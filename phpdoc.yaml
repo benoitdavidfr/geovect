@@ -1,0 +1,19 @@
+title: geovect - gestion d'objets géographiques et de leur géométrie vecteur
+path: /geovect
+doc: |
+  Ce module est constitué de 3 sous-modules principaux:
+    - gegeom gère la géométrie vecteur GeoJSON
+    - fcoll permet la lecture de FeatureCollection GeoJSON
+    - coordsys gère différents systèmes de coordonnées
+  et de sous-modules annexes:
+    - ogr2php exploite la bibliothèque Ogr2Ogr
+    - geom2d et geometry sont d'anciennes versions de gestion de la géométrie
+    - syscoord est une ancienne version de la gestion de systèmes de coordonnées
+submodules:
+  - /geovect/gegeom
+  - /geovect/fcoll
+  - /geovect/geometry
+  - /geovect/geom2d
+  - /geovect/coordsys
+  - /geovect/syscoord
+  - /geovect/ogr2php
