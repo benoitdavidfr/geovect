@@ -1,0 +1,49 @@
+title: bases de données
+$schema: http://id.georef.eu/fcoll/DbServers
+dbServers:
+  myL:
+    title: serveur MySql local
+    params: mysql://root@172.17.0.3/sys
+  myAl:
+    title: serveur MySql sur Alwaysdata
+    params: mysql://bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500
+    schemaPrefix: bdavid_
+  pgL:
+    title: serveur PgSql local
+    params: host=172.17.0.4 dbname=postgres user=postgres password=benoit
+  pgAl:
+    title: serveur PgSql Alwaysdata
+    params: host=postgresql-bdavid.alwaysdata.net dbname=bdavid_geomce user=bdavid password=dsbune44
+views:
+  FRABEL:
+    title: France et Belgique
+    server: myL
+    schema: ne_110m
+    table: admin_0_countries
+    criteria:
+      admin:
+        - France
+        - Belgium
+  coastline:
+    title: coastline
+    server: myL
+    schema: ne_110m
+    table: coastline
+  admin_0_boundary_lines_land-bbox:
+    title: bbox admin_0_boundary_lines_land
+    server: myL
+    schema: ne_110m
+    table: admin_0_boundary_lines_land
+    criteria:
+      bbox: [0, 0, 180, 90]
+
+  route500CoteEtFrontiere:
+    title: Limite côtière et Frontière internationale de Route500
+    server: myAl
+    schema: bdavid_route500
+    table: limite_administrative
+    criteria:
+      nature:
+        - Limite côtière
+        - Frontière internationale
+  

@@ -1,0 +1,107 @@
+title: fcoll - accès aux FeatureCollection
+path: /geovect/fcoll
+doc: |
+  Ce module permet:
+    - d'accéder de manière homogène à une FeatureCollection, en faisant abstraction de son format de stockage,
+    - de générer des Feature à partir d'une FeatureCollection,
+    - de dessiner des FeatureCollection.
+  
+  Chaque FeatureCollection (FColl) est identifiée par un chemin dans l'arbre des fichiers GeoJSON locaux étendu aux:
+    - fichiers OGR (à faire)
+    - tables de BD MySql (PgSql à faire)
+    - web-services (à faire)
+  
+  FeatureCollection est une classe abstraite définissant une méthode features() génératrice de Feature.
+  Elle est implémentée par:
+    - GeoJFile qui correspond à un fichier GeoJSON contenant une FeatureCollection
+    - Table qui correspond à une table MySql
+    - OgrFile (à venir)
+    - WFS (à venir)
+    - GeoJSON distants (à venir)
+  La génération de Feature peut être paramétrée par des critères de sélection.
+  
+  FCTree est une classe abstraite définissant les noeuds non finaux de l'arbre dont les feuilles sont des FeatureCollection
+  ou des définitions de cartes ; chaque FCTree:
+    - peut être itéré pour fournir ses enfants comme FCTree, FeatureCollection ou MapDef ;
+    - peut être traversé, cad que chaque noeud intermédiaire de l'arbre sait récursivement donner accès à un de ses enfants
+      en fonction de son chemin, ce concept est implémenté par la méthode child(array $criteria, string $subpath)
+  La classse est implémentée par:
+    - FileDir - répertoire de fichiers (fichiers GeoJSON ou OGR + sous-répertoires + fichiers Yaml d'extension)
+    - DbSchema - Schema MySql constitué de Table
+    - DbServer - serveur MySql constitué de DbSchema
+    - YamFileDbServers - fichier Yaml décrivant des serveurs MySql (DbServer) et des vues (Table)
+  
+  MapDef permet de définir certains éléments de cartes.
+  
+  L'arbre des FeatureCollection est en fait un treillis car, comme dans l'arborescence Unix, il est possible d'accéder
+  à un élément au travers de différents chemins.
+  
+  Chaque élément est identifié par son chemin d'accès.
+  Un fichier GeoJson/OGR est identifié par son chemin Unix Apache.
+  Une table MySql est identifiée par la concaténation:
+    - du chemin du fichier Yaml qui contient les paramètres de connexion au serveur
+    - de l'identifiant donné dans ce fichier à un serveur particulier
+    - du nom du schéma MySQL dans ce serveur
+    - du nom de la table dans ce schéma
+    
+  Ce module propose un visualiseur de FeatureCollection fondé sur la navigation dans l'arbre ici défini.
+    
+  Hiérarchie des classes définies:
+    - FeatureCollection - classe abstraite - peut être itéré comme Feature
+      +- GeoJFile - fichier GeoJSON
+      +- Table - table MySql
+    - FCTree - classe abstraite - peut être itéré comme FeatureCollection / FCTree / MapDef
+      +- FileDir - répertoire de fichiers
+      +- YamFileDbServers - fichier Yaml décrivant des serveurs MySql de BD
+      +- DbServer - Elt Yaml décrivant un serveur MySql
+      +- DbSchema - Schema MySql
+      +- YamFileMapDefs - fichier Yaml décrivant des cartes ou éléments de carte
+    - YamlFile - fichier Yaml
+    - MapDef - Elt Yaml décrivant une carte ou des éléments de carte
+  
+  A_Faire:
+    - ajouter possibilités de remonter depuis YamFileDbServers, ..
+    - ajouter les fichiers OGR (dont SHP)
+    - ajouter aux FeatureCollection la définition de métadonnées et de leur spécification,
+    - ajouter la possibilité d'enregistrer une carte.
+    - ajouter PgSql
+    - ajouter les WFS
+    - ajouter GeoJSON distants et les UGeoJson
+
+journal: |
+  21-22/5/2019:
+    - transfert du paramètre $criteria dans les FCTree dans la méthode FeatureCollection::features()
+    - ajout dans le viewer des possibilités d'exporter la carte en Yaml, de l'éditer et de consulter les objets affichés
+  20/5/2019:
+    - chgt de FeatureCollection comme Iterator en methode features() génératrice de Feature
+    - amélioration et fiabilisation des zoomIn/Out
+  19/5/2019:
+    - mise en oeuvre de la méthode Table::bbox()
+    - transfert dans le fichier secret.inc.php des mots de passe de connexion
+  18/5/2019:
+    - déplacement du module dans geovect
+  14/5/2019:
+    - ajout d'un critère de sélection dans la définition d'un FeatureCollection qui permet de ne sélectionner qu'une partie
+      du FeatureCollection
+    - renommage de FeatureDataset en FCTree
+  12/5/2019:
+    - renommage du module et de l'espace de noms
+  13/5/2019:
+    - ajout cartes prédéfinies
+  12/5/2019:
+    - écriture d'un viewer de fichiers GeoJSON
+    - extension du viewer aux BD MySql
+    - création de /geojson par scission de /gegeom
+phpScripts:
+  - /geovect/fcoll/index.php
+  - /geovect/fcoll/drawer.php
+  - /geovect/fcoll/test.php
+  - /geovect/fcoll/ne110m.php
+  - /geovect/fcoll/geojfileviewer.php
+  - /geovect/fcoll/antarctique.php
+phpIncludes:
+  - /geovect/fcoll/fcoll.inc.php
+  - /geovect/fcoll/fctree.inc.php
+  - /geovect/fcoll/database.inc.php
+  - /geovect/fcoll/mapdef.inc.php
+  - /geovect/fcoll/secret.inc.php
