@@ -1,0 +1,15 @@
+title: généralités sur les projections
+sources:
+  - https://fr.wikipedia.org/wiki/Projection_cartographique
+  - https://fr.wikipedia.org/wiki/Projection_sinuso%C3%AFdale
+types:
+  équivalente:
+    en: Equal-area
+    definition: conserve localement les surfaces
+  conforme: conserve localement les angles, donc les formes
+sinusoidale:
+  title: Projection sinusoïdale
+  doc: |
+    aussi appelée projection de Sanson ou de Flamsteed
+    projection équivalente
+    

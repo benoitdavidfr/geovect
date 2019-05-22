@@ -1,0 +1,825 @@
+title: registre des CRS
+description: |
+  Registre inspiré du standard OGC CRS WKT http://docs.opengeospatial.org/is/12-063r5/12-063r5.html, aussi ISO 19162:2015.
+  Les définitions des CRS peuvent notamment être trouvées dans http://www.epsg-registry.org/
+  Dans un souci de clareté, les éléments communs sont mutualisés.
+  Le registre est décomposé en 7 sous-registres:
+    - celui des unités
+    - celui des ellipsoides
+    - celui des systèmes géodésiques
+    - celui des CRS qui regroupe des GeodeticCRS et des ProjectedCRS
+    - celui des codes EPSG qui renvoie vers celui des CRS
+    - celui des codes IGNF qui renvoie vers celui des CRS
+    - celui des codes simples qui renvoie vers celui des CRS
+  Le choix a été fait de définir tous les GeodeticCRS en 2D avec des axes en longitude, latitude en degrés décimaux.
+  Dans le registre EPSG, ils sont généralement définis en latitude, longitude.
+  Principes de nommage des GeodeticCRS dans le registre CRS:
+    - {datum}(LonLatDd|LatLonDd) - LonLatDd pour (lon,lat) en degrés décimaux, LatLonDd pour (lat,lon) en degrés décimaux
+source:
+  - http://www.epsg-registry.org/
+  - https://epsg.io/
+  - http://spatialreference.org/
+$schema: /var/www/html/coordsys/crsregistre
+
+UNIT:
+  metre:
+    value: 1
+    AUTHORITY: {EPSG: 9001}
+  degree:
+    value: 0.01745329251994328
+    AUTHORITY: {EPSG: 9122}
+
+ELLIPSOID:
+  GRS_1980: # Ellipsoide mondial
+    title: Ellipsoide GRS (Geodetic Reference System) défini en 1980 par l'IAG (International Association of Geodesy)
+    a: 6378137.0
+    1/f: 298.257222101
+    AUTHORITY: {EPSG: 7019}
+  WGS-84:
+    title: Ellipsoide WGS-84 utilisé pour le GPS, quasiment identique à l'IAG_GRS_1980
+    a: 6378137.0
+    1/f: 298.257223563
+    AUTHORITY: {EPSG: 7030}
+  WGS-72:
+    title: Ellipsoide WGS-72
+    a: 6378135
+    1/f: 298.26
+    AUTHORITY: {EPSG: 7043}
+  International_1924:
+    title: Ellipsoide International de 1924, aussi appelé Hayford 1909
+    a: 6378388.0
+    1/f: 297.000000
+    AUTHORITY: {EPSG: 7022}
+  Clarke_1880_(IGN): # Ellipsoide français ancien
+    title: Ellipsoide de Clarke 1880 (IGN)
+    a: 6378249.2
+    1/f: 293.4660212936269
+    AUTHORITY: {EPSG: 7011}
+  Clarke_1866: # Ellipsoide ancien utilisé aux USA
+    title: Ellipsoide Clarke 1866
+    a: 6378206.4
+    b: 6356583.8
+    1/f: 294.978698214
+    AUTHORITY: {EPSG: 7008}
+    source: http://en.wikipedia.org/wiki/North_American_Datum
+  sphereUnite: # Pour tests
+    title: Sphère unité utilisée pour les tests
+    a: 1
+    1/f: inf # utilisation de la chaine 'inf' et non de la valeur .inf pour compatibilité JSON
+
+DATUM:
+  WGS_1984: # Systèmes mondiaux
+    title: Système géodésique mondial (World Geodetic System) 1984
+    ELLIPSOID: WGS-84
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 6326}
+  WGS_1972:
+    title: Système géodésique mondial (World Geodetic System) 1972
+    ELLIPSOID: WGS-72
+    TOWGS84: [0,0,4.5,0,0,0.554,0.2263]
+    AUTHORITY: {EPSG: 6322}
+  European_Terrestrial_Reference_System_1989: # EU
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 6258}
+  European_Datum_1950:
+    ELLIPSOID: International_1924
+    TOWGS84: [-87,-98,-121,0,0,0,0]
+    AUTHORITY: {EPSG: 6230}
+  Reseau_Geodesique_Francais_1993: # Systèmes de métropole
+    title: Réseau Géodesique Francais 1993
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 6171}
+  Nouvelle_Triangulation_Francaise:
+    title: Nouvelle Triangulation Francaise
+    ELLIPSOID: Clarke_1880_(IGN)
+    TOWGS84: [-168,-60,320,0,0,0,0]
+    AUTHORITY: {EPSG: 6275}
+  Reseau_Geodesique_des_Antilles_Francaises_2009: # Antilles françaises
+    title: Réseau géodésique des Antilles françaises 2009
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 1073}
+  Reseau_de_Reference_des_Antilles_Francaises_1991:
+    title: Reseau de Reference des Antilles Francaises 1991
+    ELLIPSOID: GRS_1980
+    AUTHORITY: {EPSG: 1047}
+    TOWGS84: [0,0,0,0,0,0,0]
+  Reseau_Geodesique_Francais_Guyane_1995: # Guyane
+    title: Reseau geodesique francais de Guyane 1995
+    ELLIPSOID: GRS_1980
+    TOWGS84: [2,2,-2,0,0,0,0]
+    AUTHORITY: {EPSG: 6624}
+  Reseau_Geodesique_de_la_Reunion_1992: # La Réunion
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 6627}
+  Reseau_Geodesique_de_Mayotte_2004: # Mayotte
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 1036}
+  Reseau_Geodesique_de_Saint_Pierre_et_Miquelon_2006: # St. P&M
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 1038}
+  Reseau_Geodesique_des_TAAF_2007: # TAAF
+    ELLIPSOID: GRS_1980
+    AUTHORITY: {EPSG: 1113}
+  Reseau_Geodesique_de_Wallis_et_Futuna_1996 : # Wallis et Futuna
+    title: Réseau géodésique de Wallis et Futuna 1996
+    ELLIPSOID: GRS_1980
+  Reseau_Geodesique_de_Polynesie_Francaise: # Polynésie Française
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0.072,-0.507,-0.245,-0.0183,0.0003,-0.007,-0.0093]
+    AUTHORITY: {EPSG: 6687}
+  Reseau_Geodesique_de_Nouvelle-Caledonie: # Nouvelle-Caledonie
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 6749}
+  
+  North_American_Datum_1983: # Systèmes utilisés en Amérique du nord
+    title: Systeme geodesique nord-americain de 1983
+    ELLIPSOID: GRS_1980
+    TOWGS84: [0,0,0,0,0,0,0]
+    AUTHORITY: {EPSG: 6269}
+  North_American_Datum_1927:
+    title: Systeme geodesique nord-americain de 1927
+    ELLIPSOID: Clarke_1866
+    AUTHORITY: {EPSG: 6267}
+
+  NAD27_origine_180W: # Systèmes utilisés pour les tests
+    title: Systeme geodesique nord-americain de 1927 origine 180°W (pour tests)
+    ELLIPSOID: Clarke_1866
+  sphereUnite:
+    title: Système géodesique defini sur une sphere unite
+    ELLIPSOID: sphereUnite
+
+CRS: # Registre des CRS
+  WGS84LonLatDd: # Systèmes mondiaux
+    title: Système mondial de coordonnées géographiques (World Geodetic System) 1984 - (Lon,Lat) en degrés décimaux
+    DATUM: WGS_1984
+    AUTHORITY: {EPSG: 4326}
+  WebMercator:
+    title: Projection WebMercator
+    BASEGEODCRS: WGS84LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Spheric_Mercator_1SP
+    AUTHORITY: {EPSG: 3857}
+  WorldMercator:
+    title: Projection World Mercator - WGS84
+    BASEGEODCRS: WGS84LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Mercator_1SP
+    AUTHORITY: {EPSG: 3395}
+  WGS72LonLatDd:
+    DATUM: WGS_1972
+    AUTHORITY: {EPSG: 4322}
+  ETRS89LonLatDd: # Systèmes européens
+    title: European Terrestrial Reference System 1989
+    DATUM: European_Terrestrial_Reference_System_1989
+    AUTHORITY: {EPSG: 4258}
+  ED50LonLatDd:
+    DATUM: European_Datum_1950
+    AUTHORITY: {EPSG: 4230}
+    epsgWkt: |
+      GEODCRS["ED50",
+        DATUM["European Datum 1950",
+          ELLIPSOID["International 1924",6378388,297,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4230]]
+  IGNF:ETRS89LCC:
+    title: ETRS89 / LCC Europe
+    BASEGEODCRS: ETRS89LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of 1st standard parallel: 35
+      Latitude of 2nd standard parallel: 65
+      Latitude of false origin: 52
+      Longitude of false origin: 10
+      Easting at false origin: 4000000
+      Northing at false origin: 2800000
+    limits:
+      southlimit: 27
+      northlimit: 71
+    AUTHORITY: {EPSG: 3034}
+  
+  RGF93LonLatDd: # Métropole
+    title: RGF93 en degrés décimaux (Lon,Lat)
+    DATUM: Reseau_Geodesique_Francais_1993
+    PRIMEM:
+      Greenwich: 0
+      AUTHORITY: {EPSG: 8901}
+    UNIT: degree
+    AUTHORITY: {EPSG: 7084}
+    limits: # source https://registre.ign.fr/ign/IGNF/IGNF/#RGF93GDD
+      westlimit: -5.5
+      southlimit: 41
+      eastlimit: 10
+      northlimit: 52
+    epsgWkt: |
+      http://www.epsg-registry.org/export.htm?wkt=urn:ogc:def:crs:EPSG::7084
+      GEODCRS["RGF93 (lon-lat)",
+        DATUM["Reseau Geodesique Francais 1993",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["longitude",east,ORDER[1]],
+          AXIS["latitude",north,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",7084]]
+      http://www.epsg-registry.org/export.htm?wkt=urn:ogc:def:crs:EPSG::7042
+      GEODCRS["RGF93 (lon-lat)",
+        DATUM["Reseau Geodesique Francais 1993",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,3],
+          AXIS["longitude",east,ORDER[1],ANGLEUNIT["degree",0.01745329252]],
+          AXIS["latitude",north,ORDER[2],ANGLEUNIT["degree",0.01745329252]],
+          AXIS["ellipsoidal height",up,ORDER[3],LENGTHUNIT["metre",1.0]],
+        ID["EPSG",7042]]
+      http://www.epsg-registry.org/export.htm?wkt=urn:ogc:def:crs:EPSG::4171
+      GEODCRS["RGF93",
+        DATUM["Reseau Geodesique Francais 1993",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4171]]
+    spatialOrgWkt: |
+      GEOGCS["RGF93",
+          DATUM["Reseau_Geodesique_Francais_1993",
+              SPHEROID["GRS 1980",6378137,298.257222101,
+                  AUTHORITY["EPSG","7019"]],
+              TOWGS84[0,0,0,0,0,0,0],
+              AUTHORITY["EPSG","6171"]],
+          PRIMEM["Greenwich",0,
+              AUTHORITY["EPSG","8901"]],
+          UNIT["degree",0.01745329251994328,
+              AUTHORITY["EPSG","9122"]],
+          AUTHORITY["EPSG","4171"]]
+  IGNF:LAMB93:
+    title: Projection Lambert 93
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 46.5
+      Latitude of 1st standard parallel: 49
+      Latitude of 2nd standard parallel: 44
+      Longitude of false origin: 3
+      Easting at false origin: 700000
+      Northing at false origin: 6600000
+    AUTHORITY: {EPSG: 2154}
+    AXIS: {X: EAST, Y: NORTH}
+    epsgWkt: |
+      http://www.epsg-registry.org/export.htm?wkt=urn:ogc:def:crs:EPSG::2154
+      PROJCRS["RGF93 / Lambert-93",
+        BASEGEODCRS["RGF93",
+          DATUM["Reseau Geodesique Francais 1993",
+            ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]]],
+        CONVERSION["Lambert-93",
+          METHOD["Lambert Conic Conformal (2SP)",ID["EPSG",9802]],
+          PARAMETER["Latitude of false origin",46.5,ANGLEUNIT["degree",0.01745329252]],
+          PARAMETER["Longitude of false origin",3,ANGLEUNIT["degree",0.01745329252]],
+          PARAMETER["Latitude of 1st standard parallel",49,ANGLEUNIT["degree",0.01745329252]],
+          PARAMETER["Latitude of 2nd standard parallel",44,ANGLEUNIT["degree",0.01745329252]],
+          PARAMETER["Easting at false origin",700000,LENGTHUNIT["metre",1.0]],
+          PARAMETER["Northing at false origin",6600000,LENGTHUNIT["metre",1.0]]],
+        CS[cartesian,2],
+          AXIS["easting (X)",east,ORDER[1]],
+          AXIS["northing (Y)",north,ORDER[2]],
+          LENGTHUNIT["metre",1.0],
+        ID["EPSG",2154]]
+  IGNF:LAMBCC42:
+    title: Projection Lambert CC-42
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 42
+      Latitude of 1st standard parallel: 41.25
+      Latitude of 2nd standard parallel: 42.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 1200000
+    limits:
+      southlimit: 41
+      northlimit: 43
+    AUTHORITY: {EPSG: 3942}
+    AXIS: {X: EAST, Y: NORTH}
+  IGNF:LAMBCC43:
+    title: Projection Lambert CC-43
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 43
+      Latitude of 1st standard parallel: 42.25
+      Latitude of 2nd standard parallel: 43.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 2200000
+    limits:
+      southlimit: 42
+      northlimit: 44
+    AUTHORITY: {EPSG: 3943}
+    AXIS: {X: EAST, Y: NORTH}
+  IGNF:LAMBCC44:
+    title: Projection Lambert CC-44
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 44
+      Latitude of 1st standard parallel: 43.25
+      Latitude of 2nd standard parallel: 44.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 3200000
+    limits:
+      southlimit: 43
+      northlimit: 45
+    AUTHORITY: {EPSG: 3944}
+    AXIS: {X: EAST, Y: NORTH}
+  IGNF:LAMBCC45:
+    title: Projection Lambert CC-45
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 45
+      Latitude of 1st standard parallel: 44.25
+      Latitude of 2nd standard parallel: 45.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 4200000
+    limits:
+      southlimit: 44
+      northlimit: 46
+    AUTHORITY: {EPSG: 3945}
+    AXIS: {X: EAST, Y: NORTH}
+  IGNF:LAMBCC46:
+    title: Projection Lambert CC-46
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 46
+      Latitude of 1st standard parallel: 45.25
+      Latitude of 2nd standard parallel: 46.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 5200000
+    limits:
+      southlimit: 45
+      northlimit: 47
+    AUTHORITY: {EPSG: 3946}
+    AXIS: {X: EAST, Y: NORTH}
+  IGNF:LAMBCC47:
+    title: Projection Lambert CC-47
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 47
+      Latitude of 1st standard parallel: 46.25
+      Latitude of 2nd standard parallel: 47.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 6200000
+    limits:
+      southlimit: 46
+      northlimit: 48
+    AUTHORITY: {EPSG: 3947}
+    AXIS: {X: EAST, Y: NORTH}
+  IGNF:LAMBCC48:
+    title: Projection Lambert CC-48
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 48
+      Latitude of 1st standard parallel: 47.25
+      Latitude of 2nd standard parallel: 48.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 7200000
+    limits:
+      southlimit: 47
+      northlimit: 49
+    AUTHORITY: {EPSG: 3948}
+    AXIS: {X: EAST, Y: NORTH}
+  IGNF:LAMBCC49:
+    title: Projection Lambert CC-49
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 49
+      Latitude of 1st standard parallel: 48.25
+      Latitude of 2nd standard parallel: 49.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 8200000
+    limits:
+      southlimit: 48
+      northlimit: 50
+    AUTHORITY: {EPSG: 3949}
+    AXIS: {X: EAST, Y: NORTH}
+  IGNF:LAMBCC50:
+    title: Projection Lambert CC-50
+    BASEGEODCRS: RGF93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: 50
+      Latitude of 1st standard parallel: 49.25
+      Latitude of 2nd standard parallel: 50.75
+      Longitude of false origin: 3
+      Easting at false origin: 1700000
+      Northing at false origin: 9200000
+    limits:
+      southlimit: 49
+      northlimit: 51
+    AUTHORITY: {EPSG: 3950}
+    AXIS: {X: EAST, Y: NORTH}
+  NTFLonLatDd:
+    title: Nouvelle Triangulation Francaise, GeodeticCRS défini en degrés décimaux par rapport à Paris
+    DATUM: Nouvelle_Triangulation_Francaise
+    PRIMEM:
+      Paris: 2°20'14.025''E
+      AUTHORITY: {EPSG: 8901}
+    UNIT: degree
+  IGNF:LAMB2E:
+    title: Lambert Zone II étendue
+    BASEGEODCRS: NTFLonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_1SP
+      Scale factor at natural origin: 0.99987742
+      Latitude of false origin: 52 gr
+      Longitude of false origin: 0
+      Easting at false origin: 600_000
+      Northing at false origin: 2_200_000
+    limits:
+      southlimit: 45.92 gr
+      northlimit: 56.77 gr
+    AUTHORITY: {EPSG: 27572}
+    AXIS:
+      X: EAST
+      Y: NORTH
+    epsgWkt: |
+      PROJCRS["NTF (Paris) / Lambert zone II",
+        BASEGEODCRS["NTF (Paris)",
+          DATUM["Nouvelle Triangulation Francaise (Paris)",
+            ELLIPSOID["Clarke 1880 (IGN)",6378249.2,293.4660213,LENGTHUNIT["metre",1.0]]],
+          PRIMEM["Paris",2.5969213,ANGLEUNIT["grad",0.015707963268]]],
+        CONVERSION["Lambert zone II",
+          METHOD["Lambert Conic Conformal (1SP)",ID["EPSG",9801]],
+          PARAMETER["Latitude of natural origin",52,ANGLEUNIT["grad",0.015707963268]],
+          PARAMETER["Longitude of natural origin",0,ANGLEUNIT["grad",0.015707963268]],
+          PARAMETER["Scale factor at natural origin",0.99987742,SCALEUNIT["unity",1.0]],
+          PARAMETER["False easting",600000,LENGTHUNIT["metre",1.0]],
+          PARAMETER["False northing",2200000,LENGTHUNIT["metre",1.0]]],
+        CS[cartesian,2],
+          AXIS["easting (X)",east,ORDER[1]],
+          AXIS["northing (Y)",north,ORDER[2]],
+          LENGTHUNIT["metre",1.0],
+        ID["EPSG",27572]]
+
+  # Outre-Mer - Source: registre IGN-F http://lambert93.ign.fr/fileadmin/files/IGNF
+  RGAF09LonLatDd: # Antilles françaises
+    title: Réseau géodésique des Antilles françaises 2009
+    DATUM: Reseau_Geodesique_des_Antilles_Francaises_2009
+    AUTHORITY: {EPSG: 5489}
+    epsgWkt: |
+      GEODCRS["RGAF09",
+        DATUM["Reseau Geodesique des Antilles Francaises 2009",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",5489]]
+  RRAF_1991LonLatDd:
+    title: Reseau de Reference des Antilles Francaises 1991
+    DATUM: Reseau_de_Reference_des_Antilles_Francaises_1991
+    AUTHORITY: {EPSG: 4558}
+    epsgWkt: |
+      GEODCRS["RRAF 1991",
+        DATUM["Reseau de Reference des Antilles Francaises 1991",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4558]]
+  RGFG95LonLatDd: # Guyane
+    title: Reseau geodesique francais de Guyane 1995
+    DATUM: Reseau_Geodesique_Francais_Guyane_1995
+    AUTHORITY: {EPSG: 4624}
+    epsgWkt: |
+      GEODCRS["RGFG95",
+        DATUM["Reseau Geodesique Francais Guyane 1995",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4624]]
+    spatialOrgWkt: |
+      GEOGCS["RGFG95",
+          DATUM["Reseau_Geodesique_Francais_Guyane_1995",
+              SPHEROID["GRS 1980",6378137,298.257222101,
+                  AUTHORITY["EPSG","7019"]],
+              TOWGS84[2,2,-2,0,0,0,0],
+              AUTHORITY["EPSG","6624"]],
+          PRIMEM["Greenwich",0,
+              AUTHORITY["EPSG","8901"]],
+          UNIT["degree",0.01745329251994328,
+              AUTHORITY["EPSG","9122"]],
+          AUTHORITY["EPSG","4624"]]
+  RGR92LonLatDd: # La Réunion
+    DATUM: Reseau_Geodesique_de_la_Reunion_1992
+    AUTHORITY: {EPSG: 4627}
+    epsgWkt: |
+      GEODCRS["RGR92",
+        DATUM["Reseau Geodesique de la Reunion 1992",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4627]]
+    spatialOrgWkt: |
+      GEOGCS["RGR92",
+          DATUM["Reseau_Geodesique_de_la_Reunion_1992",
+              SPHEROID["GRS 1980",6378137,298.257222101,
+                  AUTHORITY["EPSG","7019"]],
+              TOWGS84[0,0,0,0,0,0,0],
+              AUTHORITY["EPSG","6627"]],
+          PRIMEM["Greenwich",0,
+              AUTHORITY["EPSG","8901"]],
+          UNIT["degree",0.01745329251994328,
+              AUTHORITY["EPSG","9122"]],
+          AUTHORITY["EPSG","4627"]]
+  RGM04LonLatDd: # Mayotte
+    DATUM: Reseau_Geodesique_de_Mayotte_2004
+    AUTHORITY: {EPSG: 4470}
+    epsgWkt: |
+      GEODCRS["RGM04",
+        DATUM["Reseau Geodesique de Mayotte 2004",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4470]]
+  RGSPM06LonLatDd: # St. P&M
+    DATUM: Reseau_Geodesique_de_Saint_Pierre_et_Miquelon_2006
+    AUTHORITY: {EPSG: 4463}
+    epsgWkt: |
+      GEODCRS["RGSPM06",
+        DATUM["Reseau Geodesique de Saint Pierre et Miquelon 2006",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4463]]
+  RGTAAF07LonLatDd: # TAAF
+    DATUM: Reseau_Geodesique_des_TAAF_2007
+    AUTHORITY: {EPSG: 7073}
+    epsgWkt: |
+      GEODCRS["RGTAAF07",
+        DATUM["Reseau Geodesique des Terres Australes et Antarctiques Francaises 2007",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",7073]]
+  RGWF96LonLatDd: # Wallis et Futuna
+    title: Réseau géodésique de Wallis et Futuna 1996
+    DATUM: Reseau_Geodesique_de_Wallis_et_Futuna_1996
+    AUTHORITY: {EPSG: 8900}
+    epsgWkt: |
+      GEODCRS["RGWF96",
+        DATUM["Reseau Geodesique de Wallis et Futuna 1996",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",8900]]
+  RGPFLonLatDd: # Polynésie Française
+    DATUM: Reseau_Geodesique_de_Polynesie_Francaise
+    AUTHORITY: {EPSG: 4687}
+    source: http://www.shom.fr/les-activites/activites-scientifiques/reseau-geodesique-de-polynesie-francaise-rgpf/
+    epsgWkt: |
+      http://www.epsg-registry.org/export.htm?wkt=urn:ogc:def:crs:EPSG::4687
+      GEODCRS["RGPF",
+        DATUM["Reseau Geodesique de la Polynesie Francaise",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4687]]
+  RGNC91-93LonLatDd: # Nouvelle-Caledonie
+    DATUM: Reseau_Geodesique_de_Nouvelle-Caledonie
+    AUTHORITY: {EPSG: 4749}
+    source: https://dittt.gouv.nc/geodesie-et-nivellement/les-referentiels-de-nouvelle-caledonie
+    epsgWkt: |
+      http://www.epsg-registry.org/export.htm?wkt=urn:ogc:def:crs:EPSG::4749
+      GEODCRS["RGNC91-93",
+        DATUM["Reseau Geodesique de Nouvelle Caledonie 91-93",
+          ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]],
+        CS[ellipsoidal,2],
+          AXIS["latitude",north,ORDER[1]],
+          AXIS["longitude",east,ORDER[2]],
+          ANGLEUNIT["degree",0.01745329252],
+        ID["EPSG",4749]]
+    spatialOrgWkt: |
+      DATUM["Reseau_Geodesique_de_Nouvelle_Caledonie_91_93",
+          SPHEROID["GRS 1980",6378137,298.257222101,
+              AUTHORITY["EPSG","7019"]],
+          TOWGS84[0,0,0,0,0,0,0],
+          AUTHORITY["EPSG","6749"]],
+      PRIMEM["Greenwich",0,
+          AUTHORITY["EPSG","8901"]],
+      UNIT["degree",0.01745329251994328,
+          AUTHORITY["EPSG","9122"]],
+      AUTHORITY["EPSG","4749"]]
+  LambertNouvelleCaledonie:
+    BASEGEODCRS: RGNC91-93LonLatDd
+    UNIT: metre
+    PROJECTION:
+      METHOD: Lambert_Conformal_Conic_2SP
+      Latitude of false origin: -21.5
+      Longitude of false origin: 166
+      Latitude of 1st standard parallel: -20.666666666667
+      Latitude of 2nd standard parallel: -22.333333333333
+      Easting at false origin: 400_000
+      Northing at false origin: 300_000
+    limits: # source: https://epsg.io/2984
+      westlimit: 156.25
+      southlimit: -26.45
+      eastlimit: 174.28
+      northlimit: -14.83
+    AXIS: {X: EAST, Y: NORTH}
+    AUTHORITY: {EPSG: 3163}
+    epsgWkt: |
+      PROJCRS["RGNC91-93 / Lambert New Caledonia",
+        BASEGEODCRS["RGNC91-93",
+          DATUM["Reseau Geodesique de Nouvelle Caledonie 91-93",
+            ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1.0]]]],
+        CONVERSION["Lambert New Caledonia",
+          METHOD["Lambert Conic Conformal (2SP)",ID["EPSG",9802]],
+          PARAMETER["Latitude of false origin",-21.5,ANGLEUNIT["degree",0.01745329252]],
+          PARAMETER["Longitude of false origin",166,ANGLEUNIT["degree",0.01745329252]],
+          PARAMETER["Latitude of 1st standard parallel",-20.666666666667,ANGLEUNIT["degree",0.01745329252]],
+          PARAMETER["Latitude of 2nd standard parallel",-22.333333333333,ANGLEUNIT["degree",0.01745329252]],
+          PARAMETER["Easting at false origin",400000,LENGTHUNIT["metre",1.0]],
+          PARAMETER["Northing at false origin",300000,LENGTHUNIT["metre",1.0]]],
+        CS[cartesian,2],
+          AXIS["easting (X)",east,ORDER[1]],
+          AXIS["northing (Y)",north,ORDER[2]],
+          LENGTHUNIT["metre",1.0],
+        ID["EPSG",3163]]
+      
+  NAD83LonLatDd: # systèmes d'Amérique du Nord
+    DATUM: North_American_Datum_1983
+    AUTHORITY: {EPSG: 4269}
+  NAD27LonLatDd:
+    DATUM: North_American_Datum_1927
+    AUTHORITY: {EPSG: 4267}
+
+  'UTM{nozone}{NS}-{GeodeticCRS}': # définition générique des ProjectedCRS UTM sur un GeodeticCRS qqc
+    title: Système de coordonnées en projection UTM{nozone}{NS} dans le système de coordonnées {GeodeticCRS}
+    BASEGEODCRS: '{GeodeticCRS}'
+    UNIT: metre
+    PROJECTION:
+      METHOD: UTM
+      zone: '{nozone}{NS}'
+ 
+  sphereUnite: # Diverses definitions pour les tests
+    title: Systeme geodesique defini sur une sphere unite
+    DATUM: sphereUnite
+  sphereUniteOrigine180W:
+    title: Systeme geodesique defini sur une sphere unite
+    DATUM: sphereUnite
+    PRIMEM:
+      Greenwich: -180
+  NAD27origine180W:
+    DATUM: North_American_Datum_1927
+    PRIMEM:
+      Greenwich: -180
+
+IGN-F: # Registre des codes IGN-F renvoyant vers le registre des CRS
+  ETRS89LCC: IGNF:ETRS89LCC
+  RGF93GEODD: RGF93LonLatDd
+  LAMB93: IGNF:LAMB93
+  LAMBCC42: IGNF:LAMBCC42
+  LAMBCC43: IGNF:LAMBCC43
+  LAMBCC44: IGNF:LAMBCC44
+  LAMBCC45: IGNF:LAMBCC45
+  LAMBCC46: IGNF:LAMBCC46
+  LAMBCC47: IGNF:LAMBCC47
+  LAMBCC48: IGNF:LAMBCC48
+  LAMBCC49: IGNF:LAMBCC49
+  LAMBCC50: IGNF:LAMBCC50
+  LAMB2E: IGNF:LAMB2E
+
+EPSG: # Registre des codes EPSG renvoyant vers le registre des CRS
+  2154: IGNF:LAMB93
+  3034: IGNF:ETRS89LCC
+  3163: LambertNouvelleCaledonie
+  3395: WorldMercator
+  3857: WebMercator
+  3942: IGNF:LAMBCC42
+  3943: IGNF:LAMBCC43
+  3944: IGNF:LAMBCC44
+  3945: IGNF:LAMBCC45
+  3946: IGNF:LAMBCC46
+  3947: IGNF:LAMBCC47
+  3948: IGNF:LAMBCC48
+  3949: IGNF:LAMBCC49
+  3950: IGNF:LAMBCC50
+  4171: { latLon: RGF93LonLatDd }
+  4230: { latLon: ED50LonLatDd }
+  4258: { latLon: ETRS89LonLatDd }
+  4267: { latLon: NAD27LonLatDd }
+  4269: { latLon: NAD83LonLatDd }
+  4322: { latLon: WGS72LonLatDd }
+  4326: { latLon: WGS84LonLatDd }
+  4463: { latLon: RGSPM06LonLatDd }
+  4470: { latLon: RGM04LonLatDd }
+  4558: { latLon: RRAF_1991LonLatDd }
+  4624: { latLon: RGFG95LonLatDd }
+  4627: { latLon: RGR92LonLatDd }
+  4687: { latLon: RGPFLonLatDd }
+  4749: { latLon: RGNC91-93LonLatDd }
+  5489: { latLon: RGAF09LonLatDd }
+  7042: RGF93LonLatDd
+  7084: RGF93LonLatDd
+  7073: { latLon: RGTAAF07LonLatDd }
+  8900: { latLon: RGWF96LonLatDd }
+  27572: IGNF:LAMB2E
+  # UTM RGxxx
+  5490: UTM20N-RGAF09LonLatDd # Antilles
+  4559: UTM20N-RRAF_1991LonLatDd # Antilles
+  2972: UTM22N-RGFG95LonLatDd # Guyane
+  2975: UTM40S-RGR92LonLatDd # La Réunion
+  4471: UTM38S-RGM04LonLatDd # Mayotte
+  4467: UTM21N-RGSPM06LonLatDd # St. P&M
+  8456: UTM54S-RGTAAF07LonLatDd # TAAAF
+  8903: UTM01S-RGWF96LonLatDd # Wallis-et-Futuna
+  3297: UTM06S-RGPFLonLatDd # Polynésie
+  # UTM WGS84
+  32631: UTM31N-WGS84LonLatDd # Métropole
+  32740: UTM40S-WGS84LonLatDd # La Réunion
+  32738: UTM38S-WGS84LonLatDd # Mayotte
+  # UTM ETRS89
+  25829: UTM29N-ETRS89LonLatDd # EU
+  25830: UTM30N-ETRS89LonLatDd
+  25831: UTM31N-ETRS89LonLatDd
+  25832: UTM32N-ETRS89LonLatDd
+  25833: UTM33N-ETRS89LonLatDd
+  # UTM ED50
+  23029: UTM29N-ED50LonLatDd
+  23030: UTM30N-ED50LonLatDd
+  23031: UTM31N-ED50LonLatDd
+  23032: UTM32N-ED50LonLatDd
+  23033: UTM33N-ED50LonLatDd
+   
+SIMPLE: # Registre de noms simplifiés plus simples à utiliser renvoyant vers le registre des CRS
+  WGS84LonLatDd: WGS84LonLatDd
+  WebMercator: WebMercator
+  WorldMercator: WorldMercator
+  ED50LonLatDd: ED50LonLatDd
+  RGF93LonLatDd: RGF93LonLatDd
+  Lambert93: IGNF:LAMB93
+  Lambert2E: IGNF:LAMB2E
+  NTFLonLatDd: NTFLonLatDd
+  UTM-ANF: UTM20N-RGAF09LonLatDd # Antilles
+  UTM-GUF: UTM22N-RGFG95LonLatDd # Guyane
+  UTM-REU: UTM40S-RGR92LonLatDd # La Réunion
+  UTM-MYT: UTM38S-RGM04LonLatDd # Mayotte
+  UTM-STP: UTM21N-RGSPM06LonLatDd # St. P&M
+  UTM-ATF: UTM54S-RGTAAF07LonLatDd # TAAAF
+  UTM-WLF: UTM01S-RGWF96LonLatDd # Wallis-et-Futuna
+  UTM-PYF: UTM06S-RGPFLonLatDd # Polynésie
+  LambertNouvelleCaledonie: LambertNouvelleCaledonie # Nouvelle Calédonie
+  
+  # Diverses définitions pour les tests
+  NAD83LonLatDd: NAD83LonLatDd
+  NAD27LonLatDd: NAD27LonLatDd
+  sphereUnite: sphereUnite
+  sphereUniteOrigine180W: sphereUniteOrigine180W

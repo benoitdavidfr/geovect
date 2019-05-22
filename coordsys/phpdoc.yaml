@@ -1,0 +1,26 @@
+title: coordsys - conversion de coordonnées entre systèmes de coordonnées géoreférencés (V2)
+path: /geovect/coordsys
+doc: |
+  Doc dans README.md
+  Source publié sur: https://github.com/benoitdavidfr/geovect/coordsys
+    
+requires:
+  - /geovect/gegeom
+submodules:
+phpScripts:
+  - /geovect/coordsys/index.php
+  - /geovect/coordsys/json.php
+  - /geovect/coordsys/draw.php
+  - /geovect/coordsys/area.php
+phpIncludes:
+  - /geovect/coordsys/light.inc.php
+  - /geovect/coordsys/full.inc.php
+  - /geovect/coordsys/crs.inc.php
+  - /geovect/coordsys/datum.inc.php
+  - /geovect/coordsys/geodcrs.inc.php
+  - /geovect/coordsys/lambertCC.inc.php
+  - /geovect/coordsys/mercator.inc.php
+  - /geovect/coordsys/transmerc.inc.php
+htmlFiles:
+  - /geovect/coordsys/crsregistre.yaml
+  - /geovect/coordsys/crsregistre.schema.yaml

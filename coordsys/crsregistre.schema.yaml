@@ -1,0 +1,323 @@
+title: schéma JSON du registre des CRS
+$schema: http://json-schema.org/draft-07/schema#
+$id: http://id.georef.eu/crsregistre.schema
+modified: 2019-03-22
+description: |
+  Ce schéma JSON décrit les CRS et leurs composants.
+
+definitions:
+  AUTHORITY:
+    description: définitions de codes fournis par une autorité
+    type: object
+    required: [EPSG]
+    properties:
+      EPSG:
+        description: code EPSG
+        type: integer
+  geogCoord:
+    description: coordonnée géographique en degrés décimaux, degrés, minutes, secondes ou en grades
+    oneOf:
+      - description: degrés décimaux
+        type: number
+      - description: degrés, minutes, secondes
+        type: string
+        pattern: "^\\d+[^\\d]+\\d\\d'([\\d.]+'')?(E|W|N|S)$"
+        Exemple: 2°20'14.025''E
+      - description: grades
+        type: string
+        pattern: ^-?[\d.]+ gr$
+        Exemple: 52.5 gr
+
+type: object
+required: [title, description, $schema, UNIT, ELLIPSOID, DATUM, CRS, IGN-F, EPSG, SIMPLE]
+properties:
+  title:
+    description: titre du registre
+    type: string
+  description:
+    description: description du registre
+    type: string
+  source:
+    description: liste des principales sources utilisées
+    type: array
+    items: {type: string}
+  $schema:
+    description: chemin du schema
+    type: string
+    
+  UNIT:
+    description: sous-registre des unités, dictionnaire indexé sur l'identifiant de l'unité
+    type: object
+    additionalProperties:
+      type: object
+      required: [value, AUTHORITY]
+      additionalProperties: false
+      properties:
+        value:
+          type: number
+        AUTHORITY:
+          $ref: '#/definitions/AUTHORITY'
+          
+  ELLIPSOID:
+    description: sous-registre des ellipsoides, dictionnaire indexé sur l'identifiant de l'ellipsoide
+    type: object
+    additionalProperties:
+      type: object
+      required: [a, 1/f]
+      additionalProperties: false
+      properties:
+        title:
+          description: titre
+          type: string
+        a:
+          description: "Grand axe de l'ellipsoide - (en: Equatorial radius) - en mètres"
+          type: number
+        b:
+          description: "Petit axe de l'ellipsoide - (en: semi-minor axis) - en mètres"
+          type: number
+        1/f:
+          description: "inverse de l'applatissement - (en: inverse flattening) - = a / (a - b) - en mètres"
+          oneOf:
+            - type: number
+            - description: |
+                utiliser la chaine inf pour la sphère, .inf ne doit pas être utilisé car incompatible avec un encodage en JSON
+              const: inf
+        AUTHORITY:
+          $ref: '#/definitions/AUTHORITY'
+        source:
+          description: source utilisée, généralement URL
+          type: string
+  
+  DATUM:
+    description: sous-registre des systèmes géodésiques, dictionnaire indexé sur l'identifiant du système
+    additionalProperties:
+      type: object
+      required: [ELLIPSOID]
+      additionalProperties: false
+      properties:
+        title:
+          description: titre
+          type: string
+        ELLIPSOID:
+          description: identifiant de l'ellipsoide dans le registre ELLIPSOID
+          type: string
+        TOWGS84:
+          description: matrice de passage au WGS84
+          type: array
+          items: {type: number}
+        AUTHORITY:
+          $ref: '#/definitions/AUTHORITY'
+        source:
+          description: source de l'info
+          type: string
+        epsgWkt:
+          description: WKT du registre EPSG
+          type: string
+  CRS:
+    description: sous-registre des CRS, dictionnaire indexé sur l'identifiant du CRS
+    type: object
+    additionalProperties:
+      oneOf:
+        - description: description d'un GeodeticCRS
+          type: object
+          required: [DATUM]
+          additionalProperties: false
+          properties:
+            title: { type: string }
+            DATUM:
+              description: identifiant du système géodésique dans le registre DATUM
+              type: string
+            PRIMEM:
+              description: définition du méridien d'origine, en clé le lieu et en valeur la longitude
+              type: object
+              patternProperties:
+                '^(Greenwich|Paris)$':
+                  description: longitude du méridien d'origine en degrés par rapport à Greenwich
+                  $ref: '#/definitions/geogCoord'
+                  example: { Paris: 2°20'14.025''E }
+                AUTHORITY:
+                  $ref: '#/definitions/AUTHORITY'
+            UNIT:
+              description: identifiant de l'unité dans le dictionnaire UNITS
+            AUTHORITY:
+              $ref: '#/definitions/AUTHORITY'
+            limits:
+              description: limites éventuelles définissant le domaine de définition du GeodeticCRS en WGS84
+              type: object
+              additionProperties: false
+              properties:
+                westlimit:
+                  $ref: '#/definitions/geogCoord'
+                southlimit:
+                  $ref: '#/definitions/geogCoord'
+                eastlimit:
+                  $ref: '#/definitions/geogCoord'
+                northlimit:
+                  $ref: '#/definitions/geogCoord'
+            source:
+              description: document(s) source de la définition
+              oneOf:
+                - type: string
+                - type: array
+                  items: {type: string}
+            epsgWkt:
+              description: WKT issu du registre EPSG
+              type: string
+            spatialOrgWkt:
+              description: WKT issu du registre spatialreference.org
+              type: string
+        - description: description d'un ProjectedCRS
+          type: object
+          required: [BASEGEODCRS, UNIT, PROJECTION]
+          additionalProperties: false
+          properties:
+            title: { type: string }
+            BASEGEODCRS:
+              description: identifiant du BASEGEODCRS dans le dictionnaire CRS
+            UNIT:
+              description: identifiant de l'unité dans le dictionnaire UNITS
+            PROJECTION:
+              description: définition de la projection
+              oneOf:
+                - description: Mercator_1SP
+                  type: object
+                  required: [METHOD]
+                  additionalProperties: false
+                  properties:
+                    METHOD:
+                      description: nom de la projection, correspond au nom d'une classe Php implémentant ProjectedCRS
+                      const: Mercator_1SP
+                - description: Spheric_Mercator_1SP
+                  type: object
+                  required: [METHOD]
+                  additionalProperties: false
+                  properties:
+                    METHOD:
+                      description: nom de la projection, correspond au nom d'une classe Php implémentant ProjectedCRS
+                      const: Spheric_Mercator_1SP
+                - description: Transverse_Mercator
+                  type: object
+                  required: [METHOD, zone]
+                  additionalProperties: false
+                  properties:
+                    METHOD:
+                      description: nom de la projection, correspond au nom d'une classe Php implémentant ProjectedCRS
+                      const: Transverse_Mercator
+                    scale_factor:
+                      type: number
+                    central_meridian:
+                      $ref: '#/definitions/geogCoord'
+                    Easting at false origin:
+                      type: number
+                    Northing at false origin:
+                      type: number
+                - description: UTM
+                  type: object
+                  required: [METHOD, zone]
+                  additionalProperties: false
+                  properties:
+                    METHOD:
+                      description: nom de la projection, correspond au nom d'une classe Php implémentant ProjectedCRS
+                      const: UTM
+                    zone:
+                      description: identifiant de la zone
+                      type: string
+                      pattern: ^(\d\d[NS]|{nozone}{NS})$
+                - description: Lambert_Conformal_Conic_2SP
+                  type: object
+                  required:
+                    - METHOD
+                    - Latitude of false origin
+                    - Latitude of 1st standard parallel
+                    - Latitude of 2nd standard parallel
+                    - Longitude of false origin
+                    - Easting at false origin
+                    - Northing at false origin
+                  additionalProperties: false
+                  properties:
+                    METHOD:
+                      description: nom de la projection, correspond au nom d'une classe Php implémentant ProjectedCRS
+                      const: Lambert_Conformal_Conic_2SP
+                    Latitude of false origin:
+                      $ref: '#/definitions/geogCoord'
+                    Latitude of 1st standard parallel:
+                      $ref: '#/definitions/geogCoord'
+                    Latitude of 2nd standard parallel:
+                      $ref: '#/definitions/geogCoord'
+                    scale_factor:
+                      type: number
+                    Longitude of false origin:
+                      $ref: '#/definitions/geogCoord'
+                    Easting at false origin:
+                      type: number
+                    Northing at false origin:
+                      type: number
+                - description: Lambert_Conformal_Conic_1SP
+                  type: object
+                  required:
+                    - METHOD
+                    - Latitude of false origin
+                    - Scale factor at natural origin
+                    - Longitude of false origin
+                    - Easting at false origin
+                    - Northing at false origin
+                  additionalProperties: false
+                  properties:
+                    METHOD:
+                      description: nom de la projection, correspond au nom d'une classe Php implémentant ProjectedCRS
+                      const: Lambert_Conformal_Conic_1SP
+                    Latitude of false origin:
+                      $ref: '#/definitions/geogCoord'
+                    Scale factor at natural origin:
+                      type: number
+                    Longitude of false origin:
+                      $ref: '#/definitions/geogCoord'
+                    Easting at false origin:
+                      type: number
+                    Northing at false origin:
+                      type: number
+            AUTHORITY:
+              $ref: '#/definitions/AUTHORITY'
+            AXIS:
+              description: liste des axes
+            limits:
+              description: limites éventuelles définissant le domaine de définition de la projection en WGS84
+              type: object
+              additionProperties: false
+              properties:
+                westlimit:
+                  $ref: '#/definitions/geogCoord'
+                southlimit:
+                  $ref: '#/definitions/geogCoord'
+                eastlimit:
+                  $ref: '#/definitions/geogCoord'
+                northlimit:
+                  $ref: '#/definitions/geogCoord'
+            epsgWkt:
+              description: WKT du registre EPSG
+              type: string
+  IGN-F:
+    description: correspondance IGN:F -> CRS
+    type: object
+    additionalProperties:
+      type: string
+  EPSG:
+    description: correspondance EPSG -> CRS
+    type: object
+    additionalProperties:
+      oneOf:
+        - description: renvoi vers un identifiant dans le registre CRS
+          type: string
+        - description: définit un système géodésique LatLon
+          type: object
+          required: [latLon]
+          addtitionalProperties: false
+          properties:
+            latLon:
+              description: renvoi vers un identifiant dans le registre CRS
+              type: string
+  SIMPLE:
+    description: registres de noms simples fréquemment utilisés
+    type: object
+    additionalProperties:
+      type: string
