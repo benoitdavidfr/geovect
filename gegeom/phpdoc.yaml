@@ -1,0 +1,85 @@
+title: gegeom - bibliothèque géométrique utilisant les coordonnées géographiques et euclidiennes
+path: /geovect/gegeom
+doc: |
+  Définition d'une nouvelle bibiothèque géométrique (après geom2d et geometry).
+  L'objectif est d'améliorer la modularité et d'être plus cohérent avec GeoJSON.
+  5 spécificités:
+    - les primitives géométriques sont structurées comme listes**n de positions (au sens GeoJSON) qui n'est pas un objet
+      mais un array de 2 ou 3 nombres ;
+      par exemple un MultiLineString est défini par une liste de listes de positions et pas comme une liste de LineString.
+      Seule GeometryCollection est définie comme une liste d'objets Geometry.
+      A l'inverse dans geom2d et geometry, une primitive utilise la primitive plus simple, ex. MultiLineString = list(LineString)
+      Avec ce choix de conception, la structuration des primitives est très proche de celle définie dans GeoJSON.
+      Ce choix présente 2 avantages:
+        - certaines fonctionnalités peuvent être implémentées de façon générique et évite de multiplier les méthodes sur les
+          différentes classes, par exemple le calcul du nombre de positions ou du centre d'un objet.
+        - la création d'un objet à partir de sa représentation GeoJSON est peu coûteuse et peut donc être utilisée pour des
+          objets temporaires ce qui permet de reconstruire au besoin une structure de type geom2d
+    - BBox est une classe abstraite dérivée en 2 classes respt. pour les coord. géographiques et euclidiennes ;
+      cela permet notamment de mieux documenter certaines méthodes en sachant le type de coordonnées qu'elles utilisent
+    - la bibliothèque est indépendante des changements de systèmes de coordonnées qui sont possibles en passant en paramètre
+      une fonction Pos -> Pos ;
+    - afin de rendre la bibliothèque indépendante des différentes techniques de dessin (GD, SVG, ...), les primitives
+      géométriques utilisent des primitives génériques de dessin dans un objet dessin dont la classe doit hériter la
+      classe abstraite `Drawing`.
+      La classe GdDrawing implémente implémente ces primtives
+      dans la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php)
+    - utilisation de l'espace de noms gegeom
+  
+  Hiérarchie des classes définies:
+    - Pos - classe statique regroupant des fonctions s'appliquant à une position
+    - LPos - classe statique regroupant des fonctions s'appliquant à une liste de positions
+    - LLPos - classe statique regroupant des fonctions s'appliquant à une liste de listes de positions
+    - LnPos - classe statique regroupant des fonctions s'appliquant à une liste**n de positions
+    - BBox - classe abstraite de boite
+      +- GBox
+      +- EBox
+    - Geometry - classe abstraite
+      +- Homogeneous - regroupemennt des sous-classes pour lesquelles la géom. est définie par une liste**n de positions
+        +- Point
+        +- MultiPoint
+        +- LineString
+        +- MultiLineString
+        +- Polygon
+        +- MultiPolygon
+      +- GeometryCollection
+    - Zoom
+    - Drawing
+      +- GdDrawing
+  
+  Ce module est complété par:
+    - /coordsys qui propose des changements de syst. de coord. de référence
+    - /fcoll qui gère des FeatureCollection
+    - /ogr2Php qui permet de lire un fichier OGR
+    
+  A faire:
+    - adapter les dév de geom2d et geometry, notamment:
+      - les algorithmes de tuilage utilisés pour CLC
+  
+journal: |
+  14/5/2019:
+    - modif ordre des paramètres de Drawing::_construct()
+  9-12/5/2019:
+    - écriture d'un viewer de fichiers GeoJSON
+    - scission en 2 avec ../geojson renommé ensuite ../fcoll
+  8/5/2019:
+    - restructuration des tests unitaires avec création d'un fichier unittest.inc.php
+  6/5/2019:
+    - utilisation avec ogr2Php pour charger NE110M dans MySQL et PgSQL
+    - retour spécifique de filter() lorsque la géométrie résultante est trop petite 
+phpScripts:
+  - /geovect/gegeom/index.php
+  - /geovect/gegeom/testreadme.php
+phpIncludes:
+  - /geovect/gegeom/unittest.inc.php
+  - /geovect/gegeom/position.inc.php
+  - /geovect/gegeom/gebox.inc.php
+  - /geovect/gegeom/gegeom.inc.php
+  - /geovect/gegeom/point.inc.php
+  - /geovect/gegeom/linestring.inc.php
+  - /geovect/gegeom/polygon.inc.php
+  - /geovect/gegeom/geomcoll.inc.php
+  - /geovect/gegeom/wkt.inc.php
+  - /geovect/gegeom/drawing.inc.php
+  - /geovect/gegeom/gddrawing.inc.php
+  - /geovect/gegeom/zoom.inc.php

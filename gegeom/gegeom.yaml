@@ -1,0 +1,83 @@
+title: formalisation API d'accès générique aux données géo.
+doc: |
+  FeatureCollection : FeatureCollection -> Feature
+  Question:
+    - comment naviguer dans les données de manière simple et générique, cad indépendant du format de stockage ?
+    - cela veut dire:
+      - comment naviguer dans les Layers ?
+      - comment homogénéiser la lecture d'une Layer ?
+  formatsDeStockageDeFeatureCollection:
+    vecteur:
+      - fichier GeoJSON (découpé ou non en lignes par Feature)
+      - fichier shp
+      - source OGR / Ogr2Php transforme tte source OGR en flux Php de Feature
+      - table MySql / PgSql
+      - GeoJSON accessible par http
+        - accès à un fichier GéoJSON monolithique
+        - protocole uGeoJSON (https://github.com/BenjaminVadant/leaflet-ugeojson)
+      - WFS12 GML / WFS GeoJSON
+        - GetCapabilities
+        - DescribeFeatureType
+        - GetFeature
+      - WFS3
+    view:
+      - WMS
+      - WMTS
+      - GéoTiff
+    image:
+      - WCS
+      - tiff
+  description de BD/Layer:
+    - fichier Yaml conforme au schéma http://ydclasses.georef.eu/FeatureDataset/schema
+    - GetCapabilities WFS/WMS/WMTS
+    - catalogue CSW - problème Série de données / Layer
+    
+FCTree:
+  definitions:
+    FDS: |
+      - FCTree ::= { FeatureCollection | FCTree }
+      - Permet de structurer en un arbre les FeatureCollection de différentes natures
+      - concept abstrait qui respecte:
+        - chaque objet est itérable comme FCTree ou FeatureCollection
+        - type() -> 'FCTree'
+        - chaque objet est identifié par un path qui:
+          - commence par le path de fichier à partir de la racine Apache
+          - continue dans certains objets
+            - DbServer -> DbSchema -> Database -> Table est FeatureCollection
+        - chaque objet connait son path
+        - chaque objet sait se présenter par __toString() qui donne normalement son path
+        - l'itération donne { id -> Child } / où id est l'id local dans le parent = dernier élément du path
+        - chaque objet sait être traversé cad
+          - child(subpath) -> FeatureCollection | FCTree
+      - réalisations:
+        - répertoire de fichiers (FileDir)
+        - DbServer, DbSchema, Database
+      - implémentation Php
+        - abstract class FCTree
+        - défini dans fctree
+    FColl: |
+      - FeatureCollection = { Feature }
+      - définit un regroupement d'objets généralement homogènes évent. groupés sur un autre critère (découpage géo.)
+      - concept abstrait respectant:
+        - chaque objet est itérable comme Feature
+        - type() -> 'FeatureCollection'
+      - réalisations
+        - fichier GeoJSON (GeoJFile) défini dans geojfile
+        - fichier OGR (OgrFile) défini dans ogrfile
+        - Table de Database de DbSchema de DbServer
+      - implémentation Php
+        - abstract class FeatureCollection
+        - défini dans fcoll
+
+YamlDoc:
+  FeatureDataset:
+    examples:
+      - http://id.georef.eu/geodata/ne_110m
+    definition: "dictionnaire de FeatureCollection, cad {{name}: {FeatureCollection}}"
+  ViewDataset:
+    examples:
+      - http://id.georef.eu/view/igngp
+    definition: dictionnaire de couches correspondant chacune à une couche de consultation
+  ImageDataset:
+    definition: dictionnaire d'images
+EOF:
