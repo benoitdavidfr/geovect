@@ -9,6 +9,7 @@ doc: |
     - ogr2php exploite la bibliothèque Ogr2Ogr
     - geom2d et geometry sont d'anciennes versions de gestion de la géométrie
     - syscoord est une ancienne version de la gestion de systèmes de coordonnées
+  Publié sur https://github.com/benoitdavidfr/geovect
 submodules:
   - /geovect/gegeom
   - /geovect/fcoll
