@@ -7,8 +7,8 @@ doc: |
     - de dessiner des FeatureCollection.
   
   Chaque FeatureCollection (FColl) est identifiée par un chemin dans l'arbre des fichiers GeoJSON locaux étendu aux:
+    - tables de BD MySql et PgSql
     - fichiers OGR (à faire)
-    - tables de BD MySql (PgSql à faire)
     - web-services (à faire)
   
   FeatureCollection est une classe abstraite définissant une méthode features() génératrice de Feature.
@@ -64,7 +64,6 @@ doc: |
     - ajouter les fichiers OGR (dont SHP)
     - ajouter aux FeatureCollection la définition de métadonnées et de leur spécification,
     - ajouter la possibilité d'enregistrer une carte.
-    - ajouter PgSql
     - ajouter les WFS
     - ajouter GeoJSON distants et les UGeoJson
 

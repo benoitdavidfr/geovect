@@ -20,8 +20,7 @@ doc: |
 journal: |
   23-24/5/2019:
     - suppression des mots de passe transférés dans /phplib/sql.inc.php
-    - début d'extension pour PgSql, ne semble pas fonctionner très bien, certains objets sont absents
-      cela pourrai aussi provenir d'erreurs de chargement
+    - extension pour PgSql
   21-22/5/2019:
     - suppression de $criteria dans FCTree
     - $criteria définit une expression de sélection d'objets dans une FeatureCollection
@@ -161,7 +160,7 @@ class Table extends FeatureCollection {
       if ($name == 'bbox')
         $where[] = [
           'MySql'=> "MBRIntersects(geom, ST_LineFromText('LINESTRING($value[0] $value[1],$value[2] $value[3])'))",
-          'PgSql'=> "geom && ST_MakeEnvelope($value[0],$value[1],$value[2],$value[3], 4326)",
+          'PgSql'=> "geom::geometry && ST_MakeEnvelope($value[0],$value[1],$value[2],$value[3], 4326)",
         ];
       elseif (is_array($value))
         $where[] = "$name in ('".implode("','", $value)."')";
@@ -235,10 +234,10 @@ class Table extends FeatureCollection {
   }
 
   function features(array $criteria): \Generator {
-    //echo "Table::rewind()<br>\n";
     if (null === $where = $this->where($criteria))
       return;
     $query = array_merge([ "select *, ST_AsText(geom) wkt from ".$this->schemaTable() ], $where);
+    //echo "query="; print_r($query);
     Sql::open($this->params);
     foreach (Sql::query($query) as $tuple) {
       $wkt = $tuple['wkt'];
