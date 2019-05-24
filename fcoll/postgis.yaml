@@ -1,0 +1,27 @@
+title: mémento PostGis
+url:
+  - https://postgis.net/workshops/postgis-intro/geography.html
+  - https://postgis.net/docs/using_postgis_dbmanagement.html#PostGIS_Geography
+  - https://postgis.net/docs/PostGIS_Special_Functions_Index.html#PostGIS_TypeFunctionMatrix
+
+cast: |
+  utiliser le cast en geometry pour utiliser des fonctions non disponibles pour geography
+  ex:
+    select ST_AsText(ST_Envelope(geom::geometry)) bbox from ne_110m.coastline
+
+ST_MakeEnvelope: |
+  SELECT ST_AsText(roads_geom) AS geom
+  FROM roads
+  WHERE
+    roads_geom && ST_MakeEnvelope(191232, 243117,191232, 243119,312);
+  
+  SELECT ST_AsText(ST_MakeEnvelope(10, 10, 11, 11, 4326));
+  
+ST_MakeBox2D: |
+  --Return all features that fall reside or partly reside in a US national atlas coordinate bounding box
+  --It is assumed here that the geometries are stored with SRID = 2163 (US National atlas equal area)
+  SELECT feature_id, feature_name, the_geom
+  FROM features
+  WHERE the_geom && ST_SetSRID(ST_MakeBox2D(ST_Point(-989502.1875, 528439.5625),
+  	ST_Point(-987121.375 ,529933.1875)),2163)
+

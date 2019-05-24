@@ -10,10 +10,10 @@ dbServers:
     schemaPrefix: bdavid_
   pgL:
     title: serveur PgSql local
-    params: host=172.17.0.4 dbname=postgres user=postgres password=benoit
+    params: host=172.17.0.4 dbname=postgres user=postgres
   pgAl:
     title: serveur PgSql Alwaysdata
-    params: host=postgresql-bdavid.alwaysdata.net dbname=bdavid_geomce user=bdavid password=dsbune44
+    params: host=postgresql-bdavid.alwaysdata.net dbname=bdavid_geomce user=bdavid
 views:
   FRABEL:
     title: France et Belgique

@@ -18,12 +18,16 @@ doc: |
   d'un dictionnaire associant une chaine de paramètres sans mot de passe au mot de passe correspondant.
   De plus, il est possible de définir des vues qui sont une sélection dans une table définie par un ensemble de critères. 
 journal: |
+  23-24/5/2019:
+    - suppression des mots de passe transférés dans /phplib/sql.inc.php
+    - début d'extension pour PgSql, ne semble pas fonctionner très bien, certains objets sont absents
+      cela pourrai aussi provenir d'erreurs de chargement
   21-22/5/2019:
     - suppression de $criteria dans FCTree
     - $criteria définit une expression de sélection d'objets dans une FeatureCollection
       il est utilisé dans FeatureCollection::features() et FeatureCollection::bbox()
-      il est aussi utilisé pour définir des vues qui sont eds sélections dans une table
-    - ajout de la méthode Table::conjunction() qui génère la conjonction de 2 expressions
+      il est aussi utilisé pour définir des vues qui sont des sélections dans une table
+    - ajout de la méthode Table::conjunction() qui produit la conjonction de 2 expressions
   20/5/2019:
     - chgt de Table comme Iterator en methode features() génératrice de Feature
   19/5/2019:
@@ -38,13 +42,17 @@ journal: |
     - limitation des schema et tables aux tables ayant un champ geometry
   12/5/2019:
     création
-includes: [../gegeom/unittest.inc.php, fctree.inc.php, secret.inc.php]
+includes:
+  - ../../phplib/sql.inc.php
+  - ../gegeom/unittest.inc.php
+  - fctree.inc.php
 */}
+require_once __DIR__.'/../../phplib/sql.inc.php';
 require_once __DIR__.'/../gegeom/unittest.inc.php';
 require_once __DIR__.'/fctree.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
-use MySql;
+use Sql;
 use gegeom\Geometry;
 use gegeom\GBox;
 use unittest\UnitTest;
@@ -61,17 +69,6 @@ class Table extends FeatureCollection {
   private $criteria; // critères définissant la vue
   private $key; // clé courante
   
-  // utilise le fichier secret.inc.php pour ajouter aux paramètres de connexion MySQL le mot de passe
-  static function passwd(string $params): string {
-    if (!is_file(__DIR__.'/secret.inc.php'))
-      throw new \Exception("Erreur absence de fichier des mots de passe");
-    $passwds = require(__DIR__.'/secret.inc.php');
-    if (!isset($passwds[$params]))
-      throw new \Exception("Pas de mot de passe pour $params");
-    $passwd = $passwds[$params];
-    return str_replace('@', ":$passwd@", $params);
-  } 
-
   function __construct(string $path, string $params, string $schemaTable='', array $criteria=[]) {
     //echo "Table::__construct($path, params, schemaTable=$schemaTable, criteria=",json_encode($criteria),")<br>\n"; //die();
     $this->path = $path;
@@ -150,23 +147,28 @@ class Table extends FeatureCollection {
     }
   }
   
-  // génère la partie where de la requête, retourne null ssi les critères sont contradictoires
-  function where(array $criteria): ?string {
+  // génère la partie where de la requête, retourne null si les critères sont contradictoires
+  // sinon retourne un array correspondant à une requête multi-logicielle
+  function where(array $criteria): ?array {
     $criteria = self::conjunction($this->criteria, $criteria);
     if ($criteria === null)
       return null;
     if (!$criteria)
-      return '';
+      return [];
     $where = [];
     foreach ($criteria as $name => $value) {
+      $where[] = $where ? ' and ' : ' where ';
       if ($name == 'bbox')
-        $where[] = "MBRIntersects(geom, ST_LineFromText('LINESTRING($value[0] $value[1],$value[2] $value[3])'))";
+        $where[] = [
+          'MySql'=> "MBRIntersects(geom, ST_LineFromText('LINESTRING($value[0] $value[1],$value[2] $value[3])'))",
+          'PgSql'=> "geom && ST_MakeEnvelope($value[0],$value[1],$value[2],$value[3], 4326)",
+        ];
       elseif (is_array($value))
         $where[] = "$name in ('".implode("','", $value)."')";
       else
         $where[] = "$name = '$value'";
     }
-    return ' where '.implode(' and ', $where);
+    return $where;
   }
   static function test_where() {
     echo "<pre>";
@@ -193,14 +195,21 @@ class Table extends FeatureCollection {
     $gbox = new GBox;
     if (null === $where = $this->where($criteria))
       return $gbox;
-    $query = "select AsWKT(ST_Envelope(geom)) bbox from ".$this->schemaTable().$where;
-    //echo "query=$query<br>\n";
-    MySql::open(self::passwd($this->params));
-    foreach(MySql::query($query) as $tuple) {
+    $query = array_merge(
+      [
+        [ 'MySql'=> "select ST_AsText(ST_Envelope(geom)) bbox",
+          'PgSql'=> "select ST_AsText(ST_Envelope(geom::geometry)) bbox" // ST_Envelope() ne fonctionne pas sur des geography
+        ],
+        " from ".$this->schemaTable(),
+      ],
+      $where,
+    );
+    Sql::open($this->params);
+    foreach(Sql::query($query) as $tuple) {
       //echo json_encode(Geometry::fromWkt($tuple['bbox'])->bbox()->asArray()),"<br>\n";
       $gbox->union(Geometry::fromWkt($tuple['bbox'])->bbox());
     }
-    MySql::close();
+    Sql::close();
     return $gbox;
   }
   static function test_bbox() {
@@ -229,10 +238,9 @@ class Table extends FeatureCollection {
     //echo "Table::rewind()<br>\n";
     if (null === $where = $this->where($criteria))
       return;
-    $query = "select *, AsWKT(geom) wkt from ".$this->schemaTable().$where;
-    //echo "query=$query<br>\n";
-    MySql::open(self::passwd($this->params));
-    foreach (MySql::query($query) as $tuple) {
+    $query = array_merge([ "select *, ST_AsText(geom) wkt from ".$this->schemaTable() ], $where);
+    Sql::open($this->params);
+    foreach (Sql::query($query) as $tuple) {
       $wkt = $tuple['wkt'];
       unset($tuple['geom']);
       unset($tuple['wkt']);
@@ -284,16 +292,21 @@ class DbSchema extends FCTree {
   }
   
   function getIterator() {
-    MySql::open(Table::passwd($this->params));
+    Sql::open($this->params);
     $children = [];
     $schemaname = basename($this->path);
-    $query = "select distinct table_name from information_schema.columns
-              where table_schema='$schemaname' and data_type='geometry'";
-    foreach(MySql::query($query) as $tuple) {
+    $query = [
+      "select distinct table_name from information_schema.columns ",
+      "where table_schema='$schemaname' and ",
+      [ 'MySql'=> "data_type='geometry'",
+        'PgSql'=> "data_type='USER-DEFINED' and udt_name='geography'",
+      ]
+    ];
+    foreach(Sql::query($query) as $tuple) {
       //echo "<pre>tuple="; print_r($tuple); echo "</pre>\n";
       $children[$tuple['table_name']] = new Table($this->path.'/'.$tuple['table_name'], $this->params);
     }
-    MySql::close();
+    Sql::close();
     return new \ArrayIterator($children);
   }
 };
@@ -328,17 +341,22 @@ class DbServer extends FCTree {
   }
   
   function getIterator() {
-    MySql::open(Table::passwd($this->params));
     $children = [];
-    $query = "select distinct table_schema from information_schema.columns where data_type='geometry'";
-    foreach(MySql::query($query) as $tuple) {
+    $query = [
+      "select distinct table_schema from information_schema.columns where ",
+      [ 'MySql'=> "data_type='geometry'",
+        'PgSql'=> "data_type='USER-DEFINED' and udt_name='geography'",
+      ]
+    ];
+    Sql::open($this->params);
+    foreach(Sql::query($query) as $tuple) {
       //echo "<pre>tuple="; print_r($tuple); echo "</pre>\n";
       $children[$tuple['table_schema']] = new DbSchema(
           $this->path.'/'.$tuple['table_schema'],
           $this->params,
       );
     }
-    MySql::close();
+    Sql::close();
     return new \ArrayIterator($children);
   }
 };

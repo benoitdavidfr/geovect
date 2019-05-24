@@ -33,19 +33,16 @@ journal: |
     création
 includes:
   - ../../vendor/autoload.php
-  - ../../phplib/mysql.inc.php
   - ../gegeom/gegeom.inc.php
   - fcoll.inc.php
   - database.inc.php
   - mapdef.inc.php
 */}
 require_once __DIR__.'/../../vendor/autoload.php';
-require_once __DIR__.'/../../phplib/mysql.inc.php';
 require_once __DIR__.'/../gegeom/gegeom.inc.php';
 require_once __DIR__.'/fcoll.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
-use MySql;
 use gegeom\Geometry;
 
 {/*PhpDoc: classes
