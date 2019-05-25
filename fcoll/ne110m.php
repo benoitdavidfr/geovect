@@ -13,26 +13,17 @@ doc: |
   Cela permet de lire facilement le fichier feature par feature.
   Le nom du champ géométrique doit être geom.
   La base (ne_110m ou ne_10m) est définie en fonction du nom du script.
-includes: [../../phplib/sql.inc.php, secret.inc.php]
+includes: [../../phplib/sql.inc.php]
 */
 require_once __DIR__.'/../../phplib/sql.inc.php';
 
-header('Content-type: application/json');
+//header('Content-type: application/json');
 
-function passwd(string $params): string {
-  if (!is_file(__DIR__.'/secret.inc.php'))
-    throw new \Exception("Erreur absence de fichier des mots de passe");
-  $passwds = require(__DIR__.'/secret.inc.php');
-  if (!isset($passwds[$params]))
-    throw new \Exception("Pas de mot de passe pour $params");
-  $passwd = $passwds[$params];
-  return str_replace('@', ":$passwd@", $params);
-} 
+MySql::open('mysql://root@172.17.0.3/');
 
 //print_r($argv); die();
 if (php_sapi_name()=='cli') {
   $db = $argv[0]=='ne10m.php' ? 'ne_10m' : 'ne_110m';
-  MySql::open("$sqlparams/$db");
   if ($argc == 1) {
     echo "Liste des tables:\n";
     $query = "select TABLE_NAME from information_schema.TABLES where TABLE_SCHEMA='$db'";
@@ -54,8 +45,7 @@ else {
   die("Non prévu");
 }
 
-echo "{\"type\": \"FeatureCollection\",\n \"features\": [\n";
-Sql::open(passwd('mysql://root@172.17.0.3/sys'));
+echo "{\"type\":\"FeatureCollection\",\"features\":[";
 $query = "select *, ST_AsGeoJSON(geom) geojson from $db.$table_name".($where ? " where $where" : '');
 $first = true;
 foreach (MySQL::query($query) as $tuple) {
@@ -68,7 +58,8 @@ foreach (MySQL::query($query) as $tuple) {
     'properties'=> $tuple,
     'geometry'=> json_decode($geom),
   ];
-  echo ($first ? '':",\n"),'  ',json_encode($feature);
+  //echo ($first ? '':",\n"),'  ',json_encode($feature);
+  echo ($first ? '':','),json_encode($feature);
   $first = false;
 }
-echo "\n]}\n";
+echo "]}\n";

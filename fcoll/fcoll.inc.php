@@ -7,6 +7,8 @@ classes:
 functions:
 doc: |
 journal: |
+  25/5/2019:
+    - lecture plus générique des fichiers GeoJSON, y c. distants
   21-22/5/2019:
     - suppression de $criteria dans FCTree et utilisation dans FeatureCollection::features() et FeatureCollection::bbox()
   20/5/2019:
@@ -103,44 +105,102 @@ title: class GeoJFile extends FeatureCollection - FeatureCollection comme fichie
 methods:
 doc: |
   Implémentation de FeatureCollection par un fichier GeoJSON
-  Dans cete version, le fichier doit être structuré avec:
-    - 2 lignes d'en-tête,
-    - 1 ligne par Feature et
-    - 1 ligne de fin composée de ']}'
-  Une version ultérieure pourra prendre en charge une structuration plus souple.
 */}
 class GeoJFile extends FeatureCollection {
+  //const LENGTH = 10; // taille du buffer utilisée en tests
+  const LENGTH = 1000*1000; // taille du buffer de lecture
   //protected $path; // chemin Apache de l'élément
-  private $file; // descripteur du fichier
-  private $key; // numéro d'objet
-  
+
   /*PhpDoc: methods
   name:  __construct
   title: "function __construct(string $path) - initialisation du GeoJFile déterminé par son chemin Apache"
   */
   function __construct(string $path) {
-    if (!is_file(self::ROOT.$path))
+    if ((strncmp($path, 'http://', 7)==0) || is_file(self::ROOT.$path))
+      $this->path = $path;
+    else
       throw new \Exception("Fichier $path inexistant");
-    $this->path = $path;
-    $this->file = fopen(self::ROOT.$this->path, 'r');
-    fgets($this->file);
-    fgets($this->file);
-    $this->key = 0;
   }
-  
+
   function __toString(): string { return 'GeoJFile:'.$this->path; }
-  
-  // génère les Feature respectant les critères
-  function features(array $criteria): \Generator {
+
+  /*PhpDoc: methods
+  name:  features0
+  title: "function features0(array $criteria): \\Generator - génère les Feature respectant les critères"
+  doc: |
+    Dans cete version, le fichier doit être structuré avec:
+      - 2 lignes d'en-tête,
+      - 1 ligne par Feature et
+      - 1 ligne de fin composée de ']}'
+  */
+  function features0(array $criteria): \Generator {
+    $file = fopen(self::ROOT.$this->path, 'r');
+    fgets($file);
+    fgets($file);
+    $key = 0;
     while (true) {
-      $buff = trim(fgets($this->file));
+      $buff = trim(fgets($file));
       if (strcmp($buff, "]}") == 0)
         return;
       if (substr($buff, -1)==',')
         $buff = substr($buff, 0, strlen($buff)-1);
       $current = json_decode($buff, true);
       if (self::meetCriteria($criteria, $current))
-        yield $this->key++ => $current;
+        yield $key++ => $current;
+    }
+  }
+
+  /*PhpDoc: methods
+  name:  features0
+  title: "function features(array $criteria): \\Generator - génère les Feature respectant les critères"
+  doc: |
+    Version plus générique de génération des Features avec encore cependant plusieurs limites:
+      - des espaces autorisés en JSON ne sont pas permis
+      - GeometryCollection n'est pas traité
+      - les propriétés de la FeatureCollection autres que type et features doivent être simples, cad:
+        - une chaine simple de caractères, ex: "title" : "nom du jeu de données"
+        - un array simple, ex: "bbox" : [0, 0, 100, 100]
+  */
+  function features(array $criteria): \Generator {
+    $path = ((strncmp($this->path, 'http://', 7)==0)) ? $this->path : self::ROOT.$this->path;
+    $file = fopen($path, 'r');
+    $jsonValPattern = '("[^"]*"|\[[^]]*\])'; // motif des valeurs JSON simples acceptées dans les métadonnées
+    $mdPattern = '\s*"[^"]+"\s*:\s*'.$jsonValPattern.'\s*,'; // motif des métadonnées éventuelles
+    // motif du début du fichier
+    $startPattern = '\s*{\s*"type"\s*:\s*"FeatureCollection"\s*,('.$mdPattern.')*\s*"features"\s*:\s*\[';
+    $buff = trim(fgets($file, self::LENGTH));
+    while (!preg_match("!^$startPattern!", $buff, $matches)) { // lecture des paquets nécessaires
+      $buff2 = fgets($file, self::LENGTH);
+      if ($buff2 === FALSE)
+        throw new \Exception("Erreur dans GeoJFile::features() sur buff='$buff'");
+      $buff .= trim($buff2);
+    }
+    //echo "buff=!$buff!<br>\n";
+    $buff = substr($buff, strlen($matches[0]));
+    //echo "En-tête lue, reste $buff"; die();
+    $geomPattern = '{"type":"(Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon)","coordinates":[^}]*}';
+    $featPattern = '{"type":"Feature","properties":{[^}]*},"geometry":'.$geomPattern.'}';
+    $key = 0;
+    while (true) { // itération sur les Feature
+      while (!preg_match("!^,?($featPattern)!", $buff, $matches)) { // lecture des paquets nécessaires
+        $buff2 = fgets($file, self::LENGTH);
+        if ($buff2 === FALSE) {
+          if ($buff == ']}')
+            return;
+          else
+            throw new \Exception("Erreur dans GeoJFile::features() sur '$buff'");
+        }
+        $buff .= trim($buff2);
+      }
+      $buff = substr($buff, strlen($matches[0]));
+      //echo "objet lu: $matches[1]<br>\n";
+      $current = json_decode($matches[1], true);
+      if (json_last_error() != JSON_ERROR_NONE)
+        throw new \Exception("Erreur json_decode() dans GeoJFile::features() sur $matches[1]");
+      if (self::meetCriteria($criteria, $current)) {
+        //echo "objet lu<br>\n";
+        yield $key++ => $current;
+      }
     }
   }
 };
@@ -148,6 +208,14 @@ class GeoJFile extends FeatureCollection {
 
 if (basename(__FILE__) <> basename($_SERVER['PHP_SELF'])) return; // Test unitaire des classes FeatureCollection et GeoJFile
 
+if (0) {
+  echo "<!DOCTYPE HTML><html><head><meta charset='UTF-8'><title>fc</title></head><body><pre>\n";
+  $fc = new GeoJFile('http://localhost/geovect/fcoll/ne_110m/coastline.geojson');
+  echo "fc="; print_r($fc);
+  foreach ($fc->features([]) as $id => $feature)
+    echo "$id : ",json_encode($feature),"\n";
+  
+}
 
 $criteria = ['scalerank'=> 0];
 $criteria = ['bbox'=> [0, 0, 180, 90]];

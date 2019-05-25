@@ -48,7 +48,7 @@ doc: |
     
   Hiérarchie des classes définies:
     - FeatureCollection - classe abstraite - peut être itéré comme Feature
-      +- GeoJFile - fichier GeoJSON
+      +- GeoJFile - fichier GeoJSON local ou distant
       +- Table - table MySql
     - FCTree - classe abstraite - peut être itéré comme FeatureCollection / FCTree / MapDef
       +- FileDir - répertoire de fichiers
@@ -63,11 +63,12 @@ doc: |
     - ajouter possibilités de remonter depuis YamFileDbServers, ..
     - ajouter les fichiers OGR (dont SHP)
     - ajouter aux FeatureCollection la définition de métadonnées et de leur spécification,
-    - ajouter la possibilité d'enregistrer une carte.
     - ajouter les WFS
-    - ajouter GeoJSON distants et les UGeoJson
+    - ajouter les UGeoJson
 
 journal: |
+  25/5/2019:
+    - lecture plus générique des fichiers GeoJSON, y c. distants
   21-22/5/2019:
     - transfert du paramètre $criteria dans les FCTree dans la méthode FeatureCollection::features()
     - ajout dans le viewer des possibilités d'exporter la carte en Yaml, de l'éditer et de consulter les objets affichés
