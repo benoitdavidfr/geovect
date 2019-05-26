@@ -496,4 +496,5 @@ echo "<area shape='default' />",
   "</td>",
   "</tr></table>\n";
 echo "<pre>GET=",json_encode($_GET, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE),"</pre>\n";
+echo "<a href='?map=",rawurlencode($map->encode()),"&amp;path=/geovect/fcoll'><i>Home</i></a> \n";
 echo "<a href='?'><i>Retour</i></a><br>\n";

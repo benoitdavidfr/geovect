@@ -3,7 +3,7 @@
 name: ugeojson.php
 title: ugeojson.php - accès à une FeatureCollection selon le protocole UGeoJSON étendu
 doc: |
-  Accès aux données GeoJSON de la base locale MySql en utilisant un protocole de type UGeoJSON
+  Accès aux données GeoJSON de la base MySql paramétrée en utilisant un protocole de type UGeoJSON
   dans lequel l'URL d'appel définit:
     - le schema, ex ne_110m
     - la collection/table, ex: coastline, admin_0_map_units
@@ -32,6 +32,18 @@ require_once __DIR__.'/fcoll/database.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+// paramètres de BD / host
+$dbParamsByHost = [
+  'localhost'=> 'mysql://root@172.17.0.3/',
+  //'localhost'=> 'mysql://bdavid@mysql-bdavid.alwaysdata.net/',
+  'bdavid.alwaysdata.net'=> 'mysql://bdavid@mysql-bdavid.alwaysdata.net/',
+  //'bdavid.alwaysdata.net'=> 'pgsql://bdavid@postgresql-bdavid.alwaysdata.net/',
+];
+//die(json_encode($_SERVER));
+
+if (null == $dbParams = $dbParamsByHost[$_SERVER['HTTP_HOST']] ?? null)
+  die("Erreur aucun serveur de BD paramétré pour le host $_SERVER[HTTP_HOST]");
+  
 if (0) { // log
   file_put_contents(__DIR__.'/ugeojson.log.yaml',Yaml::dump([[
     'date'=> date( DATE_ATOM),
@@ -40,7 +52,6 @@ if (0) { // log
   ]]), FILE_APPEND);
 }
 
-$dbParams = 'mysql://root@172.17.0.3/';
 MySql::open($dbParams);
 
 header('Content-type: application/json');
