@@ -2,7 +2,7 @@
 namespace fcoll;
 {/*PhpDoc:
 name: criteria.inc.php
-title: criteria.inc.php -xxx
+title: criteria.inc.php - définit la classe statique Criteria
 classes:
 doc: |
 */}

@@ -11,6 +11,7 @@ journal: |
   22-24/3/2019:
     - alignement des concepts et de la codification sur sur le std OGC CRS WKT (ISO 19162:2015)
     - ajout différents tests pour chgt de système
+includes: [crs.inc.php]
 */
 require_once __DIR__.'/crs.inc.php';
 

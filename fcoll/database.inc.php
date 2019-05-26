@@ -45,6 +45,7 @@ includes:
   - ../../phplib/sql.inc.php
   - ../gegeom/unittest.inc.php
   - fctree.inc.php
+  - criteria.inc.php
   - ugeojson.inc.php
 */}
 require_once __DIR__.'/../../phplib/sql.inc.php';

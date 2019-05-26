@@ -7,6 +7,12 @@ doc: |
   L'affichage de l'Antarctique en WM pose un problème car le polygone principal comprend des points en dessous de -85°
   de latitude qui génère des erreurs dans le calcul de coord. WM
   Ce script permet de tester ce cas et de le prendre en compte dans gddrawing.inc.php
+includes:
+  - ../coordsys/light.inc.php
+  - ../gegeom/gebox.inc.php
+  - ../gegeom/gegeom.inc.php
+  - ../gegeom/gddrawing.inc.php
+  - fctree.inc.php
 */
 require_once __DIR__.'/../coordsys/light.inc.php';
 require_once __DIR__.'/../gegeom/gebox.inc.php';

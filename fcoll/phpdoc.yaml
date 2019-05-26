@@ -9,15 +9,15 @@ doc: |
   Chaque FeatureCollection (FColl) est identifiée par un chemin dans l'arbre des fichiers GeoJSON locaux étendu aux:
     - tables de BD MySql et PgSql
     - fichiers OGR (à faire)
-    - web-services (à faire)
+    - web-services (WFS à faire)
   
   FeatureCollection est une classe abstraite définissant une méthode features() génératrice de Feature.
   Elle est implémentée par:
-    - GeoJFile qui correspond à un fichier GeoJSON contenant une FeatureCollection
-    - Table qui correspond à une table MySql
+    - GeoJFile qui correspond à un fichier GeoJSON local ou distant contenant une FeatureCollection
+    - UGeoJSON qui correspond à un web-service au protocole UGeoJSON
+    - Table qui correspond à une table MySql ou PgSql
     - OgrFile (à venir)
     - WFS (à venir)
-    - GeoJSON distants (à venir)
   La génération de Feature peut être paramétrée par des critères de sélection.
   
   FCTree est une classe abstraite définissant les noeuds non finaux de l'arbre dont les feuilles sont des FeatureCollection
@@ -29,7 +29,7 @@ doc: |
     - FileDir - répertoire de fichiers (fichiers GeoJSON ou OGR + sous-répertoires + fichiers Yaml d'extension)
     - DbSchema - Schema MySql constitué de Table
     - DbServer - serveur MySql constitué de DbSchema
-    - YamFileDbServers - fichier Yaml décrivant des serveurs MySql (DbServer) et des vues (Table)
+    - YamFileDbServers - fichier Yaml décrivant des serveurs MySql (DbServer), des vues (Table) ou des réf. à un UGeoJSON
   
   MapDef permet de définir certains éléments de cartes.
   
@@ -64,9 +64,10 @@ doc: |
     - ajouter les fichiers OGR (dont SHP)
     - ajouter aux FeatureCollection la définition de métadonnées et de leur spécification,
     - ajouter les WFS
-    - ajouter les UGeoJson
 
 journal: |
+  26/5/2019:
+    - ajout de UGeoJson
   25/5/2019:
     - lecture plus générique des fichiers GeoJSON, y c. distants
   21-22/5/2019:
@@ -104,4 +105,5 @@ phpIncludes:
   - /geovect/fcoll/fctree.inc.php
   - /geovect/fcoll/database.inc.php
   - /geovect/fcoll/mapdef.inc.php
-  - /geovect/fcoll/secret.inc.php
+  - /geovect/fcoll/ugeojson.inc.php
+  - /geovect/fcoll/criteria.inc.php

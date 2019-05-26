@@ -25,7 +25,7 @@ journal: |
       - renommage de la classe en GdDrawing
   27/4/2019:
     - création
-includes: [drawing.inc.php]
+includes: [drawing.inc.php, gegeom.inc.php]
 */}
 require_once __DIR__.'/drawing.inc.php';
 

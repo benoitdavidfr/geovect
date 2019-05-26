@@ -12,6 +12,11 @@ doc: |
     - geom2d et geometry sont d'anciennes versions de gestion de la géométrie
     - syscoord est une ancienne version de la gestion de systèmes de coordonnées
   Publié partiellement sur https://github.com/benoitdavidfr/geovect
+journal: |
+  25/5/2019:
+    - création de ugeojson.php
+  18/5/2019:
+    - regroupement des modules dans geovect
 submodules:
   - /geovect/gegeom
   - /geovect/fcoll

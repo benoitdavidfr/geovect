@@ -24,9 +24,10 @@ journal: |
     - chgt de principe
   30/4/2019:
     - création
-includes: [ ../gegeom/gegeom.inc.php ]
+includes: [ ../gegeom/gegeom.inc.php, criteria.inc.php ]
 */}
 require_once __DIR__.'/../gegeom/gegeom.inc.php';
+require_once __DIR__.'/criteria.inc.php';
    
 use \gegeom\GBox;
 use \gegeom\Geometry;
