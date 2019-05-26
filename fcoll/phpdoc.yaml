@@ -49,18 +49,19 @@ doc: |
   Hiérarchie des classes définies:
     - FeatureCollection - classe abstraite - peut être itéré comme Feature
       +- GeoJFile - fichier GeoJSON local ou distant
-      +- Table - table MySql
+      +- UGeoJSON - web-service au protocole UGeoJSON
+      +- Table - table MySql ou PgSql
     - FCTree - classe abstraite - peut être itéré comme FeatureCollection / FCTree / MapDef
       +- FileDir - répertoire de fichiers
-      +- YamFileDbServers - fichier Yaml décrivant des serveurs MySql de BD
-      +- DbServer - Elt Yaml décrivant un serveur MySql
-      +- DbSchema - Schema MySql
+      +- YamFileDbServers - fichier Yaml décrivant des serveurs MySql/PgSql de BD
+      +- DbServer - Elt Yaml décrivant un serveur MySql/PgSql
+      +- DbSchema - Schema MySql/PgSql
       +- YamFileMapDefs - fichier Yaml décrivant des cartes ou éléments de carte
     - YamlFile - fichier Yaml
     - MapDef - Elt Yaml décrivant une carte ou des éléments de carte
   
   A_Faire:
-    - ajouter possibilités de remonter depuis YamFileDbServers, ..
+    - améliorer ugeojson.inc.php, voir ce fichier
     - ajouter les fichiers OGR (dont SHP)
     - ajouter aux FeatureCollection la définition de métadonnées et de leur spécification,
     - ajouter les WFS

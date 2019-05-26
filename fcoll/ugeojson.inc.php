@@ -5,6 +5,9 @@ name: ugeojson.inc.php
 title: ugeojson.inc.php - accès aux FeatureCollection exposées selon le protocole UGeoJSON
 classes:
 doc: |
+  La lecture UGeoJSON peut être améliorée sur les points suivants:
+    - possibilité d'explorer le contenu du service depuis le viewer
+    - filtrage de l'en-tête dans GeoJFile::readGeoJFile() pour remettre les en-têtes dans ../ugeojson.php
 journal:
   26/5/2019:
     création
