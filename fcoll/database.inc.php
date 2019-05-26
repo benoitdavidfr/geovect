@@ -45,10 +45,13 @@ includes:
   - ../../phplib/sql.inc.php
   - ../gegeom/unittest.inc.php
   - fctree.inc.php
+  - ugeojson.inc.php
 */}
 require_once __DIR__.'/../../phplib/sql.inc.php';
 require_once __DIR__.'/../gegeom/unittest.inc.php';
 require_once __DIR__.'/fctree.inc.php';
+require_once __DIR__.'/criteria.inc.php';
+require_once __DIR__.'/ugeojson.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 use Sql;
@@ -83,73 +86,10 @@ class Table extends FeatureCollection {
   }
   function title(): string { return $this->__toString(); }
   
-  /*PhDoc: methods
-  name: conjunction
-  title: "static function conjunction(array $criteria1, array $criteria2): ?array - conjonction de 2 ens. de critères"
-  doc: |
-    Permet de calculer la conjunction des critères définis par une vue et ceux définis dans features()
-    Retourne null en cas d'incompatibilité, cad que la conjonction correspond à une expression toujours fausse
-  */
-  static function conjunction(array $criteria1, array $criteria2): ?array {
-    $result = $criteria2;
-    foreach ($criteria1 as $name => $value) {
-      if (!isset($result[$name]))
-        $result[$name] = $value;
-      else { // $name défini dans les 2 ensembles de critères
-        if ($name == 'bbox') {
-          $bbox1 = new GBox($result['bbox']);
-          $bbox2 = new GBox($value);
-          if ($bbox = $bbox1->intersects($bbox2))
-            $result['bbox'] = $bbox->asArray();
-          else
-            return null;
-        }
-        elseif (is_array($value) && is_array($result[$name])) {
-          if ($int = array_intersect($value, $result[$name]))
-            $result[$name] = $int;
-          else
-            return null;
-        }
-        elseif (is_array($value)) {
-          if (!in_array($result[$name], $value))
-            return null;
-        }
-        elseif (is_array($result[$name])) {
-          if (in_array($value, $result[$name]))
-            $result[$name] = $value;
-          else
-            return null;
-        }
-        elseif ($result[$name] <> $value)
-          return null;
-      }
-    }
-    return $result;
-  }
-  static function test_conjunction() {
-    echo "<pre>";
-    foreach([
-      /*[['a'=>5],['b'=>6]],
-      [['a'=>5],['a'=>6]],
-      [['a'=>[5,6]],['a'=>6]],
-      [['a'=>5],['a'=>[5,6]]],
-      [['a'=>[5,6,7,8]],['a'=>[3,4,5,6]]],
-      [['a'=>[6,7,8]],['a'=>[3,4,5]]],*/
-      [['bbox'=>[0,0,180,90]], ['bbox'=>[-180,-90,180,90]]],
-      [['bbox'=>[0,0,180,90]], ['bbox'=>[-180,-90,0,0]]],
-      [['bbox'=>[0,0,180,90]], ['bbox'=>[-180,-90,-1,-1]]],
-    ] as $pair) {
-      print_r([
-        ['parameters'=> $pair],
-        Table::conjunction($pair[0], $pair[1]) ?? 'empty',
-      ]);
-    }
-  }
-  
   // génère la partie where de la requête, retourne null si les critères sont contradictoires
   // sinon retourne un array correspondant à une requête multi-logicielle
   function where(array $criteria): ?array {
-    $criteria = self::conjunction($this->criteria, $criteria);
+    $criteria = Criteria::conjunction($this->criteria, $criteria);
     if ($criteria === null)
       return null;
     if (!$criteria)
@@ -245,6 +185,7 @@ class Table extends FeatureCollection {
       unset($tuple['wkt']);
       //print_r($tuple);
       yield $this->key++ => [
+        'type'=> 'Feature',
         'properties'=> $tuple,
         'geometry'=> Geometry::fromWkt($wkt)->asArray(),
       ];
@@ -394,6 +335,13 @@ class YamFileDbServers extends FCTree {
         isset($view['criteria']) ? $view['criteria'] : []
       );
     }
+    elseif ($type == 'ugeojson') {
+      $ugeojson = $this->yaml['ugeojson'][$childname];
+      $child = new UGeoJSON(
+        $this->path."/ugeojson-$childname",
+        $ugeojson['url']
+      );
+    }
     else
       throw new \Exception("Cas non prévu");
     if (!$subpath)
@@ -415,6 +363,13 @@ class YamFileDbServers extends FCTree {
         $this->yaml['dbServers'][$view['server']]['params'],
         "$view[schema].$view[table]",
         isset($view['criteria']) ? $view['criteria'] : []
+      );
+    }
+    if (isset($this->yaml['ugeojson']))
+    foreach ($this->yaml['ugeojson'] as $i => $ugeojson) {
+      $children[$name] = new UGeoJSON(
+        $this->path."/ugeojson-$i",
+        $ugeojson['url']
       );
     }
     return new \ArrayIterator($children);

@@ -37,12 +37,6 @@ title: abstract class FeatureCollection - ensemble de Feature GeoJSON
 methods:
 doc: |
   Une FeatureCollection expose la méthode features(array $criteria), générateur de Feature GeoJSON
-  $criteria définit une expression de sélection dans un FeatureCollection, il est structuré comme un array contenant:
-    - soit la clé bbox et une valeur valide pour créer un GBox, la sélection correspond à l'intersection des GBox
-    - soit comme clé un nom de propriété et comme valeur
-      - soit une valeur atomique pour sélectionner les objets pour lesquels cette propriété correspond à cette valeur
-      - soit une liste de valeurs pour sélectionner les objets pour lesquels cette propriété correspond à un des éléments
-  L'expression de sélection est la conjonction des critères élémentaires.
 */}
 abstract class FeatureCollection {
   const ROOT = __DIR__.'/../..'; // chemin Unix de la racine de l'arbre Apache
@@ -62,27 +56,6 @@ abstract class FeatureCollection {
       $gbox->union(Geometry::fromGeoJSON($feature['geometry'])->bbox());
     }
     return $gbox;
-  }
-  
-  // teste si l'objet satisfait chacun des critères
-  static function meetCriteria(array $criteria, array $current): bool {
-    foreach ($criteria as $name => $value) {
-      if ($name == 'bbox') {
-        $bbox = new GBox($value);
-        $geom = Geometry::fromGeoJSON($current['geometry']);
-        if (!$bbox->inters($geom->bbox()))
-          return false;
-      }
-      elseif (isset($current['properties'][$name])) {
-        if (is_array($value)) {
-          if (!in_array($current['properties'][$name], $value))
-            return false;
-        }
-        elseif ($current['properties'][$name] <> $value)
-          return false;
-      }
-    }
-    return true;
   }
   
   /*PhpDoc: methods
@@ -145,13 +118,62 @@ class GeoJFile extends FeatureCollection {
       if (substr($buff, -1)==',')
         $buff = substr($buff, 0, strlen($buff)-1);
       $current = json_decode($buff, true);
-      if (self::meetCriteria($criteria, $current))
+      if (Criteria::meetCriteria($criteria, $current))
         yield $key++ => $current;
     }
   }
 
   /*PhpDoc: methods
-  name:  features0
+  name:  readGeoJFile
+  title: "function readGeoJFile(string $path): \\Generator - lit un fichier GeoJSON et génère les Features"
+  doc: |
+    Plusieurs limites:
+      - des espaces autorisés en JSON ne sont pas permis
+      - GeometryCollection n'est pas traité
+      - les propriétés de la FeatureCollection autres que type et features doivent être simples, cad:
+        - une chaine simple de caractères, ex: "title" : "nom du jeu de données"
+        - un array simple, ex: "bbox" : [0, 0, 100, 100]
+  */
+  static function readGeoJFile(string $path): \Generator {
+    $file = fopen($path, 'r');
+    $jsonValPattern = '("[^"]*"|\[[^]]*\])'; // motif des valeurs JSON simples acceptées dans les métadonnées
+    $mdPattern = '\s*"[^"]+"\s*:\s*'.$jsonValPattern.'\s*,'; // motif des métadonnées éventuelles
+    // motif du début du fichier
+    $startPattern = '\s*{\s*"type"\s*:\s*"FeatureCollection"\s*,('.$mdPattern.')*\s*"features"\s*:\s*\[';
+    $buff = trim(fgets($file, self::LENGTH));
+    while (!preg_match("!^$startPattern!", $buff, $matches)) { // lecture des paquets nécessaires
+      $buff2 = fgets($file, self::LENGTH);
+      if ($buff2 === FALSE)
+        throw new \Exception("Erreur dans GeoJFile::readGeoJFile() sur buff='$buff'");
+      $buff .= trim($buff2);
+    }
+    //echo "buff=!$buff!<br>\n";
+    $buff = substr($buff, strlen($matches[0]));
+    //echo "En-tête lue, reste $buff"; die();
+    $geomPattern = '{"type":"(Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon)","coordinates":[^}]*}';
+    $featPattern = '{"type":"Feature","properties":{[^}]*},"geometry":'.$geomPattern.'}';
+    while (true) { // itération sur les Feature
+      while (!preg_match("!^,?($featPattern)!", $buff, $matches)) { // lecture des paquets nécessaires
+        $buff2 = fgets($file, self::LENGTH);
+        if ($buff2 === FALSE) {
+          if ($buff == ']}')
+            return;
+          else
+            throw new \Exception("Erreur dans GeoJFile::readGeoJFile() sur '$buff'");
+        }
+        $buff .= trim($buff2);
+      }
+      $buff = substr($buff, strlen($matches[0]));
+      //echo "objet lu: $matches[1]<br>\n";
+      $current = json_decode($matches[1], true);
+      if (json_last_error() != JSON_ERROR_NONE)
+        throw new \Exception("Erreur json_decode() dans GeoJFile::readGeoJFile() sur $matches[1]");
+      yield $current;
+    }
+  }
+  
+  /*PhpDoc: methods
+  name:  features
   title: "function features(array $criteria): \\Generator - génère les Feature respectant les critères"
   doc: |
     Version plus générique de génération des Features avec encore cependant plusieurs limites:
@@ -163,43 +185,11 @@ class GeoJFile extends FeatureCollection {
   */
   function features(array $criteria): \Generator {
     $path = ((strncmp($this->path, 'http://', 7)==0)) ? $this->path : self::ROOT.$this->path;
-    $file = fopen($path, 'r');
-    $jsonValPattern = '("[^"]*"|\[[^]]*\])'; // motif des valeurs JSON simples acceptées dans les métadonnées
-    $mdPattern = '\s*"[^"]+"\s*:\s*'.$jsonValPattern.'\s*,'; // motif des métadonnées éventuelles
-    // motif du début du fichier
-    $startPattern = '\s*{\s*"type"\s*:\s*"FeatureCollection"\s*,('.$mdPattern.')*\s*"features"\s*:\s*\[';
-    $buff = trim(fgets($file, self::LENGTH));
-    while (!preg_match("!^$startPattern!", $buff, $matches)) { // lecture des paquets nécessaires
-      $buff2 = fgets($file, self::LENGTH);
-      if ($buff2 === FALSE)
-        throw new \Exception("Erreur dans GeoJFile::features() sur buff='$buff'");
-      $buff .= trim($buff2);
-    }
-    //echo "buff=!$buff!<br>\n";
-    $buff = substr($buff, strlen($matches[0]));
-    //echo "En-tête lue, reste $buff"; die();
-    $geomPattern = '{"type":"(Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon)","coordinates":[^}]*}';
-    $featPattern = '{"type":"Feature","properties":{[^}]*},"geometry":'.$geomPattern.'}';
     $key = 0;
-    while (true) { // itération sur les Feature
-      while (!preg_match("!^,?($featPattern)!", $buff, $matches)) { // lecture des paquets nécessaires
-        $buff2 = fgets($file, self::LENGTH);
-        if ($buff2 === FALSE) {
-          if ($buff == ']}')
-            return;
-          else
-            throw new \Exception("Erreur dans GeoJFile::features() sur '$buff'");
-        }
-        $buff .= trim($buff2);
-      }
-      $buff = substr($buff, strlen($matches[0]));
-      //echo "objet lu: $matches[1]<br>\n";
-      $current = json_decode($matches[1], true);
-      if (json_last_error() != JSON_ERROR_NONE)
-        throw new \Exception("Erreur json_decode() dans GeoJFile::features() sur $matches[1]");
-      if (self::meetCriteria($criteria, $current)) {
+    foreach (self::readGeoJFile($path) as $feature) {
+      if (Criteria::meetCriteria($criteria, $feature)) {
         //echo "objet lu<br>\n";
-        yield $key++ => $current;
+        yield $key++ => $feature;
       }
     }
   }

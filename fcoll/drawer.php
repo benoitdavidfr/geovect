@@ -49,7 +49,7 @@ $drawing = new GdDrawing(
 
 $worldCriteria = $map['world'] ? ['bbox'=> $map['world']] : [];
 foreach ($map['layers'] as $layer) {
-  $lyrCriteria = Table::conjunction($worldCriteria, $layer['criteria'] ?? []);
+  $lyrCriteria = Criteria::conjunction($worldCriteria, $layer['criteria'] ?? []);
   foreach (FCTree::create($layer['path'])->features($lyrCriteria) as $feature) {
     try {
       Geometry::fromGeoJSON($feature['geometry'])

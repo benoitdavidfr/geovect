@@ -46,4 +46,7 @@ views:
       nature:
         - Limite côtière
         - Frontière internationale
-  
+
+ugeojson:
+  - title: coastline
+    url: http://localhost/geovect/ugeojson.php/ne_110m/collections/coastline/items?bbox=[0,0,180,90]

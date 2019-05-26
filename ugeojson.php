@@ -30,6 +30,16 @@ journal:
 */
 require_once __DIR__.'/fcoll/database.inc.php';
 
+use Symfony\Component\Yaml\Yaml;
+
+if (0) { // log
+  file_put_contents(__DIR__.'/ugeojson.log.yaml',Yaml::dump([[
+    'date'=> date( DATE_ATOM),
+    'path'=> "http://$_SERVER[HTTP_HOST]$_SERVER[SCRIPT_NAME]?".($_SERVER['QUERY_STRING'] ?? ''),
+    //'$_SERVER'=> $_SERVER,
+  ]]), FILE_APPEND);
+}
+
 $dbParams = 'mysql://root@172.17.0.3/';
 MySql::open($dbParams);
 
@@ -181,7 +191,7 @@ if (preg_match('!^/([^/]+)/collections/([^/]+)/items$!', $_SERVER['PATH_INFO'], 
   ];
   if ($criteria)
     $query['criteria'] = $criteria;
-  echo '"query":',json_encode($query),",\n";
+  //echo '"query":',json_encode($query),",\n";
   echo '"features":[',"\n";
   $first = true;
   foreach ($table->features($criteria) as $feature) {

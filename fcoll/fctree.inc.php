@@ -78,12 +78,24 @@ abstract class FCTree implements \IteratorAggregate {
       else
         return null;
     }
+    elseif (!$path || ($path=='.'))
+      return null;
     else {
       //echo "LayerTree::create($path)<br>\n";
       //echo "dirname=",dirname($path),"<br>\n";
       //echo "basename=",basename($path),"<br>\n";
       return self::create(dirname($path), $subpath ? basename($path).'/'.$subpath : basename($path));
     }
+  }
+  
+  /*PhDoc: methods
+  name: create
+  title: static function chooseHttp(string $path): FeatureCollection - renvoie un objet en fonction de son path http
+  doc: |
+    Retourne le bon type d'objet en focntion de son path http
+  */
+  static function chooseHttp(string $path): FeatureCollection {
+    return new UGeoJSON($path);
   }
   
   /*PhDoc: methods

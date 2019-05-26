@@ -5,11 +5,13 @@ doc: |
     - gegeom gère la géométrie vecteur GeoJSON
     - fcoll permet la lecture de FeatureCollection GeoJSON
     - coordsys gère différents systèmes de coordonnées
+  d'un script Php:
+    - ugeojson.php expose des données géographiques selon le protocole UGeoJSON
   et de sous-modules annexes:
     - ogr2php exploite la bibliothèque Ogr2Ogr
     - geom2d et geometry sont d'anciennes versions de gestion de la géométrie
     - syscoord est une ancienne version de la gestion de systèmes de coordonnées
-  Publié sur https://github.com/benoitdavidfr/geovect
+  Publié partiellement sur https://github.com/benoitdavidfr/geovect
 submodules:
   - /geovect/gegeom
   - /geovect/fcoll
@@ -18,3 +20,5 @@ submodules:
   - /geovect/coordsys
   - /geovect/syscoord
   - /geovect/ogr2php
+phpScripts:
+  - /geovect/ugeojson.php
