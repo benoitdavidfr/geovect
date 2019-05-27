@@ -20,10 +20,11 @@ journal: |
 submodules:
   - /geovect/gegeom
   - /geovect/fcoll
+  - /geovect/ugeojson
   - /geovect/geometry
   - /geovect/geom2d
   - /geovect/coordsys
   - /geovect/syscoord
   - /geovect/ogr2php
 phpScripts:
-  - /geovect/ugeojson.php
+  - /geovect/.php
