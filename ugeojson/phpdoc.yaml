@@ -1,0 +1,39 @@
+title: ugeojson - accès aux FeatureCollection au travers d'un web-service au protocole UGeoJSON
+path: /geovect/ugeojson
+doc: |
+  Le protocole UGeoJSON est défini à partir du plug-in https://github.com/BenjaminVadant/leaflet-ugeojson
+  et de la spécification de WFS3.
+  
+  Les idées fondatrices sont:
+    - accès à une FeatureCollection (FC) au travers d'une URL, qui est aussi son URI,
+      en y ajoutant en option des critères simples de sélection, notament bbox, zoom et filtrage sur une propriété,
+    - auto-description de la FC au sein d'un ensemble d'ensembles de FC, s'appliquant à:
+      - serveur Pg/My -> schema -> Table
+      - WFS -> produit -> FeatureType
+  Points d'accès:
+    - {landing}/{schema}/collections/{collname}/items?{criteria} fournit les objets de la collection {schema}.{collname}
+      satisfaisant aux critères définis par {criteria} sous la forme d'une FeatureCollection GeoJSON
+    - {landing}/{schema}/collections/{collname}/items fournit le contenu complet de la collection {schema}.{collname}
+      sous la forme d'une FeatureCollection GeoJSON
+    - {landing}/{schema}/collections/{collname}/schema fournit le schema des propriétés des objets de la collection
+    - {landing}/{schema}/collections/{collname} fournit les MD de la collection, au minimum une référence vers le schema
+      et une autre vers son contenu
+    - {landing}/{schema}/collections fournit en JSON la liste des collections du schema
+    - {landing}/{schema} fournit en JSON la liste des collections du schema
+    - {landing}/api fournit la documentation de l'API
+    - {landing} fournit en JSON les MD du service, la liste des schemas, la réf. à la doc de l'API et des exemples
+  Exemples:
+    - exposition d'un serveur MySql/PgSql contenant des schemas contenant des tables contenant des Feature
+      - {landing}/ne_110m/collections/coastline/items?bbox=[0,0,180,90]
+      - {landing}/ne_110m/collections/admin_0_map_units/items?su_a3=FXX
+    - exposition du serveur WFS IGN restructuré en ensembles de FeatureTypes
+      - {landing}/bdtopo/collections/troncon_laisse/items?bbox=[0,0,180,90]&nature=Hautes%20mers
+  
+  Questions:
+    - {landing}/{schema} == {landing}/{schema}/collections ?
+    - quelle MD ? où les stocker ?
+journal:
+  26/5/2019:
+    - création
+phpScripts:
+  - /geovect/ugeojson/my.php
