@@ -32,13 +32,12 @@ journal: |
   12/5/2019:
     création
 includes:
-  - ../../vendor/autoload.php
   - ../gegeom/gegeom.inc.php
   - fcoll.inc.php
   - database.inc.php
   - mapdef.inc.php
 */}
-require_once __DIR__.'/../../vendor/autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/../gegeom/gegeom.inc.php';
 require_once __DIR__.'/fcoll.inc.php';
 

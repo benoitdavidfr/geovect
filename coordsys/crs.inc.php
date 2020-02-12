@@ -14,10 +14,11 @@ journal: |
     - transfert des registres dans le fichier crsregistre.yaml défini par le schema crsregistre.schema.yaml
   22/3/2019:
     - alignement des concepts et de la codification sur sur le std OGC CRS WKT (ISO 19162:2015)
-includes: [../../vendor/autoload.php, full.inc.php]
+includes:
+  - full.inc.php
 */
 
-require_once __DIR__.'/../../vendor/autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 use Symfony\Component\Yaml\Yaml;
 
 /*PhpDoc: classes

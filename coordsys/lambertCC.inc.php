@@ -175,6 +175,9 @@ class Lambert_Conformal_Conic_2SP extends GeodeticCRS implements ProjectedCRS {
   public function geo (array $xy): array {
     //$this->afficheConstantes();
     list($X, $Y) = $xy;
+    if (!is_numeric($X)) die("Erreur X non numeric ligne ".__LINE__);
+    //echo "<pre>this="; print_r($this); echo "</pre>\n";
+    //echo "sqrt( pow(($X - $this->Xs),2) + pow(($Y - $this->Ys),2) );<br>\n";
     $R = sqrt( pow(($X - $this->Xs),2) + pow(($Y - $this->Ys),2) );
     $gamma = atan(($X - $this->Xs)/($this->Ys - $Y));
     $lon = $this->lambdac + ($gamma / $this->n); 

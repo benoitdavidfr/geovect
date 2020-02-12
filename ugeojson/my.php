@@ -1,7 +1,7 @@
 <?php
 /*PhpDoc:
 name: my.php
-title: my.php - accès à une FeatureCollection selon le protocole UGeoJSON étendu
+title: my.php - accès à une FeatureCollection stockée dans MySql selon le protocole UGeoJSON étendu
 doc: |
   Accès aux données GeoJSON de la base MySql paramétrée en utilisant un protocole de type UGeoJSON.
 journal:

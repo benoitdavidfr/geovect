@@ -12,6 +12,44 @@ doc: |
     - geom2d et geometry sont d'anciennes versions de gestion de la géométrie
     - syscoord est une ancienne version de la gestion de systèmes de coordonnées
   Publié partiellement sur https://github.com/benoitdavidfr/geovect
+  
+  Réflexions:
+    - les services UGeoJSON peuvent remplacer l'accès aux BD
+    - ils peuvent aussi être utilisés comme proxy pour l'accès aux WFS
+    - il reste à traiter les fichiers locaux
+    - la notion d'UGeoJSON a besoin d'être étendue à un catalogue de points d'accès
+    - cela pourrait être une notion de GeoCat, similaire à celle de FCTree
+    - un GeoCat pourrait contenir:
+      - l'URI d'un service UGeoJson, ex: http://id.geocat.fr/bdtopo - ugeojson de la BD Topo
+      - l'URI d'un sous-catalogue
+      - l'URI d'une carte agrégeant différentes FC
+    - les fichiers locaux sont gérés différemment
+      - le viewer gère les fichiers locaux et les GéoCat/UGeoJSON du web
+  Extension UGeoJSON:
+    - GeoCat == { réf. -> GeoCat | FCollDescr }, correspond à une URI
+    - FCollDescr == description d'une FC, correspond à une URI
+    - FCollSchema == (type=FeatureCollection) <=> contenu FC, l'URL peut être complétée par des critères de sélection
+    - FCollItems == (type=FeatureCollection) <=> contenu FC, l'URL peut être complétée par des critères de sélection
+  Exemples:
+    - http://id.geocat.fr/ign
+      - réf. un GeoCat qui contient le catalogue des données IGN,
+      - contient http://id.geocat.fr/bdtopo qui réf. un GeoCat qui correspond aux données BD Topo
+    - http://id.geocat.fr/bdtopo contient la liste des réf. aux desc. des FC de la BD Topo,
+      par ex. http://id.geocat.fr/bdtopo/collections/troncon_laisse
+    - http://id.geocat.fr/bdtopo/collections/troncon_laisse contient la description de la FC, not.:
+      - http://id.geocat.fr/bdtopo/collections/troncon_laisse/schema
+      - http://id.geocat.fr/bdtopo/collections/troncon_laisse/items
+      
+    - Les GéoCat ont une URI de la forme {path}/{geocatid}
+    - Toute FColl est rattachée à un catalogue et les FCollDescr ont une URI de la forme:
+        {path}/{geocatid}/collections/{fcollid}
+    - http://id.geocat.fr/ est le catalogue racine
+    - De même un GéoCat peut contenir des images (ex: http://id.geocat.ign.fr/ortho/images/spot6-2014)
+      et des ViewDataset (ex: http://id.geocat.ign.fr/cartes/view/scanexp-ng)
+    - L'URI d'un ViewDataset référence les MD de la donnée
+    - Un ViewDataset s'utilise au travers de l'URL http://id.geocat.ign.fr/cartes/view/scanexp-ng/{z}/{x}/{y}.(png|jpg)
+    
+    
 journal: |
   25/5/2019:
     - création de ugeojson.php
@@ -26,5 +64,3 @@ submodules:
   - /geovect/coordsys
   - /geovect/syscoord
   - /geovect/ogr2php
-phpScripts:
-  - /geovect/.php

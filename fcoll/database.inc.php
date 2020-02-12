@@ -90,12 +90,14 @@ class Table extends FeatureCollection {
   // génère la partie where de la requête, retourne null si les critères sont contradictoires
   // sinon retourne un array correspondant à une requête multi-logicielle
   function where(array $criteria): ?array {
+    //echo "where:"; print_r($criteria);
     $criteria = Criteria::conjunction($this->criteria, $criteria);
     if ($criteria === null)
       return null;
     if (!$criteria)
       return [];
     $where = [];
+    //echo "where:"; print_r($criteria);
     foreach ($criteria as $name => $value) {
       $where[] = $where ? ' and ' : ' where ';
       if ($name == 'bbox')

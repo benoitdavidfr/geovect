@@ -36,9 +36,10 @@ La bibliothèque est indépendante des systèmes de coordonnées.
 Les coordonnées géographiques sont cependant distinguées des coordonnées euclidiennes lorsque les fonctionnalités
 sont différentes.
 Les changements de systèmes de coordonnées sont effectués en passant en paramètre aux méthodes proj() ou geo()
-une fonction anonyme qui fait correspondre à une position en coord. géo. à une en coord. projetées ou vice-versa.  
+une fonction anonyme qui fait correspondre une position en coord. projetées à une position en coord. géo.
+ou vice-versa.  
 Cette bibliothèque a été conçue pour permettre d'utiliser facilement les fonctions définies
-dans la [bibliothèque CoordSys](https://github.com/benoitdavidfr/coordsys).
+dans la [bibliothèque CoordSys](https://github.com/benoitdavidfr/geovect/tree/master/coordsys).
 
 ### 1.3. Dessin des primitives géométriques
 Les primitives géométriques peuvent se dessiner dans un objet dessin.
@@ -54,7 +55,7 @@ et de [geom2d](https://github.com/benoitdavidfr/geom2d).
 Elle apporte principalement 4 spécificités :
 
   - structuration des coordonnées des primitives comme listes de positions, très proche de l'approche GeoJSON,
-    et simplifiant plusieurs algoritmes,
+    et simplifiant plusieurs algorithmes,
   - définition d'une classe abstraite BBox et de 2 classes concrètes GBox et EBox respt. pour les coord. géographiques
     et euclidiennes ; permettant ainsi dans le code de mieux distinguer le type de BBox utilisé,
   - indépendance par rapport aux changements de systèmes de coordonnées en utilisant en paramètre une fonction de changement
