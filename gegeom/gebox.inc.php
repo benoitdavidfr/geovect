@@ -43,7 +43,7 @@ doc: |
   Cette classe est abstraite.
   2 classes concrètes en héritent, l'une avec des coord. géographiques, l'autre des coord. euclidiennes
   Il existe une BBox particulière qui est indéfinie, on peut l'interpréter comme l'espace entier
-  A sa création sans paramètre la BBox est indéfinie
+  A sa création sans paramètre une BBox est indéfinie
 */}
 abstract class BBox {
   protected $min=[]; // [number, number] ou []
@@ -261,7 +261,7 @@ abstract class BBox {
   abstract function size(): float;
 };
 
-UnitTest::class(__NAMESPACE__, __FILE__, 'BBox'); // Test unitaire de la classe BBox
+//UnitTest::class(__NAMESPACE__, __FILE__, 'BBox'); // Test unitaire de la classe BBox
 
 {/*PhpDoc: classes
 name: GBox

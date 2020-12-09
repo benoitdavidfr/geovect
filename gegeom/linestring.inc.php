@@ -42,7 +42,8 @@ class LineString extends Homogeneous {
   }
   
   function length(): float {
-    return array_sum(array_map(function(Segment $seg): float { return $seg->length(); }, $this->segs()));
+    //return array_sum(array_map(function(Segment $seg): float { return $seg->length(); }, $this->segs()));
+    return LPos::length($this->coords);
   }
   
   /*PhpDoc: methods
@@ -54,7 +55,7 @@ class LineString extends Homogeneous {
       A linear ring MUST follow the right-hand rule with respect to the area it bounds,
       i.e., exterior rings are clockwise, and holes are counterclockwise.
   */
-  function areaOfRing(): float {
+  /*function areaOfRing(): float {
     $area = 0.0;
     $geoms = $this->geoms();
     $n = count($geoms);
@@ -63,10 +64,13 @@ class LineString extends Homogeneous {
       $area += $geoms[$i]->diff($pt0)->vectorProduct($geoms[$i+1]->diff($pt0));
     }
     return -$area/2;
-  }
+  }*/
+  function areaOfRing(): float { return LPos::areaOfRing($this->coords); }
   static function test_areaOfRing() {
     foreach ([
       [[0,0],[0,1],[1,0],[0,0]],
+      [[0,0],[1,0],[0,1],[0,0]],
+      [[0,0],[0,1],[1,1],[1,0],[0,0]],
       //'LINESTRING(0 0,1 0,1 1,0 1,0 0)',
       //'LINESTRING(10 10,11 10,11 11,10 11,10 10)',
     ] as $coords) {
@@ -96,7 +100,10 @@ class LineString extends Homogeneous {
   name:  filter
   title: "function efilter(): Homogeneous - renvoie un nouveau LineString filtré supprimant les points successifs identiques en utilisant eprecision (A REVOIR)"
   */
-  function efilter(): Homogeneous { $cclass = get_called_class(); return new $cclass(LPos::filter($this->coords, self::$eprecision)); }
+  function efilter(): Homogeneous {
+    $cclass = get_called_class();
+    return new $cclass(LPos::filter($this->coords, self::$eprecision));
+  }
   
   /* Dév interrompu
   function clip(GBox $window): MultiLineString {
@@ -199,7 +206,7 @@ class MultiLineString extends Homogeneous {
   }
   
   function length(): float {
-    return array_sum(array_map(function(array $lpos) { return (new LineString($lpos))->length(); }, $this->coords));
+    return array_sum(array_map('gegeom\LPos::length', $this->coords));
   }
   static function test_length() {
     foreach ([

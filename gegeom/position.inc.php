@@ -23,6 +23,7 @@ name: Pos
 title: class Pos - classe statique de gestion d'une position
 doc: |
   une position est une liste de 2 ou 3 nombres
+  Peut correspondre à un point ou à un vecteur.
 methods:
 */}
 class Pos {
@@ -46,7 +47,7 @@ class Pos {
   /*PhpDoc: methods
   name:  isValid
   title: "static function isValid($pos): bool - vérifie la validité de $pos comme position"
-  doc: définition la moins contraingnante possible
+  doc: définition la moins contraignante possible
   */
   static function isValid($pos): bool {
     return is_array($pos) && isset($pos[0]) && is_numeric($pos[0]) && isset($pos[1]) && is_numeric($pos[1])
@@ -83,17 +84,13 @@ class Pos {
   title: "static function diff(array $pos, array $v): array - $pos - $v en 2D, $v doit être une position"
   */
   static function diff(array $pos, array $v): array {
-    if (Pos::is($v))
-      return [$pos[0] - $v[0], $pos[1] - $v[1]];
-    else
+    if (!self::is($pos))
+      throw new \Exception("Erreur dans Pos:diff(), paramètre pos pas une position");
+    elseif (!self::is($v))
       throw new \Exception("Erreur dans Pos:diff(), paramètre v pas une position");
+    else
+      return [$pos[0] - $v[0], $pos[1] - $v[1]];
   }
-  
-  /*PhpDoc: methods
-  name:  distance
-  title: "static function distance(array $a, array $b): float - distance entre les positions $a et $b"
-  */
-  static function distance(array $a, array $b): float { return self::norm(self::diff($a, $b)); }
   
   /*PhpDoc: methods
   name:  vectorProduct
@@ -115,13 +112,19 @@ class Pos {
     ] as $lpts) {
       $v0 = $lpts[0];
       $v1 = $lpts[1];
-      echo "vectorProduct(",implode(',',$v0),",",implode(',',$v1),"=",self::vectorProduct($v0, $v1),"<br>\n";
-      echo "scalarProduct(",implode(',',$v0),",",implode(',',$v1),"=",self::scalarProduct($v0, $v1),"<br>\n";
+      echo "vectorProduct(",implode(',',$v0),",",implode(',',$v1),")=",self::vectorProduct($v0, $v1),"<br>\n";
+      echo "scalarProduct(",implode(',',$v0),",",implode(',',$v1),")=",self::scalarProduct($v0, $v1),"<br>\n";
     }
   }
   
   static function norm(array $u): float { return sqrt(self::scalarProduct($u, $u)); }
     
+  /*PhpDoc: methods
+  name:  distance
+  title: "static function distance(array $a, array $b): float - distance entre les positions $a et $b"
+  */
+  static function distance(array $a, array $b): float { return self::norm(self::diff($a, $b)); }
+  
   /*PhpDoc: methods
   name:  distancePosLine
   title: "static function distancePosLine(array $pos, array $a, array $b): float - distance de $pos à la droite $a et $b"
@@ -212,7 +215,7 @@ doc: |
 class LPos {
   const EXAMPLES = [
     "cas réel"=> [[ -59.572094692612, -80.040178725096 ], [ -59.865849371975, -80.549656671062 ], [ -60.15965572777, -81.000326837079 ], [ -62.255393439367, -80.863177585777 ], [ -64.48812537297, -80.921933689293 ], [ -65.74166642929, -80.588827406739 ], [ -65.74166642929, -80.549656671062 ], [ -66.290030890555, -80.255772800618 ], [ -64.037687750898, -80.294943536295 ], [ -61.883245612217, -80.392870375488 ], [ -61.138975796133, -79.981370945148 ], [ -60.610119188058, -79.628679294756 ], [ -59.572094692612, -80.040178725096 ]]
-    ];
+  ];
 
   static function is($lpos): bool { return is_array($lpos) && isset($lpos[0]) && Pos::is($lpos[0]); }
 
@@ -244,12 +247,50 @@ class LPos {
     }
   }
   
+  
+  static function length(array $lpos): float {
+    $length = 0;
+    $posPrec = null;
+    foreach ($lpos as $pos) {
+      if ($posPrec)
+        $length += Pos::distance($posPrec, $pos);
+      $posPrec = $pos;
+    }
+    return $length;
+  }
+  
+  /*PhpDoc: methods
+  name:  areaOfRing
+  title: "static function areaOfRing(array $lpos): float - renvoie la surface de l'anneau constitué par la liste des pos dans le CRS courant"
+  doc: |
+    La surface est positive ssi la géométrie est orientée dans le sens des aiguilles de la montre (sens trigo inverse).
+    Cette règle est conforme à la définition GeoJSON:
+      A linear ring MUST follow the right-hand rule with respect to the area it bounds,
+      i.e., exterior rings are clockwise, and holes are counterclockwise.
+  */
+  static function areaOfRing(array $lpos): float {
+    $area = 0.0;
+    $pos0 = $lpos[0];
+    for ($i=1; $i<count($lpos)-1; $i++) {
+      $area += Pos::vectorProduct(Pos::diff($lpos[$i], $pos0), Pos::diff($lpos[$i+1], $pos0));
+    }
+    return -$area/2;
+  }
+  static function test_areaOfRing() {
+    foreach ([
+      [[0,0],[0,1],[1,0],[0,0]],
+      [[0,0],[1,0],[0,1],[0,0]],
+      [[0,0],[0,1],[1,1],[1,0],[0,0]],
+    ] as $lpos) {
+      echo "areaOfRing(".LnPos::wkt($lpos).")=",self::areaOfRing($lpos),"<br>\n";
+    }
+  }
+  
   /*PhpDoc: methods
   name: filter
   title: "static function filter(array $lpos, int $precision): array - renvoie une LPos filtré supprimant les points successifs identiques"
   doc: |
     Les coordonnées sont arrondies avec $precision chiffres significatifs. Un filtre sans arrondi n'a pas de sens.
-    La liste retournée 
   */
   static function filter(array $lpos, int $precision): array {
     //echo "Lpos::filter(",json_encode($lpos),", $precision)=<br>\n";

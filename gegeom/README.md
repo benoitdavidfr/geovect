@@ -191,13 +191,13 @@ La classe MultiPoint implémente la primitive MultiPoint correspondant à une li
 Elle hérite de la classe Geometry et ne définit aucune méthode spécifique.
 
 ### 3.4. La classe LineString
-La classe LineString implémente la primtive LineString en 2D ou 3D correspondant à une liste brisée.
+La classe LineString implémente la primtive LineString en 2D ou 3D correspondant à une ligne brisée.
 Elle hérite de la classe `Geometry`.
 
 #### Méthodes
 Outre les méthodes génériques de Geometry, les méthodes suivantes sont définies :
 
-  - `isClosed(): bool` - teste la fermeture de la liste brisée (premier de dernier points identiques)
+  - `isClosed(): bool` - teste la fermeture de la liste brisée (cad premier et dernier points identiques)
   - // `distancePointPointList(Point $pt): array` - distance minimum d'une liste de points au point pt (NON IMPLEMENTE)  
     retourne la distance et le no du point qui correspond à la distance minimum sous la forme ['dist'=>$dist, 'n'=>$n]
   - // `distancePointLineString(Point $pt): array` - distance minimum de la ligne brisée au point pt (NON IMPLEMENTE)  
@@ -208,7 +208,7 @@ La classe MultiLineString implémente la primitive MultiLineString correspondant
 Elle hérite de la classe Geometry et ne possède aucune méthode spécifique.
 
 ### 3.6. La classe Polygon
-La classe Polygon implémente la primtive Polygon correspondant à un extérieur défini par une ligne brisée fermée
+La classe Polygon implémente la primitive Polygon correspondant à un extérieur défini par une ligne brisée fermée
 et d'éventuels trous chacun défini comme une ligne brisée fermée.
 Elle hérite de la classe Geometry.
 
@@ -216,7 +216,7 @@ Elle hérite de la classe Geometry.
 Outre les méthodes génériques de Geometry, les méthodes suivantes sont définies :
 
   - `posInPolygon(array $pos): bool` - teste si une position est dans le polygone
-  - `inters(Geometry $geom): bool` - teste l'intersection entre avec un polygone ou multi-polygone
+  - `inters(Geometry $geom): bool` - teste l'intersection entre un polygone et soit un polygone soit multi-polygone
   - // `addHole(LineString $hole): void` - ajoute un trou au polygone (NON IMPLEMENTE) 
 
 ### 3.7. La classe MultiPolygon
@@ -226,7 +226,7 @@ Elle hérite de la classe Geometry.
 #### Méthodes
 Outre les méthodes génériques de Geometry, les méthodes suivantes sont définies :
 
-  - `inters(Geometry $geom): bool` - teste l'intersection entre les 2 polygones ou multi-polygones
+  - `inters(Geometry $geom): bool` - teste l'intersection entre un multi-polygone et soit un polygone soit un multi-polygone
   - //`pointInPolygon(array $pos): bool` - teste si une position est dans le polygone (NON IMPLEMENTE)
 
 ### 3.8. La classe GeometryCollection
@@ -234,7 +234,7 @@ La classe GeometryCollection implémente la primitive GeometryCollection corresp
 d'objets élémentaires.  
 Elle hérite de la classe Geometry et ne possède aucune méthode spécifique.
 
-## 4. Le dessin des primtives géométriques
+## 4. Le dessin des primitives géométriques
 ### 4.1. La classe abstraite Drawing
 La classe abstraite `Drawing` définit l'interface à respecter par une classe de dessin.  
 Le paramètre `$style` respecte les principes définis

@@ -1,10 +1,5 @@
 <?php
 namespace gegeom;
-
-// Ce package ne fonctionne pas avec Php8
-/*if (preg_match('!^(\d\.\d).\d$!', phpversion(), $matches) && ($matches[1] >= 8.0))
-  die("Ne fonctionne pas avec Php ".phpversion()."\n");*/
-
 {/*PhpDoc:
 name:  gegeom.inc.php
 title: gegeom.inc.php - primitives géométriques utilisant des coordonnées géographiques ou euclidiennes
@@ -22,6 +17,8 @@ doc: |
     - améliorer asArray pour qu'il fonctionne sur une classe pour laquelle la méthode asArray() n'est pas définie
   
 journal: |
+  9/12/2020:
+    - passage en Php 8
   6/5/2019:
     - ajout Homogeneous::filter()
   5/5/2019:
@@ -290,7 +287,7 @@ abstract class Homogeneous extends Geometry {
   name: geoms
   title: "abstract function geoms(): array - retourne la liste des primitives contenues dans l'objet sous la forme d'objets"
   doc: |
-    Point -> [], MutiPoint->[Point], LineString->[Point], MultiLineString->[LineString], Polygon->[LineString],
+    Point -> [], MultiPoint->[Point], LineString->[Point], MultiLineString->[LineString], Polygon->[LineString],
     MutiPolygon->[Polygon], GeometryCollection->[Elements]  
   */
   abstract function geoms(): array;

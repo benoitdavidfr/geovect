@@ -19,7 +19,7 @@ name: Polygon
 title: class Polygon extends Homogeneous - Polygon
 methods:
 doc: |
-  Défini par une liste d'anneaux (ring), chacun liste d'au moins 4 positions, la première et la dernière étant équivalentes.
+  Défini par une liste d'anneaux (ring), chacun liste d'au moins 4 positions, la première et la dernière étant identiques.
   Le premier anneau est obligatoire est est l'extérieur du polygone, les autres facultatifs sont chacun un intérieur.
   Chaque intérieur doit être inclus dans l'extérieur et les différents anneaux ne doivent pas s'intersecter.
   Chaque anneau doit respecter la règle de la main droite (right-hand rule) par rapport à la surface bordée,
@@ -80,10 +80,10 @@ class Polygon extends Homogeneous {
   }
   
   function area(array $options=[]): float {
-    $noDirection = (isset($options['noDirection']) && ($options['noDirection']));
+    $noDirection = $options['noDirection'] ?? false;
     $area = null;
     foreach ($this->coords as $lpos) {
-      $areaOfRing = (new LineString($lpos))->areaOfRing();
+      $areaOfRing = LPos::areaOfRing($lpos);
       if ($area === null)
         $area = $noDirection ? abs($areaOfRing) : $areaOfRing;
       else
@@ -118,7 +118,7 @@ class Polygon extends Homogeneous {
     return new $cclass($coords);
   }
   static function test_filter() {
-    $pol = Geometry::fromGeoJSON(self::EXAMPLE);
+    $pol = Geometry::fromGeoJSON(self::EXAMPLES[0]);
     echo $pol,"->filter(3)=",json_encode($pol->filter(3)),"<br>\n";
   }
   
