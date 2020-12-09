@@ -1,5 +1,10 @@
 <?php
 namespace gegeom;
+
+// Ce package ne fonctionne pas avec Php8
+if (preg_match('!^(\d\.\d).\d$!', phpversion(), $matches) && ($matches[1] >= 8.0))
+  die("Ne fonctionne pas avec Php ".phpversion()."\n");
+
 {/*PhpDoc:
 name:  gegeom.inc.php
 title: gegeom.inc.php - primitives géométriques utilisant des coordonnées géographiques ou euclidiennes
@@ -196,7 +201,7 @@ abstract class Geometry {
   abstract function isValid(): bool;
   
   /*PhpDoc: methods
-  name:  fromWkt
+  name:  getErrors
   title: "abstract function getErrors(): array - renvoie l'arbre des erreurs ou [] s'il n'y en a pas"
   doc: |
     La réponse est :
@@ -420,7 +425,7 @@ abstract class Homogeneous extends Geometry {
   
   /*PhpDoc: methods
   name:  dissolveCollection
-  title: "dissolveCollection(): array - retourne un array de primtives géométriques homogènes"
+  title: "dissolveCollection(): array - retourne un array de primitives géométriques homogènes"
   */
   function dissolveCollection(): array { return [$this]; }
   

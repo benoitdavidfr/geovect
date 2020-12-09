@@ -1,6 +1,8 @@
 # Bibliothèque Php de gestion de la géométrie
 
 ## 1. Généralités
+Ne fonctionne pas avec Php 8.
+
 Cette bibliothèque Php définit des classes Php de gestion des primitives géométriques
 [GeoJSON](https://tools.ietf.org/html/rfc7946) et [OGC WKT](https://en.wikipedia.org/wiki/Well-known_text).  
 Elle comprend, tout d'abord, la classe abstraite Geometry ainsi que les 7 sous-classes suivantes correspondant

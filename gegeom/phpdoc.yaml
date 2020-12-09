@@ -1,6 +1,8 @@
 title: gegeom - bibliothèque géométrique utilisant les coordonnées géographiques et euclidiennes
 path: /geovect/gegeom
 doc: |
+  gegeom n'est pas compatible avec Php8 !!!
+  
   Définition d'une nouvelle bibiothèque géométrique (après geom2d et geometry).
   L'objectif est d'améliorer la modularité et d'être plus cohérent avec GeoJSON.
   5 spécificités:

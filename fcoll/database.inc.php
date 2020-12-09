@@ -144,7 +144,7 @@ class Table extends FeatureCollection {
         ],
         " from ".$this->schemaTable(),
       ],
-      $where,
+      $where
     );
     Sql::open($this->params);
     foreach(Sql::query($query) as $tuple) {
@@ -159,7 +159,7 @@ class Table extends FeatureCollection {
       '',
       'mysql://bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500',
       'bdavid_route500.limite_administrative',
-      [ 'nature'=> ["Limite côtière", "Frontière internationale"] ],
+      [ 'nature'=> ["Limite côtière", "Frontière internationale"] ]
     );
     //$table = new Table('', 'mysql://root@172.17.0.3/sys', [], 'ne_110m.coastline');
     echo $table->bbox([]),"<br>\n";
@@ -201,7 +201,7 @@ class Table extends FeatureCollection {
       '',
       'mysql://bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500',
       'bdavid_route500.limite_administrative',
-      [ 'nature'=> ["Limite côtière", "Frontière internationale"] ],
+      [ 'nature'=> ["Limite côtière", "Frontière internationale"] ]
     );
     echo "<pre>\n";
     foreach ($table->features(['bbox'=>[-10,49,0,51]]) as $id => $feature) {
@@ -296,7 +296,7 @@ class DbServer extends FCTree {
       //echo "<pre>tuple="; print_r($tuple); echo "</pre>\n";
       $children[$tuple['table_schema']] = new DbSchema(
           $this->path.'/'.$tuple['table_schema'],
-          $this->params,
+          $this->params
       );
     }
     Sql::close();

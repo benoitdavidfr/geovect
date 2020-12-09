@@ -6,7 +6,13 @@ title: fcoll.inc.php - définition des classes FeatureCollection et GeoJFile
 classes:
 functions:
 doc: |
+  namespace fcoll;
+  Attention, GeoJFile::features() ne marche pas si dans un objet GeoJSON le champ geometry est avant properties.
+  Voir /cartoenedis/geojfile.inc.php pour une solution plus générique
+
 journal: |
+  23-25/2/2020:
+    - détection d'un cas non traité et redév. d'une solution dans /cartoenedis/geojfile.inc.php
   25/5/2019:
     - lecture plus générique des fichiers GeoJSON, y c. distants
   21-22/5/2019:
@@ -78,7 +84,8 @@ name:  GeoJFile
 title: class GeoJFile extends FeatureCollection - FeatureCollection comme fichier GeoJSON
 methods:
 doc: |
-  Implémentation de FeatureCollection par un fichier GeoJSON
+  Implémentation de FeatureCollection par un fichier GeoJSON.
+  Plusieurs limites sur les fichiers GeoJSON.
 */}
 class GeoJFile extends FeatureCollection {
   //const LENGTH = 10; // taille du buffer utilisée en tests
