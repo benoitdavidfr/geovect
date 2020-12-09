@@ -1,8 +1,6 @@
 # Bibliothèque Php de gestion de la géométrie
 
 ## 1. Généralités
-Ne fonctionne pas avec Php 8.
-
 Cette bibliothèque Php définit des classes Php de gestion des primitives géométriques
 [GeoJSON](https://tools.ietf.org/html/rfc7946) et [OGC WKT](https://en.wikipedia.org/wiki/Well-known_text).  
 Elle comprend, tout d'abord, la classe abstraite Geometry ainsi que les 7 sous-classes suivantes correspondant
@@ -16,6 +14,8 @@ Elle comprend en outre :
   - la classe abstraite `Drawing` définissant l'interface d'un dessin et la classe `GdDrawing` implémentant cette interface
     avec GD.
   - la classe `FeatureStream` permettant de lire un flux de Feature GeoJSON pour quelques couches particulières.
+
+La bibliothèque a été mise en conformité avec Php 8.
 
 ### 1.1. Le concept de position
 La bibliothèque reprend de GeoJSON le concept de **position** constituée de 2 coordonnées éventuellement complétées par une altitude.
