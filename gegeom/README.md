@@ -132,26 +132,26 @@ Elle définit les méthodes suivantes:
   - `static fromWkt(string $wkt, string $prefix=''): Geometry` - crée une géométrie à partir d'un WKT
   - `__construct(array $coords, array $style=[])` - initialise une géométrie à partir des coordonnées, comme position,
     liste de positions, ..., et d'un éventuel style,
-  - `coords(): array` - les coordonnées comme position ou liste de positions ou liste de listes ...,
+  - `coords(): array` - retourne les coordonnées comme position ou liste de positions ou liste de listes ...,
     retourne [] pour une GeometryCollection,
   - `geoms(): array` - pour une GeometryCollection retourne la liste des objets contenus dans l'objet,
     pour les autres types retourne le singleton composé de l'objet,
-  - `asArray(): array` - la représentation GeoJSON en array
-  - `__toString(): string` - une représentation en string
-  - `geojson(): string` - la représentation GeoJSON en string
-  - `wkt(): string` - la représentation WKT
-  - `isValid(): bool` - renvoie vrai ssi l'objet est valide
-  - `getErrors(): array` - renvoie l'arbre des erreurs si l'objet est invalide, sinon renvoie []
+  - `asArray(): array` - retourne la représentation GeoJSON comme array Php
+  - `__toString(): string` - retourne une représentation en string
+  - `geojson(): string` - retourne la représentation GeoJSON en string
+  - `wkt(): string` - retourne la représentation WKT
+  - `isValid(): bool` - retourne vrai ssi l'objet est valide
+  - `getErrors(): array` - retourne l'arbre des erreurs si l'objet est invalide, sinon renvoie []
   - `proj2D(): Geometry` - projection 2D, supprime l'éventuelle 3ème coordonnée, renvoie un nouveau Geometry
-  - `center(): array` - le centre de l'objet comme position
-  - `aPos(): array` - une position de l'objet
-  - `bbox(): GBox` - le BBox de l'objet considéré en coordonnées géographiques
-  - `ebox(): EBox` - le BBox de l'objet considéré en coordonnées euclidiennes
+  - `center(): array` - retourne le centre de l'objet comme position
+  - `aPos(): array` - retourne une position de l'objet
+  - `bbox(): GBox` - retourne le BBox de l'objet considéré en coordonnées géographiques
+  - `ebox(): EBox` - retourne le BBox de l'objet considéré en coordonnées euclidiennes
   - `proj(callable $projPos): Geometry` - change de système de coordonnées en appliquant la fonction anonyme passée en paramètre,
-    renvoie un nouvel objet de la même classe que l'objet d'origine,
-  - `nbPoints(): int` - le nombre de points de l'objet (pas de positions)
-  - `length(): float` - la longueur de l'objet dans le système de coordonnées (ne pas utiliser avec des coord. géo.)
-  - `area(array $options=[]): float` - la surface de l'objet, par défaut cette surface est positive ssi la géométrie
+    retourne un nouvel objet de la même classe que l'objet d'origine,
+  - `nbPoints(): int` - retourne le nombre de points de l'objet (pas de positions)
+  - `length(): float` - retourne la longueur de l'objet dans le système de coordonnées (ne pas utiliser avec des coord. géo.)
+  - `area(array $options=[]): float` - retourne la surface de l'objet, par défaut cette surface est positive ssi la géométrie
     tourne dans le sens des aiguilles d'une montre,
     si $options['noDirection'] est défini et vrai alors le calcul ne tient pas compte du sens  
     (ne pas utiliser avec des coord. géo.)
