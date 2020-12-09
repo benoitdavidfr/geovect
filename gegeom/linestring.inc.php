@@ -27,6 +27,12 @@ class LineString extends Homogeneous {
   
   function geoms(): array { return array_map(function(array $pos) { return new Point($pos); }, $this->coords); }
   
+  /*PhpDoc: methods
+  name: __toString
+  title: "function __toString(): string - génère la réprésentation string WKT"
+  */
+  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
+
   function isValid(): bool { return LPos::isValid($this->coords) && (count($this->coords) >= 2); }
   
   function getErrors(): array {
@@ -170,6 +176,12 @@ class MultiLineString extends Homogeneous {
     }
   }
   
+  /*PhpDoc: methods
+  name: __toString
+  title: "function __toString(): string - génère la réprésentation string WKT"
+  */
+  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
+
   function isValid(): bool {
     foreach ($this->geoms() as $ls)
       if (!$ls->isValid())

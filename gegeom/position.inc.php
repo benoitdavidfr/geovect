@@ -7,6 +7,8 @@ functions:
 classes:
 doc: |
 journal: |
+  9/12/2020:
+    - transfert de méthodes Point dans Pos pour passage Php8
   8/5/2019:
     - modif de la méthode de tests unitaires
   5/5/2019:
@@ -73,6 +75,85 @@ class Pos {
   static function test_getErrors(): void {
     foreach (array_merge(self::EXAMPLES, self::COUNTEREXAMPLES) as $title => $ex) {
       echo "$title - getErrors()=",json_encode(self::getErrors($ex)),"<br>\n";
+    }
+  }
+  
+  /*PhpDoc: methods
+  name:  diff
+  title: "static function diff(array $pos, array $v): array - $pos - $v en 2D, $v doit être une position"
+  */
+  static function diff(array $pos, array $v): array {
+    if (Pos::is($v))
+      return [$pos[0] - $v[0], $pos[1] - $v[1]];
+    else
+      throw new \Exception("Erreur dans Pos:diff(), paramètre v pas une position");
+  }
+  
+  /*PhpDoc: methods
+  name:  distance
+  title: "static function distance(array $a, array $b): float - distance entre les positions $a et $b"
+  */
+  static function distance(array $a, array $b): float { return self::norm(self::diff($a, $b)); }
+  
+  /*PhpDoc: methods
+  name:  vectorProduct
+  title: "static function vectorProduct(array $u, array $v): float - produit vectoriel $this par $v en 2D"
+  */
+  static function vectorProduct(array $u, array $v): float { return $u[0] * $v[1] - $u[1] * $v[0]; }
+  
+  /*PhpDoc: methods
+  name:  scalarProduct
+  title: "static function scalarProduct(array $u, array $v): float - produit scalaire $u par $v en 2D"
+  */
+  static function scalarProduct(array $u, array $v): float { return $u[0] * $v[0] + $u[1] * $v[1]; }
+  static function test_scalarProduct() {
+    foreach ([
+      [[15,20], [20,15]],
+      [[1,0], [0,1]],
+      [[4,0], [0,3]],
+      [[1,0], [1,0]],
+    ] as $lpts) {
+      $v0 = $lpts[0];
+      $v1 = $lpts[1];
+      echo "vectorProduct(",implode(',',$v0),",",implode(',',$v1),"=",self::vectorProduct($v0, $v1),"<br>\n";
+      echo "scalarProduct(",implode(',',$v0),",",implode(',',$v1),"=",self::scalarProduct($v0, $v1),"<br>\n";
+    }
+  }
+  
+  static function norm(array $u): float { return sqrt(self::scalarProduct($u, $u)); }
+    
+  /*PhpDoc: methods
+  name:  distancePosLine
+  title: "static function distancePosLine(array $pos, array $a, array $b): float - distance de $pos à la droite $a et $b"
+  doc: |
+    distance signée de la position $pos à la droite définie par les 2 positions $a et $b"
+    La distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
+    # Distance signee d'un point P a une droite orientee definie par 2 points A et B
+    # la distance est positive si P est a gauche de la droite AB et negative si le point est a droite
+    # Les parametres sont les 3 points P, A, B
+    # La fonction retourne cette distance.
+    # --------------------
+    sub DistancePointDroite
+    # --------------------
+    { my @ab = (@_[4] - @_[2], @_[5] - @_[3]); # vecteur B-A
+      my @ap = (@_[0] - @_[2], @_[1] - @_[3]); # vecteur P-A
+      return pvect (@ab, @ap) / Norme(@ab);
+    }
+  */
+  static function distancePosLine(array $pos, array $a, array $b): float {
+    $ab = self::diff($b, $a);
+    $ap = self::diff($pos, $a);
+    if (self::norm($ab) == 0)
+      throw new \Exception("Erreur dans distancePosLine : Points A et B confondus et donc droite non définie");
+    return self::vectorProduct($ab, $ap) / self::norm($ab);
+  }
+  static function test_distancePosLine() {
+    foreach ([
+      [[1,0], [0,0], [1,1]],
+      [[1,0], [0,0], [0,2]],
+    ] as $lpts) {
+      echo "distancePosLine([",implode(',', $lpts[0]),"],[",implode(',',$lpts[1]),'],[',implode(',',$lpts[2]),"])->",
+        self::distancePosLine($lpts[0], $lpts[1],$lpts[2]),"<br>\n";
     }
   }
   
@@ -216,7 +297,7 @@ class LPos {
       $distmax = 0; // distance max
       $nptmax = -1; // num du point pour la distance max
       foreach($lpos as $n => $pos) {
-        $dist = abs((new Point($pos))->distancePointLine($pos0, $posn));
+        $dist = abs(Pos::distancePosLine($pos, $pos0, $posn));
         if ($dist > $distmax) {
           $distmax = $dist;
           $nptmax = $n;
@@ -232,11 +313,10 @@ class LPos {
       return array_merge($ls1, array_slice($ls2, 1));
     }
     else { // cas d'une ligne fermée
-      $pt0 = new Point($pos0);
       $distmax = 0; // distance max
       $nptmax = -1; // num du point pour la distance max
       foreach($lpos as $n => $pos) {
-        $dist = $pt0->distance($pos);
+        $dist = Pos::distance($pos0, $pos);
         if ($dist > $distmax) {
           $distmax = $dist;
           $nptmax = $n;

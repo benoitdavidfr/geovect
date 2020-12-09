@@ -2,8 +2,8 @@
 namespace gegeom;
 
 // Ce package ne fonctionne pas avec Php8
-if (preg_match('!^(\d\.\d).\d$!', phpversion(), $matches) && ($matches[1] >= 8.0))
-  die("Ne fonctionne pas avec Php ".phpversion()."\n");
+/*if (preg_match('!^(\d\.\d).\d$!', phpversion(), $matches) && ($matches[1] >= 8.0))
+  die("Ne fonctionne pas avec Php ".phpversion()."\n");*/
 
 {/*PhpDoc:
 name:  gegeom.inc.php
@@ -190,7 +190,7 @@ abstract class Geometry {
   
   /*PhpDoc: methods
   name: geojson
-  title: "function geojson(): string - génère la représentation Php du GeoJSON"
+  title: "function geojson(): string - génère la représentation string du GeoJSON"
   */
   function geojson(): string { return json_encode($this->asArray()); }
   
@@ -278,7 +278,7 @@ abstract class Homogeneous extends Geometry {
   name: __toString
   title: "function __toString(): string - génère la réprésentation string WKT"
   */
-  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
+  //function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
   
   /*PhpDoc: methods
   name: wkt

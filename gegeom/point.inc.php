@@ -8,6 +8,8 @@ doc: |
   Fichier concu pour être inclus dans gegeom.inc.php
   La classe Segment est utilisée pour effectuer certains calculs au sein de gegeom
 journal: |
+  9/12/2020:
+    - transfert de méthodes Point dans Pos pour passage Php8
   3/5/2019:
     - ajout length(), distance(), distancePointLine(), projPointOnLine()
   30/4/2019:
@@ -38,7 +40,7 @@ class Point extends Homogeneous {
   name:  norm
   title: "function norm(): float - renvoie la norme du vecteur"
   */
-  function norm(): float { return sqrt($this->scalarProduct($this)); }
+  function norm(): float { return Pos::norm($this->coords); }
   static function test_norm() {
     foreach ([
       [15,20],
@@ -53,7 +55,7 @@ class Point extends Homogeneous {
   name:  distance
   title: "function distance(array $pos): float - distance entre $this et $pos"
   */
-  function distance(array $pos): float { return $this->diff($pos)->norm(); }
+  function distance(array $pos): float { return Pos::distance($this->coords, $pos); }
   
   /*PhpDoc: methods
   name:  add
@@ -80,36 +82,19 @@ class Point extends Homogeneous {
     else
       throw new \Exception("Erreur dans Point:diff(), paramètre ni position ni Point");
   }
-    
+  
   /*PhpDoc: methods
   name:  vectorProduct
-  title: "function vectorProduct(Point $v): float - produit vectoriel $this par $v en 2D"
+  title: "static function vectorProduct(array $u, array $v): float - produit vectoriel $this par $v en 2D"
   */
-  function vectorProduct(Point $v): float {
-    return $this->coords[0] * $v->coords[1] - $this->coords[1] * $v->coords[0];
-  }
+  function vectorProduct(Point $v): float { return Pos::vectorProduct($this->coords, $v->coords); }
   
   /*PhpDoc: methods
   name:  scalarProduct
   title: "function scalarProduct(Point $v): float - produit scalaire $this par $v en 2D"
   */
-  function scalarProduct(Point $v): float {
-    return $this->coords[0] * $v->coords[0] + $this->coords[1] * $v->coords[1];
-  }
-  static function test_scalarProduct() {
-    foreach ([
-      [[15,20], [20,15]],
-      [[1,0], [0,1]],
-      [[4,0], [0,3]],
-      [[1,0], [1,0]],
-    ] as $lpts) {
-      $v0 = new Point($lpts[0]);
-      $v1 = new Point($lpts[1]);
-      echo "($v0)->vectorProduct($v1)=",$v0->vectorProduct($v1),"<br>\n";
-      echo "($v0)->scalarProduct($v1)=",$v0->scalarProduct($v1),"<br>\n";
-    }
-  }
-
+  function scalarProduct(Point $v): float { return Pos::scalarProduct($this->coords, $v->coords); }
+  
   /*PhpDoc: methods
   name:  scalMult
   title: "function scalMult(float $scal): Point  - multiplication de $this considéré comme un vecteur par un scalaire"
@@ -134,11 +119,7 @@ class Point extends Homogeneous {
     }
   */
   function distancePointLine(array $a, array $b): float {
-    $ab = (new Point($b))->diff($a);
-    $ap = $this->diff($a);
-    if ($ab->norm() == 0)
-      throw new \Exception("Points A et B confondus et donc droite non définie");
-    return $ab->vectorProduct($ap) / $ab->norm();
+    return Pos::distancePosLine($this->coords, $a, $b);
   }
   static function test_distancePointLine() {
     foreach ([
@@ -150,7 +131,7 @@ class Point extends Homogeneous {
         $p->distancePointLine($lpts[1],$lpts[2]),"<br>\n";
     }
   }
-  
+    
   /*PhpDoc: methods
   name:  projPointOnLine
   title: "function projPointOnLine(array $a, array $b): float - projection du point sur la droite A,B, renvoie u"
@@ -319,6 +300,12 @@ class MultiPoint extends Homogeneous {
   function eltTypes(): array { return $this->coords ? ['Point'] : []; }
   function geoms(): array { return array_map(function(array $pos) { return new Point($pos); }, $this->coords); }
   function nbPoints(): int { return count($this->coords); }
+  
+  /*PhpDoc: methods
+  name: __toString
+  title: "function __toString(): string - génère la réprésentation string WKT"
+  */
+  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
   
   function isValid(): bool {
     foreach ($this->geoms() as $pt)

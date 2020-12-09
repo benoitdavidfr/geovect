@@ -96,24 +96,6 @@ abstract class BBox {
       throw new \Exception("Erreur de BBox::__construct(".json_encode($param).")");
   }
   
-  static function test___construct() {
-    foreach([
-      null,
-      [1,2],
-      [1,2,3],
-      [1,2,3,4],
-      [1,2,3,4,5,6],
-      "1,2,3,4",
-      "1,2,3,4,5,6",
-      [[1,2],[3,4],[5,6]], // LPos
-      [[[1,2],[3,4],[5,6]]], // LLPos
-      [[[[1,2],[3,4],[5,6]]]], // LLLPos
-    ] as $param) {
-      $gbox = new GBox($param);
-      echo "new GBox(",json_encode($param),")=",$gbox,"<br>\n";
-    }
-  }
-  
   /*PhpDoc: methods
   name: __toString
   title: "function __toString(): string - représentation comme string avec des coord. arrondies"
@@ -264,23 +246,6 @@ abstract class BBox {
     echo "BBox::intersects(b2=$b2)@$this -> ",$i ? 'true' : 'false',"<br>\n";
     return $i;
   }
-  // Test unitaire de la méthode intersects
-  static function test_intersects() {
-    // cas d'intersection d'un point avec un rectangle
-    $b1 = new GBox([[0, 0], [1, 1]]);
-    $b2 = new GBox([0, 0]);
-    $b1->intersectsVerbose($b2);
-    
-    // cas de non intersection entre 2 rectangles
-    $b1 = new GBox([[0, 0], [1, 1]]);
-    $b2 = new GBox([[2, 2], [3, 3]]);
-    $b1->intersectsVerbose($b2);
-    
-    // cas de non intersection entre 2 rectangles
-    $b1 = new GBox([[0, 0], [2, 2]]);
-    $b2 = new GBox([[1, 1], [3, 3]]);
-    $b1->intersectsVerbose($b2);
-  }
   
   /*PhpDoc: methods
   name: inters
@@ -317,6 +282,42 @@ class GBox extends BBox {
       throw new \Exception("Erreur de GBox::size()  sur une GBox indéterminée");
     $cos = cos(($this->max[1] + $this->min[1])/2 / 180 * pi()); // cosinus de la latitude moyenne
     return max($this->dlon() * $cos, $this->dlat());
+  }
+  
+  static function test___construct() {
+    foreach([
+      null,
+      [1,2],
+      [1,2,3],
+      [1,2,3,4],
+      [1,2,3,4,5,6],
+      "1,2,3,4",
+      "1,2,3,4,5,6",
+      [[1,2],[3,4],[5,6]], // LPos
+      [[[1,2],[3,4],[5,6]]], // LLPos
+      [[[[1,2],[3,4],[5,6]]]], // LLLPos
+    ] as $param) {
+      $gbox = new GBox($param);
+      echo "new GBox(",json_encode($param),")=",$gbox,"<br>\n";
+    }
+  }
+  
+  // Test unitaire de la méthode intersects
+  static function test_intersects() {
+    // cas d'intersection d'un point avec un rectangle
+    $b1 = new GBox([[0, 0], [1, 1]]);
+    $b2 = new GBox([0, 0]);
+    $b1->intersectsVerbose($b2);
+    
+    // cas de non intersection entre 2 rectangles
+    $b1 = new GBox([[0, 0], [1, 1]]);
+    $b2 = new GBox([[2, 2], [3, 3]]);
+    $b1->intersectsVerbose($b2);
+    
+    // cas de non intersection entre 2 rectangles
+    $b1 = new GBox([[0, 0], [2, 2]]);
+    $b2 = new GBox([[1, 1], [3, 3]]);
+    $b1->intersectsVerbose($b2);
   }
   
   /*PhpDoc: methods
@@ -372,26 +373,14 @@ class GBox extends BBox {
   /*PhpDoc: methods
   name: dist
   title: "function proj(callable $projPos): EBox - projection d'un GBox prenant en paramètre une fonction de projection d'une position en coord. géo. en coords. projetées"
+  doc: |
+    La fonction de test est définie dans la classe EBox
   */
   function proj(callable $projPos): EBox {
     return new EBox([
       $projPos($this->min),
       $projPos($this->max)
     ]);
-  }
-  static function test_proj() {
-    require_once __DIR__.'/../coordsys/light.inc.php';
-    $gbox = new GBox([-2,48, -1,49]);
-    echo "$gbox ->proj(WebMercator) = ", $gbox->proj(function(array $pos) { return \WebMercator::proj($pos); }),"<br>\n";
-    echo "$gbox ->proj(WorldMercator) = ", $gbox->proj(function(array $pos) { return \WorldMercator::proj($pos); }),"<br>\n";
-    echo "$gbox ->proj(Lambert93) = ", $gbox->proj(function(array $pos) { return \Lambert93::proj($pos); }),"<br>\n";
-    
-    echo "$gbox ->center() = ", json_encode($gbox->center()),"<br>\n";
-    echo "UTM::zone($gbox ->center()) = ", $zone = \UTM::zone($gbox->center()),"<br>\n";
-    echo "$gbox ->proj(UTM-$zone) = ",
-         $eboxutm = $gbox->proj(function(array $pos) use($zone) { return \UTM::proj($zone, $pos); }),"<br>\n";
-    echo "$eboxutm ->geo(UTM-$zone) = ",
-         $eboxutm->geo(function(array $pos) use($zone) { return \UTM::geo($zone, $pos); }),"<br>\n";
   }
 };
 
@@ -482,7 +471,7 @@ class EBox extends BBox {
 
   /*PhpDoc: methods
   name: dist
-  title: "function proj(callable $projPos): EBox - calcule les coord. géo. d'un EBox en utilisant la fonction anonyme en paramètre"
+  title: "function geo(callable $geoPos): GBox - calcule les coord. géo. d'un EBox en utilisant la fonction anonyme en paramètre"
   */
   function geo(callable $geoPos): GBox {
     return new GBox([
@@ -495,6 +484,21 @@ class EBox extends BBox {
     require_once __DIR__.'/zoom.inc.php';
     $ebox = Zoom::tileEBox(9, [253, 176]);
     echo "$ebox ->geo(WebMercator) = ", $ebox->geo(function(array $pos) { return \WorldMercator::geo($pos); }),"<br>\n";
+  }
+  static function test_proj() {
+    echo "<h3>Test de GBox::proj() et non EBox:proj()</h3>\n";
+    require_once __DIR__.'/../coordsys/light.inc.php';
+    $gbox = new GBox([-2,48, -1,49]);
+    echo "$gbox ->proj(WebMercator) = ", $gbox->proj(function(array $pos) { return \WebMercator::proj($pos); }),"<br>\n";
+    echo "$gbox ->proj(WorldMercator) = ", $gbox->proj(function(array $pos) { return \WorldMercator::proj($pos); }),"<br>\n";
+    echo "$gbox ->proj(Lambert93) = ", $gbox->proj(function(array $pos) { return \Lambert93::proj($pos); }),"<br>\n";
+    
+    echo "$gbox ->center() = ", json_encode($gbox->center()),"<br>\n";
+    echo "UTM::zone($gbox ->center()) = ", $zone = \UTM::zone($gbox->center()),"<br>\n";
+    echo "$gbox ->proj(UTM-$zone) = ",
+         $eboxutm = $gbox->proj(function(array $pos) use($zone) { return \UTM::proj($zone, $pos); }),"<br>\n";
+    echo "$eboxutm ->geo(UTM-$zone) = ",
+         $eboxutm->geo(function(array $pos) use($zone) { return \UTM::geo($zone, $pos); }),"<br>\n";
   }
 };
 

@@ -45,6 +45,12 @@ class Polygon extends Homogeneous {
     return array_map(function(array $lpos) { return new LineString($lpos); }, $this->coords);
   }
   
+  /*PhpDoc: methods
+  name: __toString
+  title: "function __toString(): string - génère la réprésentation string WKT"
+  */
+  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
+  
   function isValid(): bool {
     if (!LLPos::isValid($this->coords))
       return false; // Les coordonnées du Polygon doivent être un LLPos
@@ -261,6 +267,12 @@ class MultiPolygon extends Homogeneous {
     return array_map(function(array $llpos) { return new Polygon($llpos); }, $this->coords);
   }
   
+  /*PhpDoc: methods
+  name: __toString
+  title: "function __toString(): string - génère la réprésentation string WKT"
+  */
+  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
+
   function isValid(): bool {
     foreach ($this->geoms() as $pol)
       if (!$pol->isValid())
