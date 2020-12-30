@@ -1,0 +1,259 @@
+title: catalogue des données IGN
+description: |
+  Catalogue de données structuré conformément au standard DCAT v2 (https://www.w3.org/TR/vocab-dcat-2/)
+  et utilisant le thésaurus EuroVoc (https://eur-lex.europa.eu/browse/eurovoc.html?locale=fr)
+  et Geonames (https://www.geonames.org/) pour l'indexation spatiale.  
+  [Il est exposé en JSON-LD](http://dcat.geocat.fr/ign/catalog).
+$schema: http://ydclasses.georef.eu/YamlRdf/schema
+abstract: |
+namespaces:
+  dc: http://purl.org/dc/elements/1.1/
+  dcat: http://www.w3.org/ns/dcat#
+  dct: http://purl.org/dc/terms/
+  dctype: http://purl.org/dc/dcmitype/
+  foaf: http://xmlns.com/foaf/0.1/
+  geosparql: http://www.opengis.net/ont/geosparql#
+  owl: http://www.w3.org/2002/07/owl#
+  rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
+  rdfs: http://www.w3.org/2000/01/rdf-schema#
+  sdo: https://schema.org/
+  skos: http://www.w3.org/2004/02/skos/core#
+  vcard: http://www.w3.org/2006/vcard/ns#
+  w3cgeo: http://www.w3.org/2003/01/geo/wgs84_pos#
+  xsd: http://www.w3.org/2001/XMLSchema#
+classes:
+  - dcat:Catalog
+  - dcat:Dataset
+  - dcat:Distribution
+  - dcat:DataService
+properties:
+  a: rdf:type
+  title: dct:title
+  language: dct:language
+  creator:
+    id: dct:creator
+    type: '@id'
+  description: dct:description
+  themeTaxonomy:
+    id: dcat:themeTaxonomy
+    type: '@id'
+  theme:
+    id: dcat:theme
+    type: '@id'
+  keyword: dcat:keyword
+  spatial:
+    id: dct:spatial
+    type: '@id'
+  landingPage:
+    id: dcat:landingPage
+    type: '@id'
+  accessUrl:
+    id: dcat:accessUrl
+    type: '@id'
+  format: dct:format
+  mediaType: dcat:mediaType
+  licence:
+    id: dct:licence
+    type: '@id'
+  accessRights: dct:accessRights
+  dataset: dcat:dataset
+  distribution: dcat:distribution
+  accessService: dcat:accessService
+  service: dcat:service
+  endpointURL: dcat:endpointURL
+  servesDataset: dcat:servesDataset
+  sameAs: owl:sameAs
+rootId: catalog
+
+a: dcat:Catalog
+language: fr
+themeTaxonomy: http://publications.europa.eu/resource/dataset/eurovoc - EuroVoc
+theme:
+  - http://eurovoc.europa.eu/2470 - politique de l'environnement
+  - http://eurovoc.europa.eu/4074 - prévention des risques pour l'environnement
+  - http://eurovoc.europa.eu/2494 - politique des transports
+  - http://eurovoc.europa.eu/2498 - politique énergétique
+  - http://eurovoc.europa.eu/2496 - politique du logement
+  - http://eurovoc.europa.eu/4619 - urbanisme
+  - http://eurovoc.europa.eu/2475 - politique de la construction
+spatial: https://www.geonames.org/3017382 - France
+
+catalog:
+  catalogueGp:
+    a: dcat:Catalog
+    title: Catalogue des données du Géoportail IGN
+    creator: http://id.georef.eu/organization/IGN
+    landingPage: https://geoservices.ign.fr/documentation/geoservices/csw.html
+    distribution:
+      serviceCsw:
+        a: dcat:Distribution
+        title: Service CSW du Géoportail IGN
+        accessService: '#/service/serviceCswGp'
+  catalogueInspire:
+    a: dcat:Catalog
+    title: Catalogue Inspire des données du Géoportail IGN
+    creator: http://id.georef.eu/organization/IGN
+    landingPage: https://geoservices.ign.fr/documentation/geoservices/csw.html
+    distribution:
+      serviceCsw:
+        a: dcat:Distribution
+        title: Service CSW Inspire du Géoportail IGN
+        accessService: '#/service/serviceCswInspire'
+  
+dataset:
+  bdAdresse:
+  bdParcellaire:
+  bdTopo:
+    a: dcat:Dataset
+    title: BD TOPO
+    language: fr
+  bdOrtho:
+  bdCarto:
+    a: dcat:Dataset
+    title: BD CARTO
+    language: fr
+    description: |
+      La BD CARTO® est une description vectorielle homogène des différents éléments du paysage
+      avec une précision décamétrique.
+
+      La BD CARTO® propose par ailleurs sa richesse thématique : réseaux routier (plus d’1 million de km de routes)
+      et ferré, unités administratives, réseau hydrographique, occupation du sol.
+      Pour chaque thème, les objets sont associés à des attributs pour une description sémantique et des analyses
+      plus fines. Cet outil permet de localiser, gérer, suivre ses données métier du 1 : 50 000 au 1 : 200 000.
+
+      La BD CARTO® est également un fond cartographique de référence, précis et homogène, qui permet d’avoir une vision
+      et une analyse d’ensemble sur un territoire intercommunal, départemental ou régional.
+      Sa structuration topologique, son actualité (mise à jour régulière) et sa précision permettent
+      notamment le couplage avec les moyens modernes de localisation embarquée (géonavigation)
+      et les applications de navigation routière à moyenne échelle.
+    creator: http://id.georef.eu/organization/IGN
+    spatial: France métropole
+    distribution:
+      serviceWfs:
+        a: dcat:Distribution
+        title: Service WFS du Géoportail IGN
+        accessService: '#/service/serviceWfsGp'
+      serviceWmsVecteurIgn:
+        a: dcat:Distribution
+        title: Service WMS vecteur du Géoportail IGN
+        accessService: '#/service/serviceWmsVecteurGp'
+      serviceWmts:
+        a: dcat:Distribution
+        title: Service WMTS du Géoportail IGN
+        accessService: '#/service/serviceWmtsGp'
+  adminExpress:
+    a: dcat:Dataset
+    title: ADMIN EXPRESS
+    language: fr
+    description: |
+      Le produit ADMIN EXPRESS décrit le découpage administratif du territoire métropolitain
+      et des départements d'outre-mer.
+      Les données du produit ADMIN EXPRESS sont produites mensuellement. Sa géométrie est celle de la BD CARTO®.
+      Il permet d’effectuer des croisements avec d’autres sources de données dans le but de construire des représentations
+      thématiques du territoire avec une granularité de la commune.
+      La précion géométrique est comprise entre 15 mètres et 50 mètres en erreur moyenne quadratique.
+  
+      Le produit ADMIN-EXPRESS-COG est mis à jour annuellement en cohérence avec le COG par l’INSEE.
+      Pour un usage cartographique, une géométrie simplifiée est obtenue par généralisation de la couche 
+      moyenne échelle correspondante.
+      Cette représentation cartographique peut différer de la limite administrative lorsque cela s’avère mieux 
+      représenter le territoire.
+    creator: http://id.georef.eu/organization/IGN
+    spatial: France métropole
+    licence: Licence ouverte Etalab 2.0
+    distribution:
+      serviceWfs:
+        a: dcat:Distribution
+        title: Service WFS IGN
+        accessService: '#/service/serviceWfsIgn'
+      serviceWms:
+        a: dcat:Distribution
+        title: Service WMS IGN
+        accessService: '#/service/serviceWmsIgn'
+      serviceWmts:
+        a: dcat:Distribution
+        title: Service WMTS IGN
+        accessService: '#/service/serviceWmtsIgn'
+  contoursIris:
+  
+  bdforetv2:
+  RPG:
+  pointsDeRepèreRoutiers:
+  restrictionsPourDronesDeLoisirs:
+  
+service:
+  serviceCswGp:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title: Service CSW du Géoportail IGN
+    creator: http://id.georef.eu/organization/IGN
+    endpointURL: https://wxs.ign.fr/catalogue/csw?service=CSW&request=GetCapabilities
+    servesDataset:
+      - '#/catalog/catalogueGp'
+  serviceCswInspire:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title: Service CSW Inspire du Géoportail IGN
+    creator: http://id.georef.eu/organization/IGN
+    endpointURL: https://wxs.ign.fr/catalogue/csw-inspire?service=CSW&request=GetCapabilities
+    servesDataset:
+      - '#/catalog/catalogueInspire'
+  serviceWfsGp:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/download
+    title: Service WFS du Géoportail IGN
+    language: fr
+    creator:
+      - http://id.georef.eu/organization/IGN
+    servesDataset:
+      - '#/dataset/bdCarto'
+    endpointURL:
+      url: https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?SERVICE=WFS&request=GetCapabilities
+      options:
+        referer: http://gexplor.fr/
+  serviceWmsVecteurGp:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/view
+    title: Service WMS vecteur du Géoportail IGN
+    language: fr
+    creator:
+      - http://id.georef.eu/organization/IGN
+    servesDataset:
+      - '#/dataset/bdCarto'
+    endpointURL:
+      url: https://wxs.ign.fr/ll0dlgs8phk2hjhmtfyqp47v/geoportail/v/wms?SERVICE=WFS&request=GetCapabilities
+      options:
+        referer: http://benoitdavidfr.github.io/
+  serviceWmsRasterGp:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/view
+    title: Service WMS raster du Géoportail IGN
+    language: fr
+    creator:
+      - http://id.georef.eu/organization/IGN
+    servesDataset:
+      - '#/dataset/bdCarto'
+    endpointURL:
+      url: https://wxs.ign.fr/ll0dlgs8phk2hjhmtfyqp47v/geoportail/r/wms?SERVICE=WFS&request=GetCapabilities
+      options:
+        referer: http://benoitdavidfr.github.io/
+  serviceWmtsGp:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/view
+    title: Service WMTS du Géoportail IGN
+    language: fr
+    creator:
+      - http://id.georef.eu/organization/IGN
+    servesDataset:
+      - '#/dataset/bdCarto'
+    endpointURL:
+      url: https://wxs.ign.fr/ll0dlgs8phk2hjhmtfyqp47v/geoportail/wmts?SERVICE=WFS&request=GetCapabilities
+      options:
+        referer: http://benoitdavidfr.github.io/
+  

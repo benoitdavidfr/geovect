@@ -1,0 +1,172 @@
+title: catalogue de données
+description: |
+  Catalogue de données structuré conformément au standard DCAT v2 (https://www.w3.org/TR/vocab-dcat-2/)
+  et utilisant le thésaurus EuroVoc (https://eur-lex.europa.eu/browse/eurovoc.html?locale=fr)
+  et Geonames (https://www.geonames.org/) pour l'indexation spatiale.  
+  [Il est exposé en JSON-LD](http://dcat.geocat.fr/catalog).
+$schema: http://ydclasses.georef.eu/YamlRdf/schema
+abstract: |
+namespaces:
+  dc: http://purl.org/dc/elements/1.1/
+  dcat: http://www.w3.org/ns/dcat#
+  dct: http://purl.org/dc/terms/
+  dctype: http://purl.org/dc/dcmitype/
+  foaf: http://xmlns.com/foaf/0.1/
+  geosparql: http://www.opengis.net/ont/geosparql#
+  owl: http://www.w3.org/2002/07/owl#
+  rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
+  rdfs: http://www.w3.org/2000/01/rdf-schema#
+  sdo: https://schema.org/
+  skos: http://www.w3.org/2004/02/skos/core#
+  vcard: http://www.w3.org/2006/vcard/ns#
+  w3cgeo: http://www.w3.org/2003/01/geo/wgs84_pos#
+  xsd: http://www.w3.org/2001/XMLSchema#
+classes:
+  - dcat:Catalog
+  - dcat:Dataset
+  - dcat:Distribution
+  - dcat:DataService
+properties:
+  a: rdf:type
+  title: dct:title
+  language: dct:language
+  creator:
+    id: dct:creator
+    type: '@id'
+  description: dct:description
+  themeTaxonomy:
+    id: dcat:themeTaxonomy
+    type: '@id'
+  theme:
+    id: dcat:theme
+    type: '@id'
+  keyword: dcat:keyword
+  spatial:
+    id: dct:spatial
+    type: '@id'
+  landingPage:
+    id: dcat:landingPage
+    type: '@id'
+  accessUrl:
+    id: dcat:accessUrl
+    type: '@id'
+  format: dct:format
+  mediaType: dcat:mediaType
+  licence:
+    id: dct:licence
+    type: '@id'
+  accessRights: dct:accessRights
+  dataset: dcat:dataset
+  distribution: dcat:distribution
+  accessService: dcat:accessService
+  service: dcat:service
+  endpointURL: dcat:endpointURL
+  servesDataset: dcat:servesDataset
+  sameAs: owl:sameAs
+rootId: catalog
+
+a: dcat:Catalog
+language: fr
+themeTaxonomy: http://publications.europa.eu/resource/dataset/eurovoc - EuroVoc
+theme:
+  - http://eurovoc.europa.eu/2470 - politique de l'environnement
+  - http://eurovoc.europa.eu/4074 - prévention des risques pour l'environnement
+  - http://eurovoc.europa.eu/2494 - politique des transports
+  - http://eurovoc.europa.eu/2498 - politique énergétique
+  - http://eurovoc.europa.eu/2496 - politique du logement
+  - http://eurovoc.europa.eu/4619 - urbanisme
+  - http://eurovoc.europa.eu/2475 - politique de la construction
+spatial: https://www.geonames.org/3017382 - France
+
+catalog:
+  SEXTANT:
+    a: dcat:Catalog
+    title: SEXTANT - Infrastructure de données géographiques marines et littorales
+    language: fr
+    creator: http://id.georef.eu/organization/Ifremer
+    theme: http://eurovoc.europa.eu/6404 - écosystème marin
+    description: |
+      Infrastructure de Données Géographiques (IDG) marines et littorales, Sextant a pour objectif de documenter, diffuser
+      et promouvoir un catalogue de données relevant du milieu marin. A destination des laboratoires et des partenaires de
+      l’Ifremer, ainsi que des acteurs nationaux et européens œuvrant dans le domaine marin et littoral, Sextant fournit
+      des outils favorisant et facilitant l’archivage, la consultation et la mise à disposition de ces données
+      géographiques.
+    landingPage: https://sextant.ifremer.fr/
+    distribution:
+      serviceCsw:
+        a: dcat:Distribution
+        title: Service CSW de Sextant
+        accessService: '#/service/SextantCsw'
+
+dataset:
+  GeoLittoral:
+    a: dcat:Dataset
+    title: Géolittoral - portail des données sur la mer et le littoral du Ministère en charge de l’environnement et de la mer
+    language: fr
+    description: |
+      Géolittoral diffuse notamment les données géographiques produites dans le cadre de l’accomplissement des politiques
+      publiques portées par le Ministère et a vocation à couvrir la totalité des espaces maritimes et littoraux français.
+      Il met également à disposition des informations et des documents de nature à expliciter ces politiques et leur mise
+      en œuvre.
+    creator:
+      - http://id.georef.eu/organization/DGALN
+      - http://id.georef.eu/organization/CGDD
+    theme: http://eurovoc.europa.eu/3142 - protection du littoral
+    landingPage: http://www.geolittoral.developpement-durable.gouv.fr/
+    distribution:
+      serviceWfs:
+        a: dcat:Distribution
+        title: Service WFS de Géolittoral
+        accessService: '#/service/GeoLittoralWfs'
+      serviceWms:
+        a: dcat:Distribution
+        title: Service WMS de Géolittoral
+        accessService: '#/service/GeoLittoralWms'
+  zonesHumidesAfb:
+    a: dcat:Dataset
+    title: Données d’observation et restauration sur les zones humides
+    creator: http://id.georef.eu/organization/afbiodiversite
+    landingPage: http://www.zones-humides.org/entre-terre-et-eau/ou-les-trouve-t-on/les-inventaires-de-zones-humides
+
+service:
+  SextantCsw:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title: Service CSW de Sextant
+    creator: http://id.georef.eu/organization/Ifremer
+    theme: http://eurovoc.europa.eu/3142 - protection du littoral
+    servesDataset: '#/dataset/SEXTANT'
+    endpointURL: https://sextant.ifremer.fr/geonetwork/srv/eng/csw?service=CSW&request=GetCapabilities
+  GeoLittoralWms:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/view
+    title: Service WMS de Géolittoral
+    language: fr
+    creator:
+      - http://id.georef.eu/organization/DGALN
+      - http://id.georef.eu/organization/CGDD
+    theme: http://eurovoc.europa.eu/3142 - protection du littoral
+    servesDataset: '#/dataset/GeoLittoral'
+    endpointURL: http://geolittoral.din.developpement-durable.gouv.fr/wxs?REQUEST=GetCapabilities&SERVICE=WMS
+  GeoLittoralWfs:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/download
+    title: Service WFS de Géolittoral
+    language: fr
+    creator:
+      - http://id.georef.eu/organization/DGALN
+      - http://id.georef.eu/organization/CGDD
+    theme: http://eurovoc.europa.eu/3142 - protection du littoral
+    servesDataset: '#/dataset/GeoLittoral'
+    endpointURL: http://geolittoral.din.developpement-durable.gouv.fr/wxs?REQUEST=GetCapabilities&SERVICE=WFS
+  eaufranceCsw:
+    a:
+      - dcat:DataService
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title: Service CSW de EauFrance
+    creator: http://id.georef.eu/organization/afb
+    theme: http://eurovoc.europa.eu/2470 - politique de l'environnement
+    endpointURL: http://www.sandre.eaufrance.fr/atlas/srv/fre/csw?service=CSW&request=GetCapabilities

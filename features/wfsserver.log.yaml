@@ -1,0 +1,135 @@
+date: '2020-12-30T09:08:57+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: DescribeFeatureType
+    OUTPUTFORMAT: application/json
+    TYPENAME: coll
+url: 'https://services.data.shom.fr/INSPIRE/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=DescribeFeatureType&OUTPUTFORMAT=application/json&TYPENAME=coll'
+date: '2020-12-30T09:09:15+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: DescribeFeatureType
+    OUTPUTFORMAT: application/json
+    TYPENAME: coll
+url: 'https://services.data.shom.fr/INSPIRE/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=DescribeFeatureType&OUTPUTFORMAT=application/json&TYPENAME=coll'
+date: '2020-12-30T09:10:35+00:00'
+appel: 'WfsServer::url'
+params:
+    request: GetCapabilities
+    VERSION: 2.0.0
+url: 'https://services.data.shom.fr/INSPIRE/wfs?SERVICE=WFS&request=GetCapabilities&VERSION=2.0.0'
+date: '2020-12-30T09:12:58+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: DescribeFeatureType
+    OUTPUTFORMAT: application/json
+    TYPENAME: coll
+url: 'https://services.data.shom.fr/INSPIRE/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=DescribeFeatureType&OUTPUTFORMAT=application/json&TYPENAME=coll'
+date: '2020-12-30T09:19:45+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: DescribeFeatureType
+    OUTPUTFORMAT: application/json
+    TYPENAME: 'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary'
+url: 'https://services.data.shom.fr/INSPIRE/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=DescribeFeatureType&OUTPUTFORMAT=application/json&TYPENAME=DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary'
+date: '2020-12-30T09:19:45+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: GetFeature
+    TYPENAMES: 'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary'
+    OUTPUTFORMAT: application/json
+    SRSNAME: 'CRS:84'
+    COUNT: 100
+    STARTINDEX: 0
+url: 'https://services.data.shom.fr/INSPIRE/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary&OUTPUTFORMAT=application/json&SRSNAME=CRS:84&COUNT=100&STARTINDEX=0'
+date: '2020-12-30T09:20:50+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: GetFeature
+    TYPENAMES: 'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary'
+    OUTPUTFORMAT: application/json
+    SRSNAME: 'CRS:84'
+    COUNT: 100
+    STARTINDEX: 0
+url: 'https://services.data.shom.fr/INSPIRE/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary&OUTPUTFORMAT=application/json&SRSNAME=CRS:84&COUNT=100&STARTINDEX=0'
+date: '2020-12-30T10:04:13+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: GetFeature
+    TYPENAMES: 'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary'
+    OUTPUTFORMAT: application/json
+    SRSNAME: 'CRS:84'
+    COUNT: 100
+    STARTINDEX: 0
+url: 'https://services.data.shom.fr/INSPIRE/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary&OUTPUTFORMAT=application/json&SRSNAME=CRS:84&COUNT=100&STARTINDEX=0'
+date: '2020-12-30T10:27:30+00:00'
+appel: 'WfsServer::url'
+params:
+    request: GetCapabilities
+    VERSION: 2.0.0
+url: 'https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?SERVICE=WFS&request=GetCapabilities&VERSION=2.0.0'
+date: '2020-12-30T10:28:59+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: DescribeFeatureType
+    OUTPUTFORMAT: application/json
+    TYPENAME: 'BDCARTO_BDD_WLD_WGS84G:region'
+url: 'https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=DescribeFeatureType&OUTPUTFORMAT=application/json&TYPENAME=BDCARTO_BDD_WLD_WGS84G:region'
+date: '2020-12-30T10:29:00+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: GetFeature
+    TYPENAMES: 'BDCARTO_BDD_WLD_WGS84G:region'
+    OUTPUTFORMAT: application/json
+    SRSNAME: 'CRS:84'
+    COUNT: 100
+    STARTINDEX: 0
+url: 'https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDCARTO_BDD_WLD_WGS84G:region&OUTPUTFORMAT=application/json&SRSNAME=CRS:84&COUNT=100&STARTINDEX=0'
+date: '2020-12-30T10:33:19+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: GetFeature
+    TYPENAMES: 'BDCARTO_BDD_WLD_WGS84G:region'
+    OUTPUTFORMAT: application/json
+    SRSNAME: 'CRS:84'
+    COUNT: 100
+    STARTINDEX: 0
+url: 'https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDCARTO_BDD_WLD_WGS84G:region&OUTPUTFORMAT=application/json&SRSNAME=CRS:84&COUNT=100&STARTINDEX=0'
+date: '2020-12-30T10:33:51+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: GetFeature
+    TYPENAMES: 'BDCARTO_BDD_WLD_WGS84G:region'
+    OUTPUTFORMAT: application/json
+    SRSNAME: 'CRS:84'
+    COUNT: 100
+    STARTINDEX: 0
+url: 'https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDCARTO_BDD_WLD_WGS84G:region&OUTPUTFORMAT=application/json&SRSNAME=CRS:84&COUNT=100&STARTINDEX=0'
+appel: 'WfsServer::query'
+httpOptions:
+    header: "referer: http://gexplor.fr/\r\n"
+date: '2020-12-30T10:35:38+00:00'
+appel: 'WfsServer::url'
+params:
+    VERSION: 2.0.0
+    REQUEST: GetFeature
+    TYPENAMES: 'BDCARTO_BDD_WLD_WGS84G:region'
+    OUTPUTFORMAT: application/json
+    SRSNAME: 'CRS:84'
+    COUNT: 100
+    STARTINDEX: 0
+url: 'https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDCARTO_BDD_WLD_WGS84G:region&OUTPUTFORMAT=application/json&SRSNAME=CRS:84&COUNT=100&STARTINDEX=0'
+appel: 'WfsServer::query'
+httpOptions:
+    header: "referer: http://gexplor.fr/\r\n"

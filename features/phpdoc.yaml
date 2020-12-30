@@ -1,0 +1,26 @@
+title: API Features
+path: /geovect/apifeatures
+doc: |
+  Mise en oeuvre du protocole API Features pour accéder à différentes sources de données.
+  Peuvent être vus comme des serveurs API Features:
+    - un répertoire local ou distant contenant des fichiers GeoJSON ou GeoJSON adapté
+    - un schéma PostGis contenant des tables défini par l'URI pgsql://{user}:{passwd}@{host}/{database}/{schema}
+      exemple: pgsql://benoit@db207552-001.dbaas.ovh.net/comhisto/public
+    - une base MySql contenant des tables défini par l'URI mysql://{user}:{passwd}@{host}/{database}
+      exemple: mysql://bdavid@mysql-bdavid.alwaysdata.net/{database}
+    - un service WFS
+      exemple: https://services.data.shom.fr/INSPIRE/wfs
+  Un système de filtre/proxy permet de:
+    - filtrer les collections, par exemple filtrer les collections BDTopo dans le flux WFS de l'IGN
+    - définir une bijection sur l'id des features, par exemple pour raccourcir les id d'une collection,
+    - restructurer les propriétés de chaque feature
+    - filtrer les features sur une propriété ou une zone géographique
+    - simplifier la géométrie, éventuellement en fonction du niveau de zoom
+    - définir un raccourci pour l'accès à un serveur API Features
+  Les URI pourraient être:
+    https://features.geoapi.fr/{raccourci}
+    https://features.geoapi.fr/pgsql/benoit@db207552-001.dbaas.ovh.net/comhisto/public
+    https://features.geoapi.fr/mysql/{user}@{host}/{database}
+    https://features.geoapi.fr/file/{path}
+    https://features.geoapi.fr/wfs/referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
+    https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs

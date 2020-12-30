@@ -1,0 +1,8 @@
+title: geovect/schema - Gestion d'un registre de schémas JSON
+path: /geovect/schema
+doc: |
+  uri: schema.geocat.fr
+  Définition de schémas de types de données regroupés par créateur (ex ign.fr), par produit (ex BDCarto) puis par thème.
+  ex: 'https://schema.geocat.fr/ign.fr/bdcarto/BDCARTO_BDD_WLD_WGS84G:limite_administrative'
+      référence le type de données BDCARTO_BDD_WLD_WGS84G:limite_administrative de la BDCarto de l'IGN
+      Il est fourni comme schéma JSON

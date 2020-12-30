@@ -1,0 +1,219 @@
+title: Structure de la BD Carto IGN
+$id: http://schema.geocat.fr/ign.fr/bdcarto
+modified: '2020-12-29T20:50+01:00'
+description: |
+  Description des objets des collections de la BD Carto V3 de l'IGN.
+  Inspiré de la structure des schémas JSON
+$schema: structure
+prefix: 'BDCARTO_BDD_WLD_WGS84G:'
+structures:
+  Thème_Administratif:
+    limite_administrative:
+      title: limite administrative
+      description: Portion continue de contour de commune
+      type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            id:
+              description: Identifiant de la limite administrative
+            nature:
+              description: Nature de la limite administrative
+              enum:
+                'Frontière internationale':
+                  description: Limite d’État
+                'Limite côtière':
+                  description: Laisse des plus hautes eaux
+                'Limite de région':
+                  description: Limite régionale
+                'Limite de département':
+                  description: Limite départementale
+                'Limite d''arrondissement':
+                  description: Limite d’arrondissement
+                'Limite de commune':
+                  description: Limite communale
+            precision:
+              description: Précision de la localisation
+              enum:
+                'Standard':
+                  description: Précision standard de localisation
+                'Non définie':
+                  description: >
+                    Précision non définie, en particulier pour les limites s’appuyant sur les surfaces d’eau
+                    du domaine public de l’État
+        geometry:
+          $ref: /GeoJSON#/definitions/LineString
+    region:
+      title: région
+    departement:
+      title: départment
+    arrondissement:
+      title: arrondissement
+    commune:
+      title: commune
+  Thème_Equipement:
+    aerodrome:
+      title: aerodrome
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+    piste_aerodrome:
+      title: piste_aerodrome
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+    metro_aerien:
+      title: metro_aerien
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+    transport_cable:
+      title: transport_cable
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+    ligne_electrique:
+      title: ligne_electrique
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+    cimetiere:
+      title: cimetiere
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+    construction_elevee:
+      title: construction_elevee
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+    digue:
+      title: digue
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+    enceinte_militaire:
+      title: enceinte_militaire
+      style: { color: darkGrey, weight: 1, opacity: 0.65 }
+
+  Thème_Habillage:
+    zone_occupation_sol:
+      title: zone_occupation_sol
+      type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            nature:
+              enum:
+                'Eau libre':
+                Forêt:
+                Bâti:
+                'Vigne, verger':
+                Prairie:
+                'Marais, tourbière':
+                "Zone d'activités":
+        geometry:
+          $ref: /GeoJSON#/definitions/Polygon
+  Thème_Hydrographie:
+    troncon_hydrographique:
+      title: Cours d’eau
+    surface_hydrographique:
+      title: Zone couverte d’eau
+    ponctuel_hydrographique:
+      title: Nœud hydrographique et point d’eau isolé
+    laisse:
+      title: laisse
+    zone_hydrographique_texture:
+      title: Zone hydrographie de texture
+  
+  Thème_Réseau_ferré:
+    troncon_voie_ferree:
+      title: troncon_voie_ferree
+      type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            nature:
+              enum:
+                - LGV
+            energie:
+              enum:
+                - Electrifiée
+    noeud_ferre:
+      title: noeud_ferre
+      type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            nature:
+              enum:
+                - 'Gare de voyageurs'
+                - 'Gare de voyageurs et de fret'
+                - 'Gare de fret'
+                - Embranchement
+                - "Changement d'attribut"
+   
+  Thème_Réseau_routier:
+    troncon_route:
+      title: troncon_route
+      type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            vocation:
+              enum:
+                - 'Type autoroutier'
+                - 'Liaison principale'
+                - 'Liaison régionale'
+                - 'Liaison locale'
+                - Bretelle
+    noeud_routier:
+      title: noeud_routier
+    liaison_maritime:
+      title: liaison_maritime
+    itineraire:
+      title: itineraire
+    franchissement:
+      title: franchissement
+    communication_restreinte:
+      title: communication_restreinte
+    equipement_routier:
+      title: equipement_routier
+    acces_equipement:
+      title: acces_equipement
+    
+  Thème_Toponymie:
+    etablissement:
+      title: etablissement
+    massif_boise:
+      title: massif_boise
+    point_remarquable_relief:
+      title: point_remarquable_relief
+    zone_activite:
+      title: zone_activite
+    zone_habitat:
+      title: zone d’habitat
+      description: Point représentant une zone d’habitat.
+      type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            id:
+              description: Identifiant de la zone d’habitat
+            importance:
+              description: Importance de la zone d’habitat.
+              enum:
+                - 'Chef-lieu de commune'
+                - 'Quartier de ville'
+                - 'Hameau'
+                - 'Sans objet'
+            insee:
+              description: Numéro INSEE de la commune dont la zone d’habitat est chef-lieu.
+            toponyme:
+              description: Toponyme éventuellement associé à la zone d’habitat.
+        geometry:
+          $ref: /GeoJSON#/definitions/Point
+    zone_reglementee_touristique:
+      title: Zone réglementée et d’intérêt touristique
+      description: |
+        Sont retenus :
+          
+          - les parcs naturels marins et les parcs nationaux avec leurs zones périphériques ;
+          - les parcs naturels régionaux ;
+          - les  réserves naturelles accessibles au public.
+            Dans certaines de ces réserves, le public ne peut pas pénétrer mais l’observation peut
+            se faire de l’extérieur ; c’est le cas le plus courant pour les îles.
+            Une réserve naturelle est un espace soumis à des restrictions et à une législation particulière
+            afin de protéger un milieu naturel fragile ou menacé ;
+          - les réserves nationales de chasse ;
+          - certaines forêts domaniales.
