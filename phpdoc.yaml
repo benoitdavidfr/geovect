@@ -1,6 +1,22 @@
 title: geovect - gestion d'objets géographiques et de leur géométrie vecteur
 path: /geovect
 doc: |
+  Nouvelle version 2020-12-29:
+    Mise en oeuvre d'une infra de données composée de:
+      - un catalogue DCAT v2 définissant les jeux de données et référencant les services permettant d'y accéder,
+        - avec un geocat racine https://dcat.geocat.fr/
+      - des services référencés dans le catalogue
+        - OGC ancienne génération
+        - OGC nlle génération, y c. des proxy sur les services ancienne génération
+      - des fichiers locaux
+      - un registre de schémas JSON définissant et documentant la structure des données exposées par les services
+      
+    L'idée est que toutes les données soient exposées au travers de services Ogc nlle génération.
+    Imaginer aussi un système de construction de cartes LL visualisant les services.
+    
+    Etendre DCAT à un catalogue de cartes, comme service ?
+    
+  Version avant 2020-12-29:
   Ce module est constitué de 3 sous-modules principaux:
     - gegeom gère la géométrie vecteur GeoJSON
     - fcoll permet la lecture de FeatureCollection GeoJSON
@@ -51,11 +67,16 @@ doc: |
     
     
 journal: |
+  29/12/2020:
+    - rénovation fondée sur un catalogue DCAT et des services OGC nlle génération
   25/5/2019:
     - création de ugeojson.php
   18/5/2019:
     - regroupement des modules dans geovect
 submodules:
+  - /geovect/dcat
+  - /geovect/features
+  - /geovect/schema
   - /geovect/gegeom
   - /geovect/fcoll
   - /geovect/ugeojson

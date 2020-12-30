@@ -2,19 +2,20 @@
 namespace fcoll;
 {/*PhpDoc:
 name: database.inc.php
-title: database.inc.php - accès aux FeatureCollection stockées dans une table MySql
+title: database.inc.php - accès aux FeatureCollection stockées dans une table MySql/PgSql
 classes:
 doc: |
-  Ce fichier implémente la possibilité d'accéder à une FeatureCollection stockée dans une table MySql.
+  Ce fichier implémente la possibilité d'accéder à une FeatureCollection stockée dans une table MySql/PgSql.
   L'accès s'effectue au travers des classes YamFileDbServers, DbServer et DbSchema implémentent la classe FCTree
   et permettant de définir les paramètres de la table (classe Table).
   2 mécanismes d'accès sont prévus:
     - en accédant à un fichier Yaml définissant les serveurs, puis dans un serveur aux schémas définis,
-      puis dans un schéma aux tables définies, puis en fin à la table,
+      puis dans un schéma aux tables définies, puis enfin à la table,
     - en définissant dans le fichier Yaml des vues et en y accédant, permettant ainsi de définir des critères de sélection
       dans la table.
+  En vrai la hiérarchie pour MySql est server / database / table et pour PgSql database / schema / table
   Les tables doivent comporter un attribut geom de type geometry contenant une géométrie GeoJSON en coord. géo.
-  Utilise le fichier secret.inc.php qui contient les mots de passe de connexion aux bases de données sous la forme
+  Utilise le fichier /phplib/secret.inc.php qui contient les mots de passe de connexion aux bases de données sous la forme
   d'un dictionnaire associant une chaine de paramètres sans mot de passe au mot de passe correspondant.
   De plus, il est possible de définir des vues qui sont une sélection dans une table définie par un ensemble de critères. 
 journal: |
@@ -63,7 +64,7 @@ use unittest\UnitTest;
 
 {/*PhpDoc: classes
 name: Table
-title: class Table extends FeatureCollection - Table MySql contenant des Feature
+title: class Table extends FeatureCollection - Table MySql/PgSql contenant des Feature
 */}
 class Table extends FeatureCollection {
   //protected $path; // chemin Apache de l'élément
@@ -214,7 +215,7 @@ UnitTest::class(__NAMESPACE__, __FILE__, 'Table');
 
 {/*PhpDoc: classes
 name: DbSchema
-title: class DbSchema extends FCTree - Schema MySql constitué de Table
+title: class DbSchema extends FCTree - Schema=base MySql ou Schema PgSql, constitué de Table
 */}
 class DbSchema extends FCTree {
   protected $params;
@@ -242,7 +243,7 @@ class DbSchema extends FCTree {
       "select distinct table_name from information_schema.columns ",
       "where table_schema='$schemaname' and ",
       [ 'MySql'=> "data_type='geometry'",
-        'PgSql'=> "data_type='USER-DEFINED' and udt_name='geography'",
+        'PgSql'=> "data_type='USER-DEFINED' and (udt_name='geography' or udt_name='geometry')",
       ]
     ];
     foreach(Sql::query($query) as $tuple) {
@@ -288,7 +289,7 @@ class DbServer extends FCTree {
     $query = [
       "select distinct table_schema from information_schema.columns where ",
       [ 'MySql'=> "data_type='geometry'",
-        'PgSql'=> "data_type='USER-DEFINED' and udt_name='geography'",
+        'PgSql'=> "data_type='USER-DEFINED' and (udt_name='geography' or udt_name='geometry')",
       ]
     ];
     Sql::open($this->params);

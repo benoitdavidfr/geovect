@@ -6,6 +6,9 @@ title: gebox.inc.php - BBox avec des coord. géographiques ou euclidiennes
 functions:
 classes:
 doc: |
+  Attention, la classe GBox ne gère pas convenablement les bbox d'objets à proximité de l'anti-méridien.
+  Une nouvelle classe a été développée pour cela, voir /geoapi/shomgt/cat2/gjbox.inc.php
+  
   Une BBox (bounding box) est un rectangle englobant défini par ses coins SW et NE.
   La classe abstraite BBox implémente des fonctionnalités génériques valables en coord. géo. comme euclidiennes
   Des classes héritées concrètes GBox et EBox implémentent les fonctionnalités spécifiques respt. aux coord. géo.
@@ -16,6 +19,8 @@ doc: |
   On gère aussi une liste de positions (Lpos) comme array de positions et une liste de listes de positions (LLpos)
   comme array d'array de positions.
 journal: |
+  18/12/2020:
+    - ajout alerte sur la mauvaise gestion des objets aux alentours de l'anti-méridien
   5/5/2019:
     - extension de BBox::__construct() et BBox::bound() pour traiter les LnPos
   30/4/2019:

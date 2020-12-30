@@ -19,7 +19,7 @@ source:
   - http://www.epsg-registry.org/
   - https://epsg.io/
   - http://spatialreference.org/
-$schema: /var/www/html/coordsys/crsregistre
+$schema: /var/www/html/geovect/coordsys/crsregistre
 
 UNIT:
   metre:

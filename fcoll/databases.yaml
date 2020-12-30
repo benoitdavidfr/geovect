@@ -10,10 +10,13 @@ dbServers:
     schemaPrefix: bdavid_
   pgL:
     title: serveur PgSql local
-    params: host=172.17.0.4 dbname=postgres user=postgres
-  pgAl:
-    title: serveur PgSql Alwaysdata
+    params: host=172.17.0.4 dbname=gis user=docker
+  pgAlgeomce:
+    title: PgSql Alwaysdata bdavid_geomce
     params: host=postgresql-bdavid.alwaysdata.net dbname=bdavid_geomce user=bdavid
+  pgAlcomhisto:
+    title: PgSql Alwaysdata bdavid_comhisto
+    params: host=postgresql-bdavid.alwaysdata.net dbname=bdavid_comhisto user=bdavid
 views:
   FRABEL:
     title: France et Belgique

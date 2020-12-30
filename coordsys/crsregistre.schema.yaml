@@ -22,11 +22,12 @@ definitions:
       - description: degrés, minutes, secondes
         type: string
         pattern: "^\\d+[^\\d]+\\d\\d'([\\d.]+'')?(E|W|N|S)$"
-        Exemple: 2°20'14.025''E
       - description: grades
         type: string
         pattern: ^-?[\d.]+ gr$
-        Exemple: 52.5 gr
+    examples:
+      - 2°20'14.025''E
+      - 52.5 gr
 
 type: object
 required: [title, description, $schema, UNIT, ELLIPSOID, DATUM, CRS, IGN-F, EPSG, SIMPLE]
@@ -132,11 +133,12 @@ properties:
               type: object
               patternProperties:
                 '^(Greenwich|Paris)$':
-                  description: longitude du méridien d'origine en degrés par rapport à Greenwich
+                  description: longitude du méridien d'origine en degrés par rapport à Greenwich ou à Paris
                   $ref: '#/definitions/geogCoord'
-                  example: { Paris: 2°20'14.025''E }
                 AUTHORITY:
                   $ref: '#/definitions/AUTHORITY'
+              examples:
+                - { Paris: 2°20'14.025''E }
             UNIT:
               description: identifiant de l'unité dans le dictionnaire UNITS
             AUTHORITY:
