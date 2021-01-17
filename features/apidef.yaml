@@ -1,0 +1,192 @@
+info:
+  title: norme API Features
+  description: |
+    Accès à des données conformément à la norme [OGC API Features](http://docs.opengeospatial.org/is/17-069r3/17-069r3.html).
+  version: '0.1'
+  contact:
+    email: contact@geoapi.fr
+    name: Benoit DAVID
+    url: https://github.com/benoitdavidfr/geovect
+  license:
+    name: Public domain
+    url: https://www.naturalearthdata.com/about/terms-of-use/
+  termsOfService: https://benoitdavidfr.github.io/geovect/termsOfService.html
+  x-keywords:
+    - OGC API Features
+openapi: 3.0.0
+components:
+  parameters:
+    f:
+      description: 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is JSON.'
+      explode: false
+      in: query
+      name: f
+      required: false
+      schema:
+        default: json
+        enum:
+          - json
+          - html
+        type: string
+      style: form
+    startindex:
+      description: 'The optional startindex parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).'
+      explode: false
+      in: query
+      name: startindex
+      required: false
+      schema:
+        default: 0
+        minimum: 0
+        type: integer
+      style: form
+paths:
+  /:
+    get:
+      description: 'Landing page'
+      summary: 'Landing page'
+      operationId: getLandingPage
+      parameters:
+        -
+          $ref: '#/components/parameters/f'
+      responses:
+        200:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage'
+        400:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter'
+        500:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError'
+      tags:
+        - server
+  /conformance:
+    get:
+      description: 'API conformance declaration'
+      operationId: getConformanceDeclaration
+      summary: 'API conformance definition'
+      tags:
+        - server
+      parameters:
+        -
+          $ref: '#/components/parameters/f'
+      responses:
+        200:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ConformanceDeclaration'
+        400:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter'
+        500:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError'
+  /api:
+    get:
+      description: 'This document'
+      summary: 'This document'
+      operationId: getOpenapi
+      parameters:
+        -
+          $ref: '#/components/parameters/f'
+      responses:
+        200:
+          description: 'successful operation'
+      tags:
+        - server
+  /collections:
+    get:
+      description: Collections
+      operationId: getCollections
+      summary: Get the list of Collections and their metadata
+      parameters:
+        - $ref: '#/components/parameters/f'
+      responses:
+        200:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collections'
+        400:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter'
+        500:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError'
+      tags:
+        - server
+  /collections/{collectionId}:
+    get:
+      description: collection
+      summary: Get the metadata of the {collectionId} Collection 
+      operationId: getCollection
+      parameters:
+        - $ref: '#/components/parameters/f'
+        - $ref:  'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/collectionId'
+      responses:
+        200:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection'
+        400:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter'
+        404:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound'
+        500:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError'
+      tags:
+        - collectionId
+  /collections/{collectionId}/items:
+    get:
+      description: Version de Commune
+      summary: Obtenir les enregistrements de la collection {collectionId}
+      operationId: items
+      parameters:
+        - $ref: '#/components/parameters/f'
+        - $ref:  'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/collectionId'
+        - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit'
+        - $ref: '#/components/parameters/startindex'
+        - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/bbox'
+        - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/datetime'
+        - name: properties
+          description: |
+            The properties that should be included for each feature. The parameter value is a comma-separated list
+            of property names.
+          explode: false
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+      responses:
+        200:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features'
+        400:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter'
+        404:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound'
+        500:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError'
+      tags:
+        - collectionId
+  /collections/{collectionId}/items/{featureId}:
+    get:
+      description: Version de Commune
+      summary: Obtenir un enregistrement en fonction de son id
+      operationId: featureId
+      parameters:
+        - $ref:  'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/collectionId'
+        - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId'
+        - $ref: '#/components/parameters/f'
+      responses:
+        200:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature'
+        400:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter'
+        404:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound'
+        500:
+          $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError'
+      tags:
+        - collectionId
+
+servers:
+  - description: Service d'accès à des données conformément à la norme OGC API Features.
+    url: http://bdavid.alwaysdata.net/geovect/features/fts.php/ne_110m
+tags:
+  - name: server
+    description: opérations de base
+    externalDocs:
+      description: information
+      url: 'https://github.com/benoitdavidfr/geovect'
+  - name: collectionId
+    description: opérations sur la collection {collectionId}

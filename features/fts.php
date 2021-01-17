@@ -21,7 +21,14 @@ doc: |
   https://features.geoapi.fr/file/{path}
   https://features.geoapi.fr/wfs/referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
   https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
+
+  
 journal: |
+  17/1/2021:
+    - A faire
+      - voir la gestion des erreurs
+      - vérifier que les paramètres non prévus sont testés et qu'une erreur est renvoyée
+      - voir comment ajouter de la doc complémentaire !
   30/12/2020:
     - création
 */
@@ -40,8 +47,8 @@ define('RACCOURCIS', [
   'shomwfs'=> '/wfs/services.data.shom.fr/INSPIRE/wfs',
   'igngpwfs'=> '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr',
   'test@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect',
-  'ne_110m@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m',
-  'ne_10m@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m',
+  'ne_110m'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m',
+  'ne_10m'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m',
   'route500@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500',
   'localgis'=> '/pgsql/docker@172.17.0.4/gis/public',
   'comhisto'=> '/pgsql/benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public',
@@ -62,16 +69,16 @@ define('EXEMPLES_DAPPELS', [
     'admin_0_countries'=> 'count=5&startindex=100',
   ],
   'mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m'=> [],
-  'ne_110m@mysql' => [
+  'ne_110m' => [
     'admin_0_countries' => 'count=10&startindex=5',
   ],
-  'ne_10m@mysql' => [
+  'ne_10m' => [
     'admin_0_countries' => 'count=10&startindex=5',
   ],
   'route500@mysql' => [
     'troncon_voie_ferree' => 'count=10&startindex=5',
   ],
-  '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect'=>[],
+  'mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect'=>[],
   'test@mysql' => [
     'unchampstretunegeom' => 'count=10',
   ],
@@ -88,11 +95,18 @@ define('EXEMPLES_DAPPELS', [
 function output(string $f, array $array, int $levels=3) {
   switch ($f) {
     case 'yaml': die(Yaml::dump($array, $levels, 2));
+    case 'html': die(Yaml::dump($array, $levels, 2));
     case 'json': die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
   }
 }
 
-switch ($f = $_GET['f'] ?? 'yaml') {
+if (isset($_GET['f']))
+  $f = $_GET['f'];
+elseif (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')))
+  $f = 'yaml';
+else
+  $f = 'json';
+switch ($f) {
   case 'yaml': {
     echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>shomwfs</title></head><body><pre>\n";
     break;
@@ -109,10 +123,13 @@ switch ($f = $_GET['f'] ?? 'yaml') {
   }
 }
 
-if (!isset($_SERVER['PATH_INFO'])) {
+//print_r($_SERVER);
+FeatureServer::log($_SERVER['REQUEST_URI']);
+  
+if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) {
   echo "Raccourcis:\n";
   foreach (RACCOURCIS as $raccourci => $url) {
-    echo "  - <a href='fts.php$url'>$raccourci</a> => $url\n";
+    echo "  - <a href='$_SERVER[SCRIPT_NAME]/$raccourci'>$raccourci</a> => $url\n";
   }
   echo "Exemples:\n";
   foreach (EXEMPLES_DAPPELS as $ex => $colls) {
@@ -132,9 +149,9 @@ if (!isset($_SERVER['PATH_INFO'])) {
   die();
 }
 
-if (preg_match('!^((/[^/]+)+)/check!', $_SERVER['PATH_INFO'], $matches)) {
+if (preg_match('!^((/[^/]+)+)/(conformance|api|check)!', $_SERVER['PATH_INFO'], $matches)) {
   $fserverId = $matches[1];
-  $action = 'check';
+  $action = $matches[3];
   $action2 = null;
 }
 
@@ -143,7 +160,7 @@ if (preg_match('!^((/[^/]+)+)/check!', $_SERVER['PATH_INFO'], $matches)) {
 elseif (preg_match('!^((/[^/]+)+)/collections!', $_SERVER['PATH_INFO'], $matches)) {
   if (!preg_match('!^((/[^/]+)+)/collections(/([^/]+)(/items(/.*)?|/describedBy|/createPrimaryKey)?)?$!',
       $_SERVER['PATH_INFO'], $matches))
-    output($f, ['error'=> "no match for '$_SERVER[PATH_INFO]'"]);
+    output($f, ['error'=> "no match1 for '$_SERVER[PATH_INFO]'"]);
   //echo 'matches1='; print_r($matches);
   $fserverId = $matches[1];
   $action = 'collections'; // liste des collections demandée
@@ -157,7 +174,7 @@ else { // sinon, c'est l'URL ou un raccourci
 }
 
 // détection du cas d'utilisation d'un raccourci et dans ce cas transformation dans le path résolu
-if (preg_match('!^/([^/]+)$!', $fserverId, $matches)) {
+if (preg_match('!^/([^/]+)/?$!', $fserverId, $matches)) {
   //echo 'matches2='; print_r($matches);
   $raccourci = $matches[1];
   //echo "raccourci $raccourci<br>\n";
@@ -169,7 +186,7 @@ if (preg_match('!^/([^/]+)$!', $fserverId, $matches)) {
 
 // identification du type de serveur et de son path
 if (!preg_match('!^/(wfs|pgsql|mysql|file)(/.*)$!', $fserverId, $matches)) {
-  output($f, ['error'=> "no match for '$_SERVER[PATH_INFO]'"]);
+  output($f, ['error'=> "no match3 for '$_SERVER[PATH_INFO]'"]);
 }
 //echo 'matches3='; print_r($matches);
 $type = $matches[1];
@@ -193,7 +210,13 @@ switch($type) {
 }
 
 if (!$action) { // /
-  output($f, $fServer->landingPage());
+  output($f, $fServer->landingPage($f));
+}
+elseif ($action == 'conformance') { // /conformance
+  output($f, $fServer->conformance());
+}
+elseif ($action == 'api') { // /api
+  output($f, $fServer->api());
 }
 elseif ($action == 'check') { // /check
   //output($f, $fServer->checkTables());
@@ -228,7 +251,7 @@ elseif (!$itemId) { // /collections/{collId}/items
     $fServer->items(
       collId: $collId,
       bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
-      count: $_GET['count'] ?? 100,
+      limit: $_GET['limit'] ?? 100,
       startindex: $_GET['startindex'] ?? 0
     ), 6
   );

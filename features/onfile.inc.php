@@ -29,26 +29,6 @@ class FeatureServerOnFile extends FeatureServer {
     $this->path = $path;
   }
   
-  function landingPage(): array { // retourne l'info de la landing page
-    return ['path'=> $this->path];
-  }
-  
-  /*function collections(): array { // retourne la liste des collections
-    if (!$dh = opendir(utf8_decode($this->path)))
-      die("Ouverture de $this->path impossible");
-    $files = [];
-    while (($filename = readdir($dh)) !== false) {
-      if (in_array($filename, ['.','..']))
-        continue;
-      if (!preg_match('!\.geojson$!', $filename))
-        continue;
-      $name = substr($filename, 0, strlen($filename)-8);
-      $files[] = ['id'=> $name, 'title'=> $name];
-    }
-    closedir($dh);
-    return $files;
-  }*/
-  
   function collections(): array { // retourne la liste des collections
     $files = [];
     foreach (new DirectoryIterator(utf8_decode($this->path)) as $fileInfo) {

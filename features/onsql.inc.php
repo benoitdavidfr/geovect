@@ -12,13 +12,12 @@ doc: |
   En PgSql les champs de type JSON sont traduits en JSON
 
   Un premier objectif serait d'utiliser un featureserver avec QGis
+
 journal: |
   15-17/1/2021:
-    - améliorations
-    - reste
-      - écrire /api
-      - écrire le schéma ???
-      - affiner le formattage
+    - finalisation d'une première version utilisable dans QGis pour onsql
+    - reste à:
+      - écrire le schéma ??? optionnel skippé pour le moment
   30/12/2020:
     - création
 includes: [ftrserver.inc.php, ../../phplib/sql.inc.php]
@@ -119,9 +118,8 @@ class FeatureServerOnSql extends FeatureServer {
     Sql::open($this->path);
   }
   
-  function landingPage(): array { // retourne l'info de la landing page
-    return ['path'=> $this->path];
-  }
+  /*function landingPage(): array { // retourne l'info de la landing page
+  }*/
 
   function checkTables(): array { // liste les tables et leur éligibilité comme collection
     $schema = basename($this->path);
@@ -173,25 +171,172 @@ class FeatureServerOnSql extends FeatureServer {
     }
   }
 
+  static function collection_structuration(string $colurl, string $collId): array {
+    return [
+      'id'=> $collId,
+      'title'=> $collId,
+      'itemType'=> 'feature', // indicator about the type of the items in the collection (the default value is 'feature').
+      'crs'=> ['http://www.opengis.net/def/crs/OGC/1.3/CRS84'],
+      'links'=> [
+        [
+          'href'=> "$colurl/items?f=json",
+          'rel'=> 'items',
+          'type'=> 'application/geo+json',
+          'title'=> "The items in GeoJSON",
+        ],
+        [
+          'href'=> "$colurl/items?f=html",
+          'rel'=> 'items',
+          'type'=> 'text/html',
+          'title'=> "The items in HTML",
+        ],
+      ],
+    ];
+    {/*schemas:/collection.yaml:
+      type: object
+      required:
+        - id
+        - links
+      properties:
+        id:
+          description: identifier of the collection used, for example, in URIs
+          type: string
+        title:
+          description: human readable title of the collection
+          type: string
+        description:
+          description: a description of the features in the collection
+          type: string
+        links:
+          type: array
+          items:
+            $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml
+        extent:
+          description: >-
+            The extent of the features in the collection. In the Core only spatial and temporal
+            extents are specified. Extensions may add additional members to represent other
+            extents, for example, thermal or pressure ranges.
+          type: object
+          properties:
+            spatial:
+              description: >-
+                The spatial extent of the features in the collection.
+              type: object
+              properties:
+                bbox:
+                  description: >-
+                    One or more bounding boxes that describe the spatial extent of the dataset.
+                    In the Core only a single bounding box is supported. Extensions may support
+                    additional areas. If multiple areas are provided, the union of the bounding
+                    boxes describes the spatial extent.
+                  type: array
+                  minItems: 1
+                  items:
+                    description: >-
+                      Each bounding box is provided as four or six numbers, depending on
+                      whether the coordinate reference system includes a vertical axis
+                      (height or depth):
+
+                      * Lower left corner, coordinate axis 1
+                      * Lower left corner, coordinate axis 2
+                      * Minimum value, coordinate axis 3 (optional)
+                      * Upper right corner, coordinate axis 1
+                      * Upper right corner, coordinate axis 2
+                      * Maximum value, coordinate axis 3 (optional)
+
+                      The coordinate reference system of the values is WGS 84 longitude/latitude
+                      (http://www.opengis.net/def/crs/OGC/1.3/CRS84) unless a different coordinate
+                      reference system is specified in `crs`.
+
+                      For WGS 84 longitude/latitude the values are in most cases the sequence of
+                      minimum longitude, minimum latitude, maximum longitude and maximum latitude.
+                      However, in cases where the box spans the antimeridian the first value
+                      (west-most box edge) is larger than the third value (east-most box edge).
+
+                      If the vertical axis is included, the third and the sixth number are
+                      the bottom and the top of the 3-dimensional bounding box.
+
+                      If a feature has multiple spatial geometry properties, it is the decision of the
+                      server whether only a single spatial geometry property is used to determine
+                      the extent or all relevant geometries.
+                    type: array
+                    minItems: 4
+                    maxItems: 6
+                    items:
+                      type: number
+                    example:
+                      - -180
+                      - -90
+                      - 180
+                      - 90
+                crs:
+                  description: >-
+                    Coordinate reference system of the coordinates in the spatial extent
+                    (property `bbox`). The default reference system is WGS 84 longitude/latitude.
+                    In the Core this is the only supported coordinate reference system.
+                    Extensions may support additional coordinate reference systems and add
+                    additional enum values.
+                  type: string
+                  enum:
+                    - 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                  default: 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+            temporal:
+              description: >-
+                The temporal extent of the features in the collection.
+              type: object
+              properties:
+                interval:
+                  description: >-
+                    One or more time intervals that describe the temporal extent of the dataset.
+                    The value `null` is supported and indicates an open time intervall.
+                    In the Core only a single time interval is supported. Extensions may support
+                    multiple intervals. If multiple intervals are provided, the union of the
+                    intervals describes the temporal extent.
+                  type: array
+                  minItems: 1
+                  items:
+                    description: >-
+                      Begin and end times of the time interval. The timestamps
+                      are in the coordinate reference system specified in `trs`. By default
+                      this is the Gregorian calendar.
+                    type: array
+                    minItems: 2
+                    maxItems: 2
+                    items:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    example:
+                      - '2011-11-11T12:22:11Z'
+                      - null
+                trs:
+                  description: >-
+                    Coordinate reference system of the coordinates in the temporal extent
+                    (property `interval`). The default reference system is the Gregorian calendar.
+                    In the Core this is the only supported temporal reference system.
+                    Extensions may support additional temporal reference systems and add
+                    additional enum values.
+                  type: string
+                  enum:
+                    - 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+                  default: 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+        itemType:
+          description: indicator about the type of the items in the collection (the default value is 'feature').
+          type: string
+          default: feature
+        crs:
+          description: the list of coordinate reference systems supported by the service
+          type: array
+          items:
+            type: string
+          default:
+            - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+    */}
+  }
+  
   function collections(): array { // retourne la liste des collections
     $schema = basename($this->path);
     // sélectionne les tables 
-    $sql = [
-      "select t.table_name, g.column_name geom_column_name, pk.column_name pk_column_name\n",
-      "from INFORMATION_SCHEMA.TABLES t\n",
-      "  left join INFORMATION_SCHEMA.columns g\n",
-      "    on g.table_schema=t.table_schema and g.table_name=t.table_name ",
-      [
-        'MySql'=> "and g.data_type='geometry'\n",
-        'PgSql'=> "and g.data_type='USER-DEFINED' and g.udt_schema='public' and g.udt_name='geometry'\n",
-      ],
-      "  left join INFORMATION_SCHEMA.key_column_usage pk\n",
-      "    on pk.table_schema=t.table_schema and pk.table_name=t.table_name\n",
-      [
-        'MySql'=> " and pk.constraint_name='PRIMARY'",
-      ],
-      "where t.table_schema='$schema'\n",
-    ];
     $sql = [
       "select t.table_name, g.column_name geom_column_name, pk.column_name pk_column_name\n",
       "from INFORMATION_SCHEMA.TABLES t\n",
@@ -208,7 +353,7 @@ class FeatureServerOnSql extends FeatureServer {
         'MySql'=> " and pk.constraint_name='PRIMARY'\n",
       ]
     ];
-    echo "sql=",Sql::toString($sql),"\n";
+    //echo "sql=",Sql::toString($sql),"\n";
     $tables = [];
     foreach (Sql::query($sql) as $tuple) {
       //print_r($tuple);
@@ -217,20 +362,45 @@ class FeatureServerOnSql extends FeatureServer {
     }
     //print_r($tables);
     
+    $selfurl = FeatureServer::selfUrl();
     $colls = [];
     foreach ($tables as $table_name => $geomColumnNames) {
-      if (count($geomColumnNames) <= 1)
-        $colls[] = ['id'=> $table_name, 'title'=> $table_name];
+      if (count($geomColumnNames) <= 1) {
+        $colls[] = self::collection_structuration("$selfurl/${table_name}", $table_name);
+      }
       else {
         foreach ($geomColumnNames as $geomColumnName)
-          $colls[] = ['id'=> $table_name.'_'.$geomColumnName, 'title'=> $table_name.'_'.$geomColumnName];
+          $colls[] = self::collection_structuration("$selfurl/${table_name}_$geomColumnName", $table_name.'_'.$geomColumnName);
       }
     }
-    return $colls;
+    return [
+      'links'=> [
+        [ 'href'=> "$selfurl?f=json", 'rel'=> 'self', 'type'=> 'application/json', 'title'=> "this document in JSON" ],
+        [ 'href'=> "$selfurl?f=html", 'rel'=> 'self', 'type'=> 'text/html', 'title'=> "this document in HTML" ],
+      ],
+      'collections'=> $colls,
+    ];
+    /*schemas:
+      /collections.yaml:
+        type: object
+        required:
+          - links
+          - collections
+        properties:
+          links:
+            type: array
+            items:
+              $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml
+          collections:
+            type: array
+            items:
+              $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/collection.yaml
+    */
   }
   
-  function collection(string $id): array { // retourne la description du FeatureType de la collection
-    return ['id'=> $id, 'title'=> $id];
+  function collection(string $collId): array { // retourne la description du FeatureType de la collection
+    $selfurl = FeatureServer::selfUrl();
+    return self::collection_structuration($selfurl, $collId);
   }
   
   function collDescribedBy(string $collId): array { // retourne la description du FeatureType de la collection
@@ -259,9 +429,9 @@ class FeatureServerOnSql extends FeatureServer {
       throw new Exception("Erreur sur bbox[3] > 90 ou < -90");
   }
   
-  // retourne les items de la collection comme array Php
+  // retourne les items de la collection comme FeatureCollection en array Php
   // L'usage de pFilter n'est pas implémenté
-  function items(string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array {
+  function items(string $collId, array $bbox=[], array $pFilter=[], int $limit=10, int $startindex=0): array {
     $jsonCols = [];
     $columns = [];
     $collection = new Collection(basename($this->path), $collId);
@@ -279,15 +449,18 @@ class FeatureServerOnSql extends FeatureServer {
     }
     
     $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table_name();
+    $where = null;
     if ($bbox) {
       self::checkBbox($bbox);
       $geomColName = $collection->geomColName();
-      $where = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n";
+      //$where = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
+      $polygonWkt = "POLYGON(($bbox[0] $bbox[1],$bbox[0] $bbox[3],$bbox[2] $bbox[3],$bbox[2] $bbox[1],$bbox[0] $bbox[1]))";
+      $where = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt', 4326))\n";
     }
     if ($where)
       $sql .= "\nwhere $where";
-    if ($count)
-      $sql .= "limit $count";
+    if ($limit)
+      $sql .= "\nlimit $limit";
     if ($startindex)
       $sql .= " offset $startindex";
     //echo "sql=$sql\n";
@@ -301,12 +474,57 @@ class FeatureServerOnSql extends FeatureServer {
         $geom = null;
       foreach ($jsonCols as $jsonCol)
         $tuple[$jsonCol] = json_decode($tuple[$jsonCol], true);
-      $items[] = ['id'=> $tuple[$collection->idColName()], 'properties'=> $tuple, 'geometry'=> $geom];
+      $items[] = ['type'=> 'Feature', 'id'=> $tuple[$collection->idColName()], 'properties'=> $tuple, 'geometry'=> $geom];
     }
-    return $items;
+    $selfurl = FeatureServer::selfUrl()
+        ."?startindex=$startindex&limit=$limit"
+        .($bbox ? "&bbox=".implode(',', $bbox) : '')
+        .($pFilter ? "&$filter=".implodeKeyVal(',', $pFilter) : '');
+    $nexturl = FeatureServer::selfUrl()
+        ."?startindex=".($startindex+$limit)."&limit=$limit"
+        .($bbox ? "&bbox=".implode(',', $bbox) : '')
+        .($pFilter ? "&$filter=".implodeKeyVal(',', $pFilter) : '');
+    $links = [
+      [ 'href'=> "$selfurl&f=json", 'rel'=> 'self', 'type'=> 'application/json', 'title'=> "this document in JSON" ],
+      [ 'href'=> "$selfurl&f=html", 'rel'=> 'self', 'type'=> 'text/html', 'title'=> "this document in HTML" ],
+    ];
+    if (count($items) == $limit)
+      $links[] = [ 'href'=> "$nexturl&f=json", 'rel'=> 'next', 'type'=> 'application/json', 'title'=> "next set of data" ];
+    return [
+      'type'=> 'FeatureCollection',
+      'features'=> $items,
+      'links'=> $links,
+      'numberReturned'=> count($items),
+    ];
+    {/* Schema
+    featureCollectionGeoJSON:
+      type: object
+      required:
+        - type
+        - features
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/featureGeoJSON"
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/link"
+        timeStamp:
+          $ref: "#/components/schemas/timeStamp"
+        numberMatched:
+          $ref: "#/components/schemas/numberMatched"
+        numberReturned:
+          $ref: "#/components/schemas/numberReturned"
+    */}
   }
-    
-  // retourne l'item $id de la collection comme array Php
+  
+  // retourne l'item $id de la collection comme Feature en array Php
   function item(string $collId, string $itemId): array {
     $jsonCols = [];
     $columns = [];
@@ -326,7 +544,7 @@ class FeatureServerOnSql extends FeatureServer {
     
     $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table_name()
       ."\nwhere ".$collection->idColName()."='$itemId'";
-    echo "sql=$sql\n";
+    //echo "sql=$sql\n";
     $tuples = Sql::getTuples($sql);
     if (!$tuples)
       throw new Exception("Erreur aucun item ne correspond à cet id", 404);
@@ -339,7 +557,12 @@ class FeatureServerOnSql extends FeatureServer {
       $geom = null;
     foreach ($jsonCols as $jsonCol)
       $tuple[$jsonCol] = json_decode($tuple[$jsonCol], true);
-    return ['id'=> $tuple[$collection->idColName()], 'properties'=> $tuple, 'geometry'=> $geom];
+    return [
+      'type'=> 'Feature',
+      'id'=> $tuple[$collection->idColName()],
+      'properties'=> $tuple,
+      'geometry'=> $geom,
+    ];
   }
 };
 

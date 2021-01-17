@@ -281,8 +281,6 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
     $this->wfsServer = new WfsGeoJson($serverUrl, $options);
   }
   
-  function landingPage(): array { return ['home'=> 'home']; }
-  
   function collections(): array { // retourne la liste des collections
     $collections = [];
     foreach ($this->wfsServer->featureTypeList() as $typeId => $type) {
