@@ -1,5 +1,5 @@
 title: API Features
-path: /geovect/apifeatures
+path: /geovect/features
 doc: |
   Mise en oeuvre du protocole API Features pour accéder à différentes sources de données.
   Peuvent être vus comme des serveurs API Features:
@@ -24,3 +24,10 @@ doc: |
     https://features.geoapi.fr/file/{path}
     https://features.geoapi.fr/wfs/referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
     https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
+phpScripts:
+  - /geovect/features/fts.php
+phpIncludes:
+  - /geovect/features/ftrserver.inc.php
+  - /geovect/features/onwfs.inc.php
+  - /geovect/features/onfile.inc.php
+  - /geovect/features/onsql.inc.php

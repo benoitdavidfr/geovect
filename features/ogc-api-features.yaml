@@ -1,0 +1,897 @@
+title: résumé de la norme OGC API Features (ISO 19168-1:2020)
+description: |
+  Structuration du document pour faciliter sa lecture.
+  Les exigences sont indiquées avec une clé de la forme req:{id}
+  Les recommandations sont indiquées avec une clé de la forme rec:{id}
+  Les schemas sont indiqués avec une clé de la forme schemas:{id}
+source: http://docs.opengeospatial.org/is/17-069r3/17-069r3.html
+identifier:
+  - http://www.opengis.net/spec/ogcapi-features-1/1.0
+  - http://www.opengis.net/doc/IS/ogcapi-features-1/1.0
+issued: 2019-10-14
+rights: Copyright © 2019 Open Geospatial Consortium
+namespaces:
+  spec: http://www.opengis.net/spec/ogcapi-features-1/1.0
+  req: spec:/req
+  rec: spec:/rec
+  per: spec:/per
+  schemas: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas
+  parameters: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/parameters
+Conformance(2):
+  req:/core: |
+    The Core specifies requirements that all Web APIs have to implement.
+    The Core does not mandate a specific encoding or format for representing features or feature collections.
+    Four requirements classes depend on the Core and specify representations for these resources in commonly used encodings
+    for spatial data on the web.
+  req:/html: Accès à l'information en utilisant le format HTML5
+  req:/geojson: Accès aux données en utilisant le format GeoJSON
+  req:/gmlsf0: Accès à l'information en utilisant le format GML, Simple Features Profile, Level 0
+  req:/gmlsf2: Accès à l'information en utilisant le format GML, Simple Features Profile, Level 2
+  req:/oas30: Conformité à la spécification OpenAPI Specification, version 3.0
+linkRelations(5.2):
+  identifier: http://tools.ietf.org/rfc/rfc8288.txt
+  relEnum:
+    alternate: Refers to a substitute for this context.
+    collection: The target IRI points to a resource which represents the collection resource for the context IRI.
+    describedBy: Refers to a resource providing information about the link’s context.
+    item: The target IRI points to a resource that is a member of the collection represented by the context IRI.
+    next: Indicates that the link’s context is a part of a series, and that the next in the series is the link target.
+    license: Refers to a license associated with this context.
+    prev: Indicates that the link’s context is a part of a series, and that the previous in the series is the link target.
+    self: Conveys an identifier for the link’s context.
+    service-desc: Identifies service description for the context that is primarily intended for consumption by machines.
+    service-doc: Identifies service documentation for the context that is primarily intended for human consumption.
+    items: Refers to a resource that is comprised of members of the collection represented by the link’s context.
+    conformance: Refers to a resource that identifies the specifications that the link’s context conforms to.
+    data: >-
+      Indicates that the link’s context is a distribution of a dataset that is an API and refers to the root resource
+      of the dataset in the API.
+  schemas:/link.yaml:
+    type: object
+    required:
+      - href
+    properties:
+      href:
+        type: string
+        example: http://data.example.com/buildings/123
+      rel:
+        type: string
+        example: alternate
+      type:
+        type: string
+        example: application/geo+json
+      hreflang:
+        type: string
+        example: en
+      title:
+        type: string
+        example: Trierer Strasse 70, 53115 Bonn
+      length:
+        type: integer
+landingPage(7.2):
+  path: /
+  req:/core/root-op: The server SHALL support the HTTP GET operation at the path /.
+  req:/core/root-success:
+    - A successful execution of the operation SHALL be reported as a response with a HTTP status code 200.
+    - The content of that response SHALL be based upon the OpenAPI 3.0
+      schema [landingPage.yaml](http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/landingPage.yaml) and 
+      include at least links to the following resources:
+        - the API definition (relation type 'service-desc' or 'service-doc')
+        - /conformance (relation type 'conformance')
+        - /collections (relation type 'data')
+  schemas:/landingPage.yaml:
+    type: object
+    required:
+      - links
+    properties:
+      title:
+        type: string
+        example: Buildings in Bonn
+      description:
+        type: string
+        example: Access to data about buildings in the city of Bonn via a Web API that conforms to the OGC API Features specification.
+      links:
+        type: array
+        items:
+          $ref: link.yaml
+  example:/landingPage.yaml:
+    title: 'Buildings in Bonn'
+    description: 'Access to data about buildings in the city of Bonn via a Web API that conforms to the OGC API Features specification.'
+    links:
+      - href: 'http://data.example.org/'
+        rel: self
+        type: application/json
+        title: 'this document'
+      - href: 'http://data.example.org/api'
+        rel: service-desc
+        type: application/vnd.oai.openapi+json;version=3.0
+        title: 'the API definition'
+      - href: 'http://data.example.org/api.html'
+        rel: service-doc
+        type: text/html
+        title: 'the API documentation'
+      - href: 'http://data.example.org/conformance'
+        rel: conformance
+        type: application/json
+        title: 'OGC API conformance classes implemented by this server'
+      - href: 'http://data.example.org/collections'
+        rel: data
+        type: application/json
+        title: 'Information about the feature collections'
+/api(7.3):
+  req:/core/api-definition-op: >-
+    The URIs of all API definitions referenced from the landing page SHALL support the HTTP GET method.
+  per:/core/api-definition-uri: >-
+    The API definition is metadata about the API and strictly not part of the API itself, but it MAY be hosted as a
+    sub-resource to the base path of the API, for example, at path /api.
+    There is no need to include the path of the API definition in the API definition itself.
+  req:/core/api-definition-success: >-
+    A GET request to the URI of an API definition linked from the landing page (link relations service-desc or service-doc)
+    with an Accept header with the value of the link property type SHALL return a document consistent with the requested
+    media type.
+  rec:/core/api-definition-oas: >-
+    If the API definition document uses the OpenAPI Specification 3.0, the document SHOULD conform to the OpenAPI
+    Specification 3.0 requirements class.
+/conformance(7.4):
+  title: Conformance declaration
+  path: /conformance
+  req:/core/conformance-op: The server SHALL support the HTTP GET operation at the path /conformance.
+  req:/core/conformance-success:
+      - A successful execution of the operation SHALL be reported as a response with a HTTP status code 200.
+      - The content of that response SHALL be based upon the OpenAPI 3.0 schema confClasses.yaml and list all OGC API
+        conformance classes that the server conforms to.
+  schemas:/confClasses.yaml:
+    type: object
+    required:
+      - conformsTo
+    properties:
+      conformsTo:
+        type: array
+        items:
+          type: string
+  example:/confClasses.yaml:
+    conformsTo:
+      - 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core'
+      - 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30'
+      - 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html'
+      - 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
+http1.1(7.5):
+  req:/core/http:
+    - The server SHALL conform to HTTP 1.1.
+    - If the server supports HTTPS, the server SHALL also conform to HTTP over TLS.
+  rec:/core/head:
+    - The server SHOULD support the HTTP 1.1 method HEAD for all resources that support the method GET.
+  httpStatusCodes:
+    200: A successful request.
+    304: An entity tag was provided in the request and the resource has not been changed since the previous request.
+    400: |
+      The server cannot or will not process the request due to an apparent client error. For example, a query parameter
+      had an incorrect value.
+    401: |
+      The request requires user authentication. The response includes a WWW-Authenticate header field containing a challenge
+      applicable to the requested resource.
+    403: |
+      The server understood the request, but is refusing to fulfill it. While status code 401 indicates missing or bad
+      authentication, status code 403 indicates that authentication is not the issue, but the client is not authorized
+      to perform the requested operation on the resource.
+    404: The requested resource does not exist on the server. For example, a path parameter had an incorrect value.
+    405: |
+      The request method is not supported. For example, a POST request was submitted, but the resource only supports
+      GET requests.
+    406: |
+      The Accept header submitted in the request did not support any of the media types supported by the server
+      for the requested resource.
+    500: An internal error occurred in the server.
+parameters(7.6):
+  req:/core/query-param-unknown: |
+    The server SHALL respond with a response with the status code 400, if the request URI includes a query parameter
+    that is not specified in the API definition.
+  req:/core/query-param-invalid: |
+    The server SHALL respond with a response with the status code 400, if the request URI includes a query parameter
+    that has an invalid value.
+web-caching(7.7):
+  rec:/core/etag: The service SHOULD support entity tags and the associated headers as specified by HTTP/1.1.
+cross-origin(7.8):
+  rec:/core/cross-origin: |
+    If the server is intended to be accessed from the browser, cross-origin requests SHOULD be supported.
+    Note that support can also be added in a proxy layer on top of the server.
+encodings(7.9):
+  rec:/core/html: |
+    To support browsing the dataset and its features with a web browser and to enable search engines to crawl and index
+    the dataset, implementations SHOULD consider to support an HTML encoding.
+  rec:/core/geojson: |
+    If the feature data can be represented for the intended use in GeoJSON, implementations SHOULD consider to support
+    GeoJSON as an encoding for features and feature collections.
+i18n(7.10):
+  rec:/core/string-i18n: |
+    For encodings that support string internationalization, the server SHOULD include information about the language
+    for each string value that includes linguistic text.
+crs(7.11):
+  req:/core/crs84: |
+    Unless the client explicitly requests a different coordinate reference system, all spatial geometries SHALL be
+    in the coordinate reference system http://www.opengis.net/def/crs/OGC/1.3/CRS84 (WGS 84 longitude/latitude)
+    for geometries without height information and http://www.opengis.net/def/crs/OGC/0/CRS84h
+    (WGS 84 longitude/latitude plus ellipsoidal height) for geometries with height information.
+link-header(7.12):
+  rec:/core/link-header: |
+    Links included in payload of responses SHOULD also be included as Link headers in the HTTP response according to
+    RFC 8288, Clause 3.
+    This recommendation does not apply, if there are a large number of links included in a response or a link is not known
+    when the HTTP headers of the response are created.
+/collections(7.13):
+  title: Feature collections
+  path: /collections
+  req:/core/fc-md-op: The server SHALL support the HTTP GET operation at the path /collections.
+  req:/core/fc-md-success:
+    - A successful execution of the operation SHALL be reported as a response with a HTTP status code 200.
+    - The content of that response SHALL be based upon the OpenAPI 3.0 schema collections.yaml.
+  schemas:/collections.yaml:
+    type: object
+    required:
+      - links
+      - collections
+    properties:
+      links:
+        type: array
+        items:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml
+      collections:
+        type: array
+        items:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/collection.yaml
+  req:/core/fc-md-links: |
+    - 200-response SHALL include the following links in the links property of the response:
+      - link to this response document (relation: self),
+      - link to the response document in every other media type supported by the server (relation: alternate).
+    - All links SHALL include the rel and type link parameters.
+  rec:/core/fc-md-descriptions:
+    - If external schemas or descriptions for the dataset exist that provide information about the structure or semantics
+      of the data, a 200-response SHOULD include links to each of those resources in the links property of the response
+      (relation: describedBy).
+    - The type link parameter SHOULD be provided for each link. This applies to resources that describe to the whole dataset.
+    - For resources that describe the contents of a feature collection, the links SHOULD be set in the links property
+      of the appropriate object in the collections resource.
+    - Examples for descriptions are: XML Schema, Schematron, JSON Schema, RDF Schema, OWL, SHACL, a feature catalogue, etc.
+  rec:/core/fc-md-license:
+    - For each feature collection in this distribution of the dataset, the links property of the collection SHOULD include
+      an item for each supported encoding with a link to the collection resource (relation: license).
+    - Alternatively, if all data shared via the API is available under the same license, the link MAY instead be added
+      to the top-level links property of the response.
+    - Multiple links to the license in different content types MAY be provided. At least a link to content type text/html
+      or text/plain SHOULD be provided.
+  req:/core/fc-md-items:
+    - For each feature collection provided by the server, an item SHALL be provided in the property collections.
+  per:/core/fc-md-items:
+    - To support servers with many collections, servers MAY limit the number of items in the property collections.
+  req:/core/fc-md-items-links:
+    - For each feature collection included in the response, the links property of the collection SHALL include an item
+      for each supported encoding with a link to the features resource (relation: items).
+    - All links SHALL include the rel and type properties.
+  req:/core/fc-md-extent:
+    - For each feature collection, the extent property, if provided, SHALL provide bounding boxes that include all spatial
+      geometries and time intervals that include all temporal geometries in this collection. The temporal extent may use null
+      values to indicate an open time interval.
+    - If a feature has multiple properties with spatial or temporal information, it is the decision of the server
+      whether only a single spatial or temporal geometry property is used to determine the extent or all relevant geometries.
+  rec:/core/fc-md-extent-single:
+    - While the spatial and temporal extents support multiple bounding boxes (bbox array) and time intervals (interval array)
+      for advanced use cases, implementations SHOULD provide only a single bounding box or time interval unless the use of
+      multiple values is important for the use of the dataset and agents using the API are known to be support multiple
+      bounding boxes or time intervals.
+  per:/core/fc-md-extent-extensions:
+    - The Core only specifies requirements for spatial and temporal extents. However, the extent object MAY be extended
+      with additional members to represent other extents, for example, thermal or pressure ranges.
+    - The Core only supports spatial extents in WGS 84 longitude/latitude and temporal extents in the Gregorian calendar
+      (these are the only enum values in extent.yaml).
+    - Extension to the Core MAY add additional reference systems to the extent object.
+  schemas:/collection.yaml:
+    type: object
+    required:
+      - id
+      - links
+    properties:
+      id:
+        description: identifier of the collection used, for example, in URIs
+        type: string
+      title:
+        description: human readable title of the collection
+        type: string
+      description:
+        description: a description of the features in the collection
+        type: string
+      links:
+        type: array
+        items:
+          $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml
+      extent:
+        description: >-
+          The extent of the features in the collection. In the Core only spatial and temporal
+          extents are specified. Extensions may add additional members to represent other
+          extents, for example, thermal or pressure ranges.
+        type: object
+        properties:
+          spatial:
+            description: >-
+              The spatial extent of the features in the collection.
+            type: object
+            properties:
+              bbox:
+                description: >-
+                  One or more bounding boxes that describe the spatial extent of the dataset.
+                  In the Core only a single bounding box is supported. Extensions may support
+                  additional areas. If multiple areas are provided, the union of the bounding
+                  boxes describes the spatial extent.
+                type: array
+                minItems: 1
+                items:
+                  description: >-
+                    Each bounding box is provided as four or six numbers, depending on
+                    whether the coordinate reference system includes a vertical axis
+                    (height or depth):
+
+                    * Lower left corner, coordinate axis 1
+                    * Lower left corner, coordinate axis 2
+                    * Minimum value, coordinate axis 3 (optional)
+                    * Upper right corner, coordinate axis 1
+                    * Upper right corner, coordinate axis 2
+                    * Maximum value, coordinate axis 3 (optional)
+
+                    The coordinate reference system of the values is WGS 84 longitude/latitude
+                    (http://www.opengis.net/def/crs/OGC/1.3/CRS84) unless a different coordinate
+                    reference system is specified in `crs`.
+
+                    For WGS 84 longitude/latitude the values are in most cases the sequence of
+                    minimum longitude, minimum latitude, maximum longitude and maximum latitude.
+                    However, in cases where the box spans the antimeridian the first value
+                    (west-most box edge) is larger than the third value (east-most box edge).
+
+                    If the vertical axis is included, the third and the sixth number are
+                    the bottom and the top of the 3-dimensional bounding box.
+
+                    If a feature has multiple spatial geometry properties, it is the decision of the
+                    server whether only a single spatial geometry property is used to determine
+                    the extent or all relevant geometries.
+                  type: array
+                  minItems: 4
+                  maxItems: 6
+                  items:
+                    type: number
+                  example:
+                    - -180
+                    - -90
+                    - 180
+                    - 90
+              crs:
+                description: >-
+                  Coordinate reference system of the coordinates in the spatial extent
+                  (property `bbox`). The default reference system is WGS 84 longitude/latitude.
+                  In the Core this is the only supported coordinate reference system.
+                  Extensions may support additional coordinate reference systems and add
+                  additional enum values.
+                type: string
+                enum:
+                  - 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                default: 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+          temporal:
+            description: >-
+              The temporal extent of the features in the collection.
+            type: object
+            properties:
+              interval:
+                description: >-
+                  One or more time intervals that describe the temporal extent of the dataset.
+                  The value `null` is supported and indicates an open time intervall.
+                  In the Core only a single time interval is supported. Extensions may support
+                  multiple intervals. If multiple intervals are provided, the union of the
+                  intervals describes the temporal extent.
+                type: array
+                minItems: 1
+                items:
+                  description: >-
+                    Begin and end times of the time interval. The timestamps
+                    are in the coordinate reference system specified in `trs`. By default
+                    this is the Gregorian calendar.
+                  type: array
+                  minItems: 2
+                  maxItems: 2
+                  items:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  example:
+                    - '2011-11-11T12:22:11Z'
+                    - null
+              trs:
+                description: >-
+                  Coordinate reference system of the coordinates in the temporal extent
+                  (property `interval`). The default reference system is the Gregorian calendar.
+                  In the Core this is the only supported temporal reference system.
+                  Extensions may support additional temporal reference systems and add
+                  additional enum values.
+                type: string
+                enum:
+                  - 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+                default: 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+      itemType:
+        description: indicator about the type of the items in the collection (the default value is 'feature').
+        type: string
+        default: feature
+      crs:
+        description: the list of coordinate reference systems supported by the service
+        type: array
+        items:
+          type: string
+        default:
+          - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+  example:/collections.yaml:
+    links:
+      -
+        href: 'http://data.example.org/collections.json'
+        rel: self
+        type: application/json
+        title: 'this document'
+      -
+        href: 'http://data.example.org/collections.html'
+        rel: alternate
+        type: text/html
+        title: 'this document as HTML'
+      -
+        href: 'http://schemas.example.org/1.0/buildings.xsd'
+        rel: describedBy
+        type: application/xml
+        title: 'GML application schema for Acme Corporation building data'
+      -
+        href: 'http://download.example.org/buildings.gpkg'
+        rel: enclosure
+        type: application/geopackage+sqlite3
+        title: 'Bulk download (GeoPackage)'
+        length: 472546
+    collections:
+      -
+        id: buildings
+        title: Buildings
+        description: 'Buildings in the city of Bonn.'
+        extent:
+          spatial:
+            bbox:
+              -
+                - 7.01
+                - 50.63
+                - 7.22
+                - 50.78
+          temporal:
+            interval:
+              -
+                - '2010-02-15T12:34:56Z'
+                - null
+        links:
+          -
+            href: 'http://data.example.org/collections/buildings/items'
+            rel: items
+            type: application/geo+json
+            title: Buildings
+          -
+            href: 'https://creativecommons.org/publicdomain/zero/1.0/'
+            rel: license
+            type: text/html
+            title: CC0-1.0
+          -
+            href: 'https://creativecommons.org/publicdomain/zero/1.0/rdf'
+            rel: license
+            type: application/rdf+xml
+            title: CC0-1.0
+/collections/{collectionId}(7.14):
+  title: Feature collection
+  path: /collections/{collectionId}
+  req:/core/sfc-md-op:
+    - The server SHALL support the HTTP GET operation at the path /collections/{collectionId}.
+    - The parameter collectionId is each id property in the feature collections response (JSONPath: $.collections[*].id).
+  req:/core/sfc-md-success:
+    - A successful execution of the operation SHALL be reported as a response with a HTTP status code 200.
+    - The content of that response SHALL be consistent with the content for this feature collection in the /collections
+      response. That is, the values for id, title, description and extent SHALL be identical.
+/items(7.15):
+  title: Features
+  path: /collections/{collectionId}/items
+  req:/core/fc-op:
+    - For every feature collection identified in the feature collections response (path /collections), the server SHALL
+      support the HTTP GET operation at the path /collections/{collectionId}/items.
+    - The parameter collectionId is each id property in the feature collections response (JSONPath: $.collections[*].id).
+  req:/core/fc-limit-definition: |
+    The operation SHALL support a parameter limit with the characteristics defined by parameters:/limit.yaml
+  parameters:/limit.yaml:
+    name: limit
+    in: query
+    description: |-
+      The optional limit parameter limits the number of items that are presented in the response document.
+
+      Only items are counted that are on the first level of the collection in the response document.
+      Nested objects contained within the explicitly requested items shall not be counted.
+
+      Minimum = 1. Maximum = 10000. Default = 10.
+    required: false
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 10000
+      default: 10
+    style: form
+    explode: false
+  per:/core/fc-limit-default-minimum-maximum: >-
+    The values for minimum, maximum and default in requirement /req/core/fc-limit-definition are only examples
+    and MAY be changed.
+  req:/core/fc-limit-response-1:
+    - The response SHALL not contain more features than specified by the optional limit parameter. If the API definition
+      specifies a maximum value for limit parameter, the response SHALL not contain more features than this maximum value.
+    - Only items are counted that are on the first level of the collection. Any nested objects contained within the explicitly
+      requested items SHALL not be counted.
+  per:/core/fc-limit-response-2: The server MAY return less features than requested (but not more).
+  req:/core/fc-bbox-definition: >-
+    The operation SHALL support a parameter bbox with the characteristics defined by by parameters:/bbox.yaml
+  parameters:/bbox.yaml:
+    name: bbox
+    in: query
+    required: false
+    schema:
+      type: array
+      minItems: 4
+      maxItems: 6
+      items:
+        type: number
+    style: form
+    explode: false
+  req:/core/fc-bbox-response:
+    - Only features that have a spatial geometry that intersects the bounding box SHALL be part of the result set,
+      if the bbox parameter is provided.
+    - If a feature has multiple spatial geometry properties, it is the decision of the server whether only a single spatial
+      geometry property is used to determine the extent or all relevant geometries.
+    - The bbox parameter SHALL match all features in the collection that are not associated with a spatial geometry, too.
+    - The bounding box is provided as four or six numbers, depending on whether the coordinate reference system includes
+      a vertical axis (height or depth):
+      - Lower left corner, coordinate axis 1
+      - Lower left corner, coordinate axis 2
+      - Minimum value, coordinate axis 3 (optional)
+      - Upper right corner, coordinate axis 1
+      - Upper right corner, coordinate axis 2
+      - Maximum value, coordinate axis 3 (optional)
+    - The bounding box SHALL consist of four numbers and the coordinate reference system of the values SHALL be interpreted
+      as WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84) unless a different coordinate reference
+      system is specified in a parameter bbox-crs.
+    - The coordinate values SHALL be within the extent specified for the coordinate reference system.
+  req:/core/fc-time-definition: >-
+    The operation SHALL support a parameter datetime with the characteristics defiend by parameters:/datetime.yaml
+  parameters:/datetime.yaml:
+    name: datetime
+    in: query
+    required: false
+    schema:
+      type: string
+    style: form
+    explode: false
+  req:/core/fc-time-response:
+    - Only features that have a temporal geometry that intersects the temporal information in the datetime parameter
+      SHALL be part of the result set, if the parameter is provided.
+    - If a feature has multiple temporal properties, it is the decision of the server whether only a single temporal
+      property is used to determine the extent or all relevant temporal properties.
+    - The datetime parameter SHALL match all features in the collection that are not associated with a temporal geometry, too.
+    - |
+      Temporal geometries are either a date-time value or a time interval. The parameter value SHALL conform to the following
+      syntax (using ABNF):
+
+        interval-closed     = date-time "/" date-time
+        interval-open-start = [".."] "/" date-time
+        interval-open-end   = date-time "/" [".."]
+        interval            = interval-closed / interval-open-start / interval-open-end
+        datetime            = date-time / interval
+    - |
+      The syntax of date-time is specified by [RFC 3339, 5.6](https://tools.ietf.org/html/rfc3339#section-5.6).
+    
+      5.6. Internet Date/Time Format
+
+         The following profile of ISO 8601 [ISO8601] dates SHOULD be used in
+         new protocols on the Internet.  This is specified using the syntax
+         description notation defined in [ABNF].
+
+         date-fullyear   = 4DIGIT
+         date-month      = 2DIGIT  ; 01-12
+         date-mday       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
+                                   ; month/year
+         time-hour       = 2DIGIT  ; 00-23
+         time-minute     = 2DIGIT  ; 00-59
+         time-second     = 2DIGIT  ; 00-58, 00-59, 00-60 based on leap second
+                                   ; rules
+         time-secfrac    = "." 1*DIGIT
+         time-numoffset  = ("+" / "-") time-hour ":" time-minute
+         time-offset     = "Z" / time-numoffset
+
+         partial-time    = time-hour ":" time-minute ":" time-second
+                           [time-secfrac]
+         full-date       = date-fullyear "-" date-month "-" date-mday
+         full-time       = partial-time time-offset
+
+         date-time       = full-date "T" full-time
+
+            NOTE: Per [ABNF] and ISO8601, the "T" and "Z" characters in this
+            syntax may alternatively be lower case "t" or "z" respectively.
+
+            This date/time format may be used in some environments or contexts
+            that distinguish between the upper- and lower-case letters 'A'-'Z'
+            and 'a'-'z' (e.g. XML).  Specifications that use this format in
+            such environments MAY further limit the date/time syntax so that
+            the letters 'T' and 'Z' used in the date/time syntax must always
+            be upper case.  Applications that generate this format SHOULD use
+            upper case letters.
+
+            NOTE: ISO 8601 defines date and time separated by "T".
+            Applications using this syntax may choose, for the sake of
+            readability, to specify a full-date and full-time separated by
+            (say) a space character.
+
+    - Open ranges in time intervals at the start or end are supported using a double-dot (..) or an empty string for the
+      start/end.
+  datetimeExample: 2018-02-12T23:20:52Z
+  intervalExamples:
+    - 2018-02-12T00:00:00Z/2018-03-18T12:31:12Z
+    - 2018-02-12T00:00:00Z/..
+    - 2018-02-12T00:00:00Z/
+  rec:/core/fc-filters: |
+    If features in the feature collection include a feature property that has a simple value (for example, a string or integer)
+    that is expected to be useful for applications using the service to filter the features of the collection based on
+    this property, a parameter with the name of the feature property and with the characteristics parameters:/filterParameter
+    SHOULD be supported
+    The schema property SHOULD be the same as the definition of the feature property in the response schema.
+  parameters:/filterParameter:
+    in: query
+    required: false
+    style: form
+    explode: false
+  filterParameterDefinitionExamples:
+    - name: function
+      in: query
+      description: >-
+        Only return buildings of a particular function.
+        Default = return all buildings.
+      required: false
+      schema:
+        type: string
+        enum:
+          - residential
+          - commercial
+          - public use
+      style: form
+      explode: false
+      example: 'function=public+use'
+    - name: name
+      in: query
+      description: >-
+        Only return buildings with a particular name. Use '*' as a wildcard.\
+
+        Default = return all buildings.
+      required: false
+      schema:
+        type: string
+      style: form
+      explode: false
+      example: 'name=A*'
+  req:/core/fc-response:
+    - successful execution of the operation SHALL be reported as a response with a HTTP status code 200.
+    - The response SHALL only include features selected by the request.
+  req:/core/fc-links: |
+    A 200-response SHALL include the following links:
+      - link to this response document (relation: self),
+      - link to the response document in every other media type supported by the service (relation: alternate).
+  rec:/core/fc-next-1: >-
+    A 200-response SHOULD include a link to the next "page" (relation: next), if more features have been selected
+    than returned in the response.
+  rec:/core/fc-next-2: >-
+    Dereferencing a next link SHOULD return additional features from the set of selected features that have not yet
+    been returned.
+  rec:/core/fc-next-3: >-
+    The number of features in a response to a next link SHOULD follow the same rules as for the response to the original
+    query and again include a next link, if there are more features in the selection that have not yet been returned.
+  per:/core/fc-prev: A response to a next link MAY include a prev link to the resource that included the next link.
+  req:/core/fc-rel-type: All links SHALL include the rel and type link parameters.
+  req:/core/fc-timeStamp: >-
+    If a property timeStamp is included in the response, the value SHALL be set to the time stamp when the response
+    was generated.
+  req:/core/fc-numberMatched:
+    - If a property numberMatched is included in the response, the value SHALL be identical to the number of features
+      in the feature collections that match the selection parameters like bbox, datetime or additional filter parameters.
+    - A server MAY omit this information in a response, if the information about the number of matching features is not
+      known or difficult to compute.
+  req:/core/fc-numberReturned:
+    - If a property numberReturned is included in the response, the value SHALL be identical to the number of features
+      in the response.
+    - A server MAY omit this information in a response, if the information about the number of features in the response
+      is not known or difficult to compute.
+/items/{featureId}(7.16):
+  title: Feature
+  path: /collections/{collectionId}/items/{featureId}
+  req:/core/f-op:
+    - For every feature in a feature collection (path /collections/{collectionId}), the server SHALL support the HTTP GET
+      operation at the path /collections/{collectionId}/items/{featureId}.
+    - The parameter collectionId is each id property in the feature collections response (JSONPath: $.collections[*].id).
+      featureId is a local identifier of the feature.
+  per:/core/f-id: >-
+    The Core requirements class only requires that the feature URI is unique. Implementations MAY apply stricter rules and,
+    for example, use unique id values per dataset or collection.
+  req:/core/f-success: A successful execution of the operation SHALL be reported as a response with a HTTP status code 200.
+  req:/core/f-links:
+    - |
+      A 200-response SHALL include the following links in the response:
+        - link to the response document (relation: self),
+        - link to the response document in every other media type supported by the service (relation: alternate), and
+          a link to the feature collection that contains this feature (relation: collection).
+    - All links SHALL include the rel and type link parameters.
+req:/html(8.2):
+  title: Requirements Class "HTML"
+  req:/html/definition: Every 200-response of an operation of the server SHALL support the media type text/html.
+  req:/html/content: |
+    Every 200-response of the server with the media type text/html SHALL be a HTML 5 document that includes the following
+    information in the HTML body:
+      - all information identified in the schemas of the Response Object in the HTML <body>, and
+      - all links in HTML <a> elements in the HTML <body>.
+  rec:/html/schema-org: A 200-response with the media type text/html, SHOULD include Schema.org annotations.
+req:/geojson(8.3):
+  title: Requirements Class "GeoJSON"
+  req:/geojson/definition: |
+    200-responses of the server SHALL support the following media types:
+      application/geo+json for resources that include feature content, and
+      application/json for all other resources.
+  req:/geojson/content:
+    - |
+      Every 200-response with the media type application/geo+json SHALL be
+        - a GeoJSON FeatureCollection Object for features (schemas:/featureCollectionGeoJSON.yaml), and
+        - a GeoJSON Feature Object for a single feature.
+    - The links specified in the requirements /req/core/fc-links and /req/core/f-links SHALL be added in a extension property
+      (foreign member) with the name links.
+    - The schema of all responses with the media type application/json SHALL conform with the JSON Schema specified
+      for the resource in the Core requirements class.
+  schemas:/featureCollectionGeoJSON.yaml:
+    type: object
+    required:
+      - type
+      - features
+    properties:
+      type:
+        type: string
+        enum:
+          - FeatureCollection
+      features:
+        type: array
+        items:
+          $ref: featureGeoJSON.yaml
+      links:
+        type: array
+        items:
+          $ref: link.yaml
+      timeStamp:
+        type: string
+        format: date-time
+      numberMatched:
+        type: integer
+        minimum: 0
+      numberReturned:
+        type: integer
+        minimum: 0
+  GeoJSONFeatureCollectionObjectResponseExample:
+    title: Example 12. A GeoJSON FeatureCollection Object response
+    description: In the example below, only the first and tenth feature is shown. Coordinates are not shown.
+    example:
+      type: FeatureCollection
+      links:
+        - href: 'http://data.example.com/collections/buildings/items?f=json'
+          rel: self
+          type: application/geo+json
+          title: 'this document'
+        - href: 'http://data.example.com/collections/buildings/items?f=html'
+          rel: alternate
+          type: text/html
+          title: 'this document as HTML'
+        - href: 'http://data.example.com/collections/buildings/items?f=json&offset=10&limit=10'
+          rel: next
+          type: application/geo+json
+          title: 'next page'
+      timeStamp: '2018-04-03T14:52:23Z'
+      numberMatched: 123
+      numberReturned: 10
+      features:
+        - type: Feature
+          id: '123'
+          geometry:
+            type: Polygon
+            coordinates: { ... }
+          properties:
+            function: residential
+            floors: '2'
+            lastUpdate: '2015-08-01T12:34:56Z'
+        - ...
+        - type: Feature
+          id: '132'
+          geometry:
+            type: Polygon
+            coordinates: { ... }
+          properties:
+            function: 'public use'
+            floors: '10'
+            lastUpdate: '2013-12-03T10:15:37Z'
+  GeoJSONFeatureObjectResponseExample:
+    title: Example 13. A GeoJSON Feature Object response
+    description: In the example below, coordinates are not shown.
+    example:
+      type: Feature
+      links:
+        - href: 'http://data.example.com/collections/buildings/items/123?f=json'
+          rel: self
+          type: application/geo+json
+          title: 'this document'
+        - href: 'http://data.example.com/collections/buildings/items/123?f=html'
+          rel: alternate
+          type: text/html
+          title: 'this document as HTML'
+        - href: 'http://data.example.com/collections/buildings'
+          rel: collection
+          type: application/json
+          title: 'the collection document'
+      id: '123'
+      geometry:
+        type: Polygon
+        coordinates: [ ... ]
+      properties:
+        function: residential
+        floors: '2'
+        lastUpdate: '2015-08-01T12:34:56Z'
+req:/gmlsf0(8.4):
+  title: 8.4. Requirements Class "Geography Markup Language (GML), Simple Features Profile, Level 0"
+req:/gmlsf2(8.5):
+  title: 8.5. Requirements Class "Geography Markup Language (GML), Simple Features Profile, Level 2"
+req:/oas30(9):
+  title: 9. Requirements class "OpenAPI 3.0"
+  req:/oas30/oas-definition-1: >-
+    An OpenAPI definition in JSON using the media type application/vnd.oai.openapi+json;version=3.0 and a HTML version
+    of the API definition using the media type text/html SHALL be available.
+  req:/oas30/oas-definition-2: The JSON representation SHALL conform to the OpenAPI Specification, version 3.0.
+  req:/oas30/oas-impl: The server SHALL implement all capabilities specified in the OpenAPI definition.
+  req:/oas30/completeness:
+    - The OpenAPI definition SHALL specify for each operation all HTTP Status Codes and Response Objects
+      that the server uses in responses.
+    - This includes the successful execution of an operation as well as all error situations that originate from the server.
+  req:/oas30/exceptions-codes: >-
+    For error situations that originate from the server, the API definition SHALL cover all applicable HTTP Status Codes.
+  schemas:/exception.yaml:
+    type: object
+    required:
+      - code
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+  example:
+    title: Example 14. An exception response object definition
+    example:
+      description: An error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/exception.yaml
+        text/html:
+          schema:
+            type: string
+  req:/oas30/security: |
+    For cases, where the operations of the server are access-controlled, the security scheme(s) SHALL be documented
+    in the OpenAPI definition.
+
+    The OpenAPI specification currently supports the following security schemes:
+      - HTTP authentication,
+      - an API key (either as a header or as a query parameter),
+      - OAuth2’s common flows (implicit, password, application and access code) as defined in RFC6749, and
+      - OpenID Connect Discovery.
+  rec:/oas30/f-key-properties: |
+    The schema for the Response Objects of the HTTP GET operation for features SHOULD include key feature properties
+    of the features in that feature collection.
+
+    This is particularly helpful if filter parameters are defined for the collection (see recommendation /rec/core/fc-filters).
+mediaTypes(10):
+security(11):
+eof:

@@ -3,38 +3,86 @@
 name: ftps.php
 title: fts.php - exposition de données au protocoles API Features
 doc: |
+  Proxy exposant des données initialement stocké soit dans un serveur WFS, soit dans une BD, soit dans un fichier GeoJSON.
+  
+  Définir un fichier stockant des options et des paramètres ?
+    - utilisé comme cache pour renseigner certains paramètres pour éviter de les interroger systématiquement ?
+    - renseigner des paramètres complémentaire, ex quel id dans une table ?
+    - fournir de la doc complémentaire ?
+    - reprendre la logique de raccourci ?
+
   Exemples:
     - https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
-    - http://localhost/geovect/features/features.php/wfs/services.data.shom.fr/INSPIRE/wfs
+    - http://localhost/geovect/features/fts.php/wfs/services.data.shom.fr/INSPIRE/wfs
+
+  https://features.geoapi.fr/{raccourci}
+  https://features.geoapi.fr/pgsql/benoit@db207552-001.dbaas.ovh.net/comhisto/public
+  https://features.geoapi.fr/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m/countries
+  https://features.geoapi.fr/file/{path}
+  https://features.geoapi.fr/wfs/referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
+  https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
 journal: |
   30/12/2020:
     - création
 */
 require_once __DIR__.'/../vendor/autoload.php';
-require_once __DIR__.'/wfsserver.inc.php';
+require_once __DIR__.'/onwfs.inc.php';
+require_once __DIR__.'/onfile.inc.php';
+require_once __DIR__.'/onsql.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+//echo "<pre>"; print_r($_SERVER); die();
+
 ini_set('memory_limit', '1G');
 
-static $raccourcis = [
+define('RACCOURCIS', [
   'shomwfs'=> '/wfs/services.data.shom.fr/INSPIRE/wfs',
-  'igngpwfs'=> '/wfs,referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs',
-];
+  'igngpwfs'=> '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr',
+  'test@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect',
+  'ne_110m@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m',
+  'ne_10m@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m',
+  'route500@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500',
+  'localgis'=> '/pgsql/docker@172.17.0.4/gis/public',
+  'comhisto'=> '/pgsql/benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public',
+]
+);
 
 define('EXEMPLES_DAPPELS', [
-  'features.php/wfs/services.data.shom.fr/INSPIRE/wfs',
-  'features.php/wfs/services.data.shom.fr/INSPIRE/wfs/collections',
-  'features.php/wfs/services.data.shom.fr/INSPIRE/wfs/collections/DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary',
-  'features.php/shomwfs',
-  'features.php/shomwfs/collections',
-  'features.php/shomwfs/collections/DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary',
-  'features.php/igngpwfs',
-  'features.php/igngpwfs/collections',
-  'features.php/igngpwfs/collections/BDCARTO_BDD_WLD_WGS84G:region',
-  'features.php/igngpwfs/collections/BDCARTO_BDD_WLD_WGS84G:region/items',
-  
-]);
+  'wfs/services.data.shom.fr/INSPIRE/wfs' => [
+    'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary',
+  ],
+  'shomwfs' => [
+    'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary',
+  ],
+  'igngpwfs' => [
+    'BDCARTO_BDD_WLD_WGS84G:region',
+  ],
+  'file/var/www/html/geovect/fcoll/ne_10m' => [
+    'admin_0_countries'=> 'count=5&startindex=100',
+  ],
+  'mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m'=> [],
+  'ne_110m@mysql' => [
+    'admin_0_countries' => 'count=10&startindex=5',
+  ],
+  'ne_10m@mysql' => [
+    'admin_0_countries' => 'count=10&startindex=5',
+  ],
+  'route500@mysql' => [
+    'troncon_voie_ferree' => 'count=10&startindex=5',
+  ],
+  '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect'=>[],
+  'test@mysql' => [
+    'unchampstretunegeom' => 'count=10',
+  ],
+  'localgis'=> [
+    'departement_carto' => 'count=5&startindex=10&f=json',
+  ],
+  'comhisto'=> [
+    'comhistog3',
+  ],
+]
+);
 
 // génère un affichage en JSON ou Yaml en fonction du paramètre $f
 function output(string $f, array $array, int $levels=3) {
@@ -63,77 +111,129 @@ switch ($f = $_GET['f'] ?? 'yaml') {
 
 if (!isset($_SERVER['PATH_INFO'])) {
   echo "Raccourcis:\n";
-  foreach ($raccourcis as $raccourci => $url) {
-    echo "  - <a href='features.php/$url'>$raccourci</a>\n";
+  foreach (RACCOURCIS as $raccourci => $url) {
+    echo "  - <a href='fts.php$url'>$raccourci</a> => $url\n";
   }
   echo "Exemples:\n";
-  foreach (EXEMPLES_DAPPELS as $ex) {
-    echo "  - <a href='$ex'>$ex</a>\n";
+  foreach (EXEMPLES_DAPPELS as $ex => $colls) {
+    echo "  - <a href='fts.php/$ex'>$ex</a>\n";
+    echo "    - <a href='fts.php/$ex/collections'>collections</a>,";
+    echo " <a href='fts.php/$ex/check'>check</a>\n";
+    foreach ($colls as $collid => $params) {
+      if (is_int($collid)) {
+        $collid = $params;
+        $params = '';
+      }
+      echo "    - <a href='fts.php/$ex/collections/$collid/describedBy'>collections/$collid/describedBy</a>\n";
+      $url = "collections/$collid/items".($params ? "?$params" : '');
+      echo "      - <a href='fts.php/$ex/$url'>$url</a>\n";
+    }
   }
   die();
 }
 
-if (preg_match('!^((/[^/]+)+)/collections(/([^/]+)(/items)?)?$!', $_SERVER['PATH_INFO'], $matches)) { // test avec /collections
-  //echo 'matches='; print_r($matches);
+if (preg_match('!^((/[^/]+)+)/check!', $_SERVER['PATH_INFO'], $matches)) {
   $fserverId = $matches[1];
-  $colls = true;
-  $collId = $matches[4] ?? null;
-  $items = $matches[3] ?? null;
+  $action = 'check';
+  $action2 = null;
+}
+
+// détermination de la partie $fserverId
+// détection de /collections
+elseif (preg_match('!^((/[^/]+)+)/collections!', $_SERVER['PATH_INFO'], $matches)) {
+  if (!preg_match('!^((/[^/]+)+)/collections(/([^/]+)(/items(/.*)?|/describedBy|/createPrimaryKey)?)?$!',
+      $_SERVER['PATH_INFO'], $matches))
+    output($f, ['error'=> "no match for '$_SERVER[PATH_INFO]'"]);
+  //echo 'matches1='; print_r($matches);
+  $fserverId = $matches[1];
+  $action = 'collections'; // liste des collections demandée
+  $collId = $matches[4] ?? null; // collection définie
+  $action2 = $matches[5] ?? null; // /items | /describedBy | /createPrimaryKey
+  $itemId = isset($matches[6]) ? substr($matches[6], 1) : null;
 }
 else { // sinon, c'est l'URL ou un raccourci
   $fserverId = $_SERVER['PATH_INFO'];
-  $colls = false;
+  $action = null; // aucune action
 }
 
-if (preg_match('!^/([^/]+)$!', $fserverId, $matches)) { // si raccourci
+// détection du cas d'utilisation d'un raccourci et dans ce cas transformation dans le path résolu
+if (preg_match('!^/([^/]+)$!', $fserverId, $matches)) {
+  //echo 'matches2='; print_r($matches);
   $raccourci = $matches[1];
   //echo "raccourci $raccourci<br>\n";
-  if (!isset($raccourcis[$raccourci]))
+  if (!isset(RACCOURCIS[$raccourci]))
     output($f, ['error'=> "$raccourci n'est pas un raccourci enregistré"]);
-  $fserverId = $raccourcis[$raccourci];
-  echo "fserverId=$fserverId<br>\n";
+  $fserverId = RACCOURCIS[$raccourci];
+  //echo "fserverId=$fserverId<br>\n";
 }
-if (!preg_match('!^/(wfs|wfs(,[^/]*)|pgsql|mysql|file)(/.*)$!', $fserverId, $matches)) {
+
+// identification du type de serveur et de son path
+if (!preg_match('!^/(wfs|pgsql|mysql|file)(/.*)$!', $fserverId, $matches)) {
   output($f, ['error'=> "no match for '$_SERVER[PATH_INFO]'"]);
 }
-echo 'matches='; print_r($matches);
+//echo 'matches3='; print_r($matches);
 $type = $matches[1];
-$wfsOptions = $matches[2];
-$path = $matches[3];
-$httpOptions = [];
-if ($wfsOptions && preg_match('!^,referer=(.*)$!', $wfsOptions, $matches)) {
-  echo 'matches='; print_r($matches);
-  $httpOptions = ['referer'=> "http://$matches[1]/"];
-  $type = 'wfs';
-}
+$path = $matches[2];
 switch($type) {
   case 'wfs': {
-    $fServer = new FeaturesProxyForWfs("https:/$path", $httpOptions);
+    $fServer = new FeatureServerOnWfs("https:/$path");
     break;
   }
+  case 'file': {
+    $fServer = new FeatureServerOnFile($path);
+    break;
+  }
+  case 'mysql':
+  case 'pgsql': {
+    $fServer = new FeatureServerOnSql("$type:/$path");
+    break;
+  }
+  
+  default: output($f, ['error'=> "traitement $type non défini"]);
 }
-if (!$colls) {
-  output($f, $fServer->home());
+
+if (!$action) { // /
+  output($f, $fServer->landingPage());
 }
-elseif (!$collId) {
+elseif ($action == 'check') { // /check
+  //output($f, $fServer->checkTables());
+  foreach ($fServer->checkTables() as $tableName => $tableProp) {
+    //echo Yaml::dump([$tableName => $tableProp]);
+    echo "$tableName:\n";
+    if ($tableProp['geomColumnNames'])
+      echo "  geom ",implode(', ', $tableProp['geomColumnNames'])," ok\n";
+    else
+      echo "  geom KO\n";
+    if ($tableProp['pkColumnName'])
+      echo "  pk ok\n";
+    else
+      echo "  <a href='$_SERVER[SCRIPT_NAME]$fserverId/collections/$tableName/createPrimaryKey'>Créer une clé primaire</a>\n";
+  }
+  die();
+}
+elseif (!$collId) { // /collections
   output($f, $fServer->collections(), 4);
 }
-else { // /collections/{collId}/items
+elseif (!$action2) { // /collections/{collId}
+  output($f, $fServer->collection($collId), 4);
+}
+elseif ($action2 == '/describedBy') { // /collections/{collId}/describedBy
+  output($f, $fServer->collDescribedBy($collId), 6);
+}
+elseif ($action2 == '/createPrimaryKey') { // /collections/{collId}/createPrimaryKey
+  $fServer->repairTable('createPrimaryKey', $collId);
+}
+elseif (!$itemId) { // /collections/{collId}/items
   output($f,
     $fServer->items(
       collId: $collId,
-      bbox: $_GET['bbox'] ?? [],
+      bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
       count: $_GET['count'] ?? 100,
       startindex: $_GET['startindex'] ?? 0
     ), 6
   );
 }
+else { // /collections/{collId}/items/{itemId}
+  output($f, $fServer->item($collId, $itemId), 6);
+}
 
-/*
-https://features.geoapi.fr/{raccourci}
-https://features.geoapi.fr/pgsql/benoit@db207552-001.dbaas.ovh.net/comhisto/public
-https://features.geoapi.fr/mysql/{user}@{host}/{database}
-https://features.geoapi.fr/file/{path}
-https://features.geoapi.fr/wfs/referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
-https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
-*/

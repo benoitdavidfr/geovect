@@ -1,19 +1,19 @@
 <?php
 /*PhpDoc:
-name: wfsserver.inc.php
-title: lib/wfsserver.inc.php - fonctionnalités communes au serveur WFS Gml et au serveur WFS GeoJSON
+name: onwfs.inc.php
+title: onwfs.inc.php - simule un service API Features au dessus d'un serveur WFS
 functions:
 doc: |
-  Code repris de YamlDoc
   Définition de 3 classes:
     - WfsServer - classe abstraite des fonctionnalités communes Gml et GeoJSON
-    - WfsGeoJson - serveur WFS retournat du GeoJSON comme ceux du Shom ou de l'IGN
-    - FeaturesApi - interface Feature API d'un serveur WfsGeoJson
+    - WfsGeoJson - serveur WFS retournant du GeoJSON comme ceux du Shom ou de l'IGN
+    - FeatureServerOnWfs - interface Feature API d'un serveur WfsGeoJson
 journal: |
-  28/12/2020:
-    - reprise de YamlDoc
+  30/12/2020:
+    - reprise de shomgt
 */
 require_once __DIR__.'/../vendor/autoload.php';
+require_once __DIR__.'/ftrserver.inc.php';
 //require_once __DIR__.'/../config.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
@@ -23,7 +23,7 @@ abstract class WfsServer {
   const CAP_CACHE = __DIR__.'/wfscapcache'; // nom du répertoire dans lequel sont stockés les fichiers XML
                                             // de capacités ainsi que les DescribeFeatureType en json
   protected string $serverUrl; // URL du serveur
-  protected array $options; // sous la forme ['option'=> valeur]
+  protected array $options; // sous la forme ['option'=> valeur] avec option valant referer et/ou proxy
   
   function __construct(string $serverUrl, array $options=[]) {
     $this->serverUrl = $serverUrl;
@@ -269,22 +269,23 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
   }
 };
 
-interface FeaturesProxy {
-  function home(): array;
-  function collections(): array; // retourne la liste des collections
-  function collection(string $id): array; // retourne la description du FeatureType de la collection
-  // retourne les items de la collection comme array Php
-  function items(string $collId, array $bbox=[], int $count=100, int $startindex=0): array;
-  // retourne l'item $id de la collection comme array Php
-  function item(string $collId, string $featureId): array;
-};
-
-class FeaturesProxyForWfs extends WfsGeoJson implements FeaturesProxy { // transforme un serveur WFS en Api Features
-  function home(): array { return ['home'=> 'home']; }
+class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Features d'un serveur WFS
+  protected WfsGeoJson $wfsServer;
+  
+  function __construct(string $serverUrl, array $options=[]) {
+    // avec dans $options, evt un proxy
+    if ($pos = strpos($serverUrl, '?referer=')) {
+      $options['referer'] = substr($serverUrl, $pos+9);
+      $serverUrl = substr($serverUrl, 0, $pos);
+    }
+    $this->wfsServer = new WfsGeoJson($serverUrl, $options);
+  }
+  
+  function landingPage(): array { return ['home'=> 'home']; }
   
   function collections(): array { // retourne la liste des collections
     $collections = [];
-    foreach ($this->featureTypeList() as $typeId => $type) {
+    foreach ($this->wfsServer->featureTypeList() as $typeId => $type) {
       $collections[] = [
         'id'=> $typeId,
         'title'=> $type['Title'],
@@ -293,19 +294,23 @@ class FeaturesProxyForWfs extends WfsGeoJson implements FeaturesProxy { // trans
     return $collections;
   }
   
-  function collection(string $id): array { // retourne la description du FeatureType de la collection
-    return $this->describeFeatureType($id);
+  function collection(string $id): array { // retourne la description de la collection
+    return ['id'=> $id, 'title'=> $id];
+  }
+  
+  function collDescribedBy(string $collId): array { // retourne la description du FeatureType de la collection
+    return $this->wfsServer->describeFeatureType($collId);
   }
   
   // retourne les items de la collection comme array Php
-  function items(string $collId, array $bbox=[], int $count=100, int $startindex=0): array {
-    $items = $this->getFeatureAsArray(
+  function items(string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array {
+    $items = $this->wfsServer->getFeatureAsArray(
       typename: $collId,
       bbox: $bbox,
       count: $count,
       startindex: $startindex
     );
-    return $items;
+    return $items['features'];
   }
   
   // retourne l'item $id de la collection comme array Php
@@ -336,7 +341,7 @@ switch ($f = $_GET['f'] ?? 'yaml') {
 }
 
 if (!isset($_SERVER['PATH_INFO'])) {
-  FeaturesApi::output($f, ['home'=> 'home']);
+  FeatureServerFromWfs::output($f, ['home'=> 'home']);
 }
 
 if (!preg_match('!^/collections(/([^/]+))?(/items)?$!', $_SERVER['PATH_INFO'], $matches)) {
