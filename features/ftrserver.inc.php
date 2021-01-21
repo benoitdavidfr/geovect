@@ -1,34 +1,42 @@
 <?php
 /*PhpDoc:
 name: ftrserver.inc.php
-title: ftrserver.inc.php - interface d'un serveur de Feature conforme au standard API Features
+title: ftrserver.inc.php - code générique d'un serveur de Feature conforme au standard API Features
 doc: |
-  Est-ce une abstract class ou une interface ?
+  Gère aussi l'aguillage vers les différents types de serveur par la méthode new()
 classes:
 journal: |
+  17-20/12/2020:
+    - évolutions
   30/12/2020:
     - création
+includes:
+  - onwfs.inc.php
+  - onfile.inc.php
+  - onsql.inc.php
 */
 use Symfony\Component\Yaml\Yaml;
 
 /*PhpDoc: classes
 name: FeatureServer
-title: abstract class FeatureServer - interface d'un serveur de Feature conforme au standard API Features
+title: abstract class FeatureServer - code générique d'un serveur de Feature conforme au standard API Features
 methods:
 doc: |
 */
 abstract class FeatureServer {
-  const LOG_FILENAME = __DIR__.'/fts_logfile.yaml';
+  const LOG_FILENAME = __DIR__.'/fts_logfile.yaml'; // chemin du fichier Yaml de log, si vide alors pas de log
+  protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données
   
-  // écrit un message dans le fichier des logs
-  static function log(string $message): void {
-    if (self::LOG_FILENAME)
-      file_put_contents(
-        self::LOG_FILENAME,
-        "'".date('Y-m-d').'T'.date('H:i:s')."': $message\n",
-        FILE_APPEND
-      )
-      or die("Erreur d'ecriture dans le fichier de logs dans FeatureServer");
+  static function log(string|array $message): void { // écrit un message dans le fichier Yaml des logs
+    if (!self::LOG_FILENAME)
+      return;
+    $dt = "'".date('Y-m-d').'T'.date('H:i:s')."'";
+    file_put_contents(
+      self::LOG_FILENAME,
+      Yaml::dump([$dt => $message]),
+      FILE_APPEND
+    )
+    or die("Erreur d'ecriture dans le fichier de logs dans FeatureServer");
   }
   
   static function selfUrl(): string { // Url d'appel sans les paramètres GET
@@ -36,16 +44,46 @@ abstract class FeatureServer {
           ."://$_SERVER[HTTP_HOST]$_SERVER[SCRIPT_NAME]$_SERVER[PATH_INFO]";
   }
   
+  // création des différents types de FeatureServer
+  static function new(string $type, string $path, ?DatasetDoc $datasetDoc): self {
+    switch($type) {
+      case 'wfs': return new FeatureServerOnWfs("https:/$path", $datasetDoc);
+      case 'file': return new FeatureServerOnFile($path, $datasetDoc);
+      case 'mysql':
+      case 'pgsql': return new FeatureServerOnSql("$type:/$path", $datasetDoc);
+      default: output($f, ['error'=> "traitement $type non défini"]);
+    }
+  }
+  
   function landingPage(string $f): array { // retourne l'info de la landing page
     $selfurl = self::selfUrl();
     $dataId = substr($_SERVER['REQUEST_URI'], strlen($_SERVER['SCRIPT_NAME']));
+    $title = $this->datasetDoc->title ?? null;
     return [
-      'title'=> "Access to $dataId data using OGC API Features specification",
-      'description'=> "Access to $dataId data via a Web API that conforms to the OGC API Features"
-        ." specification.",
+      'title'=> $title ?? "Access to $dataId data using OGC API Features specification",
+      'description'=>
+        $title ?
+          "Accès au jeu de données \"$title\" au travers d'une API conforme à la norme OGC API Features" :
+          "Access to $dataId data via a Web API that conforms to the OGC API Features specification.",
       'links'=> [
-        [ 'href'=> $selfurl, 'rel'=> 'self', 'type'=> 'application/json', 'title'=> "this document in JSON" ],
-        [ 'href'=> $selfurl, 'rel'=> 'self', 'type'=> 'text/html', 'title'=> "this document in HTML" ],
+        [
+          'href'=> $selfurl,
+          'rel'=> ($f == 'json') ? 'self' : 'alternate',
+          'type'=> 'application/json',
+          'title'=> "this document in JSON",
+        ],
+        [
+          'href'=> $selfurl,
+          'rel'=> ($f == 'html') ? 'self' : 'alternate',
+          'type'=> 'text/html',
+          'title'=> "this document in HTML",
+        ],
+        [
+          'href'=> $selfurl,
+          'rel'=> ($f == 'yaml') ? 'self' : 'alternate',
+          'type'=> 'application/x-yaml',
+          'title'=> "this document in Yaml",
+        ],
         [
           'href'=> "$selfurl/api",
           'rel'=> 'service-desc',
@@ -69,6 +107,12 @@ abstract class FeatureServer {
           'rel'=> 'data',
           'type'=> 'text/html',
           'title'=> "Information about the feature collections in HTML",
+        ],
+        [
+          'href'=> "$selfurl/collections",
+          'rel'=> 'data',
+          'type'=> 'application/json',
+          'title'=> "Information about the feature collections in JSON",
         ],
       ],
     ];
@@ -102,9 +146,9 @@ abstract class FeatureServer {
       'title'=> title,
     ]
   */
-  abstract function collections(): array;
+  abstract function collections(string $f): array;
   
-  abstract function collection(string $collId): array;
+  abstract function collection(string $f, string $collId): array;
 
   abstract function collDescribedBy(string $collId): array; // retourne la description du FeatureType de la collection
   
@@ -114,3 +158,7 @@ abstract class FeatureServer {
   // retourne l'item $id de la collection comme array Php
   abstract function item(string $collId, string $featureId): array;
 };
+
+require_once __DIR__.'/onwfs.inc.php';
+require_once __DIR__.'/onfile.inc.php';
+require_once __DIR__.'/onsql.inc.php';

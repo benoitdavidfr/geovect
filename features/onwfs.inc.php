@@ -272,16 +272,17 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
 class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Features d'un serveur WFS
   protected WfsGeoJson $wfsServer;
   
-  function __construct(string $serverUrl, array $options=[]) {
+  function __construct(string $serverUrl, ?DatasetDoc $datasetDoc, array $options=[]) {
     // avec dans $options, evt un proxy
     if ($pos = strpos($serverUrl, '?referer=')) {
       $options['referer'] = substr($serverUrl, $pos+9);
       $serverUrl = substr($serverUrl, 0, $pos);
     }
     $this->wfsServer = new WfsGeoJson($serverUrl, $options);
+    $this->datasetDoc = $datasetDoc;
   }
   
-  function collections(): array { // retourne la liste des collections
+  function collections(string $f): array { // retourne la liste des collections
     $collections = [];
     foreach ($this->wfsServer->featureTypeList() as $typeId => $type) {
       $collections[] = [
@@ -292,7 +293,7 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
     return $collections;
   }
   
-  function collection(string $id): array { // retourne la description de la collection
+  function collection(string $f, string $id): array { // retourne la description de la collection
     return ['id'=> $id, 'title'=> $id];
   }
   

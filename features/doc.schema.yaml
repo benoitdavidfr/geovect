@@ -1,0 +1,245 @@
+title: schéma JSON de la documentation
+abstract: |
+  L'objectif est de définir une doc des jeux de données exposés en s'inspirant des schema JSON
+  et permettant de générer facilement un schéma JSON.
+  Cette doc définit:
+    - la structuration des données
+    - la définition des jeux de données, de leurs collections, de leurs propriétés, des valeurs en cas de type énuméré.
+    - la définition du type de géométrie de chaque collection
+  La documentation d'un jeu de données peut être partielle.
+$id: http://feature.geoapi.fr/schema/doc
+$schema: http://json-schema.org/draft-06/schema#
+definitions:
+  link:
+    description: définition d'un lien Web (RFC 8288)
+    type: object
+    required: [href]
+    properties:
+      href:
+        type: string
+        example: http://data.example.com/buildings/123
+      rel:
+        type: string
+        example: alternate
+      type:
+        type: string
+        example: application/geo+json
+      hreflang:
+        type: string
+        example: en
+      title:
+        type: string
+        example: Trierer Strasse 70, 53115 Bonn
+      length:
+        type: integer
+  enumType:
+    description: |
+      description d'un type énuméré soit par une liste de valeurs autorisées soit par un dictionnaire des valeurs
+      permettant de détailler chaque valeur.
+    oneOf:
+      - description: description par la liste des valeurs autorisées
+        type: array
+        items:
+          type: string
+      - description: description par un dictionnaire indexé sur chaque valeur autorisée
+        type: object
+        patternProperties:
+          ^[-a-zA-Z0-9_]*$:
+            description: description de la valeur
+            type: object
+            additionalProperties: false
+            required: [label]
+            properties:
+              label:
+                description: étiquette associée destinée à un humain
+                type: string
+              description:
+                description: description plus détaillée de la valeur, comprend définition, critère de sélection, ...
+  property:
+    description: |
+      description d'une propriété d'une collection.
+      Contrairement aux schema JSON, si enum est utilisé le type n'est pas nécessaire.
+    type: object
+    additionalProperties: false
+    required: [title]
+    properties:
+      title:
+        description: titre de la propriété destiné à un humain
+        type: string
+      description:
+        description: descriptions plus détaillée de la propriété
+        type: string
+      mandatory:
+        description: Une valeur est-elle obligatoire pour cette propriété ?
+        type: string
+        enum: [yes, no]
+      identifier:
+        description: Propriété identifiant l'objet (clé primaire)
+        type: string
+        enum: [yes, no]
+      type:
+        description: type de la propriété
+        type: string
+        enum:
+          - string
+          - integer
+          - number
+      enum:
+        $ref: '#/definitions/enumType'
+      unit:
+        description: si la propriété décrit une mesure alors indique l'unité de cette mesure
+        enum:
+          - tonne
+          - meter
+      specificValues:
+        description: |
+          si certaines valeurs ont une signification particulière alors liste de ces valeurs et de leur signification
+          sous la forme d'un dictionnaire indiquant pour chaque valeur sa signification.
+        oneOf:
+          - type: object
+            patternProperties:
+              ^[-a-zA-Z0-9_\.]*$:
+                description: signification de la valeur
+                type: string
+          - description: cas particulier où les valeurs sont les premiers entiers positifs ou nuls
+            type: array
+  elementaryGeometryTypeType:
+    description: type géométrique élémentaire
+    type: string
+    enum:
+      - Point
+      - Point2D
+      - Point3D
+      - MultiPoint
+      - MultiPoint2D
+      - MultiPoint3D
+      - LineString
+      - LineString2D
+      - LineString3D
+      - MultiLineString
+      - MultiLineString2D
+      - MultiLineString3D
+      - Polygon
+      - Polygon2D
+      - Polygon3D
+      - MultiPolygon
+      - MultiPolygon2D
+      - MultiPolygon3D
+      - GeometryCollection
+      - none
+  collection:
+    description: description d'une collection d'un jeu de données
+    type: object
+    additionalProperties: false
+    required: [title, geometryType]
+    properties:
+      title:
+        description: titre de la collection destiné à un humain
+        type: string
+      description:
+        description: |
+          description plus détaillée, comprend la définition, les critères de sélection, ...
+          Possibilité d'utiliser du markdown.
+        type: string
+      geometryType:
+        description: |
+          Type(s) de géométrie des objets de la classe.
+          Construit à partir du type GeoJSON en y ajoutant éventuellement 2D/3D ainsi que le type none
+          indiquant que les objets n'ont pas de géométrie.
+          Peut être soit un type ou une liste de types possibles.
+        oneOf:
+          - $ref: '#/definitions/elementaryGeometryTypeType'
+          - type: array
+            items:
+              $ref: '#/definitions/elementaryGeometryTypeType'
+        enum:
+          - Point
+          - Point2D
+          - Point3D
+          - MultiPoint
+          - MultiPoint2D
+          - MultiPoint3D
+          - LineString
+          - LineString2D
+          - LineString3D
+          - MultiLineString
+          - MultiLineString2D
+          - MultiLineString3D
+          - Polygon
+          - Polygon2D
+          - Polygon3D
+          - MultiPolygon
+          - MultiPolygon2D
+          - MultiPolygon3D
+          - GeometryCollection
+          - none
+      properties:
+        description: |
+          Dictionnaire des propriétés des items de la collection indexé sur le nom de la propriété.
+          La description est optionelle.
+        type: object
+        patternProperties:
+          ^[-a-zA-Z0-9_]*$:
+            $ref: '#/definitions/property'
+  dataset:
+    type: object
+    additionalProperties: false
+    required: [title, path]
+    properties:
+      title:
+        description: titre du jeu de données
+        type: string
+      abstract:
+        description: résumé du jeu de données
+        type: string
+      source:
+        description: URL de référence du jeu de données
+        type: string
+      licence:
+        description: définition de la licence d'utilisation des données
+        $ref: '#/definitions/link'
+      path:
+        description: chemin du jeu de données pour https://features.geoapi.fr/
+        type: string
+      doc_url:
+        description: lien vers une documentation plus complète
+        type: string
+        format: uri
+      metadata:
+        description: lien vers des MD par ex. ISO 19139
+        type: string
+        format: uri
+      precision:
+        description: |
+          nbre de chiffres signficatifs dans les coordonnées géographiques
+          ex: 4 => résolution de de 1e-4 degrés soit 1e-4° * 40 km / 360° = 11 m
+      collections:
+        description: dictionnaire des collections indexées sur l'id de la collection
+        type: object
+        patternProperties:
+          ^[-a-zA-Z0-9_]*$:
+            $ref: '#/definitions/collection'
+type: object
+additionalProperties: false
+required: [title, abstract, $schema, datasets]
+properties:
+  title:
+    description: titre du document
+    type: string
+  abstract:
+    description: résumé du document
+    type: string
+  $schema:
+    description: schéma JSON du document défini soit par une référence, soit inline
+    oneOf:
+      - type: string
+      - $ref: http://json-schema.org/schema#
+  datasets:
+    description: dictionnaire des jeux de données documentés indexés par leur id
+    type: object
+    patternProperties:
+      ^[-a-zA-Z0-9_]*$:
+        $ref: '#/definitions/dataset'
+  eof:
+    description: marque de fin de fichier
+    type: 'null'

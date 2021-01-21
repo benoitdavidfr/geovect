@@ -8,12 +8,11 @@ doc: |
   Une collection est une table qui doit avoir une clé primaire qui peut être créé si nécessaire.
   Les champs géométriques doivent être en CRS CRS:84.
   Si la table n'a pas de champ géométrique alors les feature seront créés avec une géométrie null.
-  Si la table a plus d'un champ géométrique alors plusieurs collections seront définies avec chacun des champs.
+  Si la table a plus d'un champ géométrique alors plusieurs collections sont définies, une pour chacun des champs.
   En PgSql les champs de type JSON sont traduits en JSON
-
-  Un premier objectif serait d'utiliser un featureserver avec QGis
-
 journal: |
+  20-21/1/2021:
+    - ajout du schema JSON de chaque collection
   15-17/1/2021:
     - finalisation d'une première version utilisable dans QGis pour onsql
     - reste à:
@@ -25,19 +24,44 @@ includes: [ftrserver.inc.php, ../../phplib/sql.inc.php]
 require_once __DIR__.'/ftrserver.inc.php';
 require_once __DIR__.'/../../phplib/sql.inc.php';
 
+use Symfony\Component\Yaml\Yaml;
+
 /*PhpDoc: classes
-name: Collection
-title: class Collection - Un objet Collection est initialisé par un collId et gère le mapping avec la table et ses colonnes
+name: SqlSchema
+title: class SqlSchema - Début de gestion du schema Sql
 doc: |
-  On ne gère pas le cas de collision entre le nom généré et l'existence de ce nom comme table
-  La création de l'objet génère 2 requêtes Sql dans les cas stds et 3 dans les cas particuliers
+  L'objectif est de gérer les requêtes sur INFORMATION_SCHEMA
 */
-class Collection {
-  protected string $schema;
-  protected string $table_name;
-  protected array $columns; // [[properties]]
-  protected string $idColName; // nom de la colonne clé primaire
-  protected string $geomColName; // nom de la colonne géométrique
+class SqlSchema {
+  // liste les tables du schema avec le nom de la colonne géométrique et le nom de la colonne clé primaire
+  // S'il y a plusieurs colonnes géométriques alors la table est dupliquée pour chacune
+  static function listOfTables(string $schema): array {
+    $sql = [
+      "select t.table_name, g.column_name geom_column_name, pk.column_name pk_column_name\n",
+      "from INFORMATION_SCHEMA.TABLES t\n",
+      "  left join INFORMATION_SCHEMA.columns g\n",
+      "    on g.table_schema=t.table_schema and g.table_name=t.table_name ",
+      [
+        'MySql'=> "and g.data_type='geometry'\n",
+        'PgSql'=> "and g.data_type='USER-DEFINED' and g.udt_schema='public' and g.udt_name='geometry'\n",
+      ],
+      "  join INFORMATION_SCHEMA.key_column_usage pk\n",
+      "    on pk.table_schema=t.table_schema and pk.table_name=t.table_name\n",
+      "where t.table_schema='$schema' ",
+      [
+        'MySql'=> " and pk.constraint_name='PRIMARY'\n",
+      ]
+    ];
+    //echo "sql=",Sql::toString($sql),"\n";
+    $tables = [];
+    foreach (Sql::query($sql) as $tuple) {
+      //print_r($tuple);
+      $table_name = $tuple['TABLE_NAME'] ?? $tuple['table_name'] ?? null;
+      $tables[$table_name][] = $tuple['geom_column_name'];
+    }
+    //print_r($tables);
+    return $tables;
+  }
   
   // liste des colonnes de la table $table_name
   static function listOfColumnsOfTable(string $schema, string $table_name): array { 
@@ -52,21 +76,39 @@ class Collection {
     return Sql::getTuples($sql);
   }
   
-  static function isGeometryColumn(array $column): bool {
+  static function isGeometryColumn(array $column): bool { // la colonne est-elle de type geometry ?
     return ($column['data_type']=='geometry') // MySql
       // PgSql
       || (($column['data_type']=='USER-DEFINED') && ($column['udt_schema']=='public') && ($column['udt_name']=='geometry'));
   }
+
+  // ne fonctionne qu'en PgSql, je ne sais pas le faire en MySql
+  static function isJsonColumn(array $column): bool { return ($column['data_type']=='jsonb'); }
+};
+
+/*PhpDoc: classes
+name: CollOnSql
+title: class CollOnSql - Un objet CollOnSql est initialisé par un collId et gère le mapping avec la table et ses colonnes
+doc: |
+  Ne gère pas le cas de collision entre le nom généré et un nom existant de table
+  La création de l'objet génère 2 requêtes Sql dans les cas stds et 3 dans les cas particuliers
+*/
+class CollOnSql {
+  protected string $schema;
+  protected string $table_name;
+  protected array $columns; // [[properties]]
+  protected string $idColName; // nom de la colonne clé primaire
+  protected string $geomColName; // nom de la colonne géométrique
   
   // $collId peut être soit le nom d'une table soit la concaténation du nom d'une table et du nom d'un de ses champs géom.
   function __construct(string $schema, string $collId) {
     $this->schema = $schema;
-    //echo "listOfColumnsOfTable="; print_r(self::listOfColumnsOfTable($schema, $collId));
-    if ($columns = self::listOfColumnsOfTable($schema, $collId)) { // cas normal 
+    //echo "listOfColumnsOfTable="; print_r(SqlSchema::listOfColumnsOfTable($schema, $collId));
+    if ($columns = SqlSchema::listOfColumnsOfTable($schema, $collId)) { // cas normal 
       $this->table_name = $collId;
       $this->columns = $columns;
       foreach ($columns as $column) {
-        if (self::isGeometryColumn($column))
+        if (SqlSchema::isGeometryColumn($column))
           $this->geomColName = $column['column_name'];
       }
     }
@@ -81,7 +123,7 @@ class Collection {
         throw new Exception("Erreur sur la détection de table_name pour collId='$collId'");
       $this->table_name = $tuples[0]['table_name'];
       $this->geomColName = $tuples[0]['column_name'];
-      $this->columns = self::listOfColumnsOfTable($schema, $this->table_name);
+      $this->columns = SqlSchema::listOfColumnsOfTable($schema, $this->table_name);
       if (!$this->columns)
         throw new Exception("Erreur aucune colonne collId='$collId'");
     }
@@ -101,26 +143,21 @@ class Collection {
     //"collection="; print_r($this);
   }
   
-  function schema(): string { return $this->schema; }
-  function table_name(): string { return $this->table_name; }
-  function columns(): array { return $this->columns; }
-  function idColName(): string { return $this->idColName; }
-  function geomColName(): string { return $this->geomColName; }
+  function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
 };
 
 class FeatureServerOnSql extends FeatureServer {
+  //protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données - déclaré dans la sur-classe
   protected string $path;
-  //protected ?Collection $collection = null;
+  //protected ?CollOnSql $collection = null;
   
-  function __construct(string $path) {
+  function __construct(string $path, ?DatasetDoc $datasetDoc) {
     $this->path = $path;
     //echo "path=$path\n";
     Sql::open($this->path);
+    $this->datasetDoc = $datasetDoc;
   }
   
-  /*function landingPage(): array { // retourne l'info de la landing page
-  }*/
-
   function checkTables(): array { // liste les tables et leur éligibilité comme collection
     $schema = basename($this->path);
     //echo "schema=$schema\n";
@@ -171,7 +208,10 @@ class FeatureServerOnSql extends FeatureServer {
     }
   }
 
-  static function collection_structuration(string $colurl, string $collId): array {
+  // structuration d'une collection pour les réponses à /collections et à /collection/{collId}
+  static function collection_structuration(string $collUrl, string $collId, string $f): array {
+    // Faut-il les 2 liens ? On pourrait avoir plus d'un lien uniquement pour self et alternate !
+    // vérifier ce qui est dit dans la norme
     return [
       'id'=> $collId,
       'title'=> $collId,
@@ -179,13 +219,25 @@ class FeatureServerOnSql extends FeatureServer {
       'crs'=> ['http://www.opengis.net/def/crs/OGC/1.3/CRS84'],
       'links'=> [
         [
-          'href'=> "$colurl/items?f=json",
+          'href'=> "$collUrl/describedBy".(($f<>'json') ? '?f=json' : ''),
+          'rel'=> 'items',
+          'type'=> 'application/json',
+          'title'=> "The JSON schema of the FeatureCollection in JSON",
+        ],
+        [
+          'href'=> "$collUrl/describedBy".(($f<>'html') ? '?f=html' : ''),
+          'rel'=> 'items',
+          'type'=> 'text/html',
+          'title'=> "The JSON schema of the FeatureCollection in Html",
+        ],
+        [
+          'href'=> "$collUrl/items".(($f<>'json') ? '?f=json' : ''),
           'rel'=> 'items',
           'type'=> 'application/geo+json',
           'title'=> "The items in GeoJSON",
         ],
         [
-          'href'=> "$colurl/items?f=html",
+          'href'=> "$collUrl/items".(($f<>'html') ? '?f=html' : ''),
           'rel'=> 'items',
           'type'=> 'text/html',
           'title'=> "The items in HTML",
@@ -334,49 +386,37 @@ class FeatureServerOnSql extends FeatureServer {
     */}
   }
   
-  function collections(): array { // retourne la liste des collections
+  function collections(string $f): array { // retourne la liste des collections
     $schema = basename($this->path);
-    // sélectionne les tables 
-    $sql = [
-      "select t.table_name, g.column_name geom_column_name, pk.column_name pk_column_name\n",
-      "from INFORMATION_SCHEMA.TABLES t\n",
-      "  left join INFORMATION_SCHEMA.columns g\n",
-      "    on g.table_schema=t.table_schema and g.table_name=t.table_name ",
-      [
-        'MySql'=> "and g.data_type='geometry'\n",
-        'PgSql'=> "and g.data_type='USER-DEFINED' and g.udt_schema='public' and g.udt_name='geometry'\n",
-      ],
-      "  join INFORMATION_SCHEMA.key_column_usage pk\n",
-      "    on pk.table_schema=t.table_schema and pk.table_name=t.table_name\n",
-      "where t.table_schema='$schema' ",
-      [
-        'MySql'=> " and pk.constraint_name='PRIMARY'\n",
-      ]
-    ];
-    //echo "sql=",Sql::toString($sql),"\n";
-    $tables = [];
-    foreach (Sql::query($sql) as $tuple) {
-      //print_r($tuple);
-      $table_name = $tuple['TABLE_NAME'] ?? $tuple['table_name'] ?? null;
-      $tables[$table_name][] = $tuple['geom_column_name'];
-    }
-    //print_r($tables);
-    
+    $tables = SqlSchema::listOfTables($schema); // sélectionne les tables du schema
     $selfurl = FeatureServer::selfUrl();
     $colls = [];
     foreach ($tables as $table_name => $geomColumnNames) {
-      if (count($geomColumnNames) <= 1) {
-        $colls[] = self::collection_structuration("$selfurl/${table_name}", $table_name);
+      if (count($geomColumnNames) <= 1) { // cas std avec une collection 
+        //$collDoc = $doc
+        $colls[] = self::collection_structuration("$selfurl/${table_name}", $table_name, $f);
       }
-      else {
+      else { // cas particuliers avec une collection par attribut géométrique
         foreach ($geomColumnNames as $geomColumnName)
-          $colls[] = self::collection_structuration("$selfurl/${table_name}_$geomColumnName", $table_name.'_'.$geomColumnName);
+          $colls[] = self::collection_structuration(
+            "$selfurl/${table_name}_$geomColumnName", $table_name.'_'.$geomColumnName, $f);
       }
     }
     return [
       'links'=> [
-        [ 'href'=> "$selfurl?f=json", 'rel'=> 'self', 'type'=> 'application/json', 'title'=> "this document in JSON" ],
-        [ 'href'=> "$selfurl?f=html", 'rel'=> 'self', 'type'=> 'text/html', 'title'=> "this document in HTML" ],
+        [
+          'f'=> $f,
+          'href'=> $selfurl.(($f <> 'json') ? '?f=json' : ''),
+          'rel'=> ($f=='json') ? 'self' : 'alternate',
+          'type'=> 'application/json',
+          'title'=> "this document in JSON",
+        ],
+        [
+          'href'=> $selfurl.(($f <> 'html') ? '?f=html' : ''),
+          'rel'=> ($f=='html') ? 'self' : 'alternate',
+          'type'=> 'text/html',
+          'title'=> "this document in HTML"
+        ],
       ],
       'collections'=> $colls,
     ];
@@ -398,17 +438,94 @@ class FeatureServerOnSql extends FeatureServer {
     */
   }
   
-  function collection(string $collId): array { // retourne la description du FeatureType de la collection
+  function collection(string $f, string $collId): array { // retourne la description du FeatureType de la collection
     $selfurl = FeatureServer::selfUrl();
-    return self::collection_structuration($selfurl, $collId);
+    return self::collection_structuration($selfurl, $collId, $f);
   }
   
-  function collDescribedBy(string $collId): array { // retourne la description du FeatureType de la collection
-    return (new Collection(basename($this->path), $collId))->columns();
+  function collDescribedBy(string $collId): array { // retourne la description d'un FeatureType de la collection
+    $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
+    $docFSchema = $collDoc ? $collDoc->featureSchema() : []; // schema issu de la doc
+    //echo Yaml::dump(['$docFSchema'=> $docFSchema], 5, 2);
+    $columns = (new CollOnSql(basename($this->path), $collId))->columns;
+    $propertiesSchema = [];
+    foreach ($columns as $column) {
+      if (!SqlSchema::isGeometryColumn($column)) {
+        $propertiesSchema[$column['column_name']] =
+            $docFSchema['properties']['properties']['properties'][$column['column_name']] ?? ['type'=> 'string'];
+      }
+    }
+    $geomSchema = $docFSchema['properties']['geometry']['properties'] ??
+        [
+          'type'=> 'object',
+          'properties'=> [
+            'type'=> ['type'=> 'string'],
+            'coordinates'=> ['type'=> 'array'],
+          ],
+        ];
+    $schema = ['@id'=> self::selfUrl()];
+    $title = $docFSchema['title'] ?? $collId;
+    $schema['title'] = "Schema JSON d'un Feature de la collection \"$title\"";
+    if (isset($docFSchema['description']))
+      $schema['description'] = $docFSchema['description'];
+    return array_merge($schema,
+      [
+        '$schema'=> 'http://json-schema.org/schema#',
+        'type'=> 'object',
+        'required'=> ['id','properties','geometry'],
+        'properties'=> [
+          'id'=> ['type'=> 'string'],
+          'properties'=> [
+            'type'=> 'object',
+            'properties'=> $propertiesSchema,
+          ],
+          'geometry'=> $geomSchema,
+        ],
+      ]
+    );
+      /*
+      type: object
+      required:
+        - id
+        - properties
+        - geometry
+      properties:
+        id:
+          type: string
+        properties:
+          type: object
+          additionalProperties: false
+          properties:
+            id_rte500:
+              description: 'Identifiant de l''objet'
+              type: string
+            nature:
+              description: 'Nature de la limite administrative'
+              type: string
+              enum:
+                - 'Limite côtière'
+                - 'Frontière internationale'
+                - 'Limite de région'
+                - 'Limite de département'
+                - 'Limite d''arrondissement'
+                - 'Limite de commune'
+            id:
+              type: string
+        geometry:
+          type: object
+          properties:
+            type:
+              type: string
+              const: LineString
+            coordinates:
+              type: array
+              items:
+                type: array
+                minItems: 2
+                maxItems: 2
+                items: { type: number }
+      */
   }
-  
-  // ne fonctionne qu'en PgSql, je ne sais pas le faire en MySql
-  function isJsonColumn(array $column): bool { return ($column['data_type']=='jsonb'); }
   
   static function checkBbox(array $bbox): void { // vérifie que la bbox est correcte, sinon lève une exception 
     if (count($bbox) <> 4)
@@ -434,13 +551,13 @@ class FeatureServerOnSql extends FeatureServer {
   function items(string $collId, array $bbox=[], array $pFilter=[], int $limit=10, int $startindex=0): array {
     $jsonCols = [];
     $columns = [];
-    $collection = new Collection(basename($this->path), $collId);
-    foreach ($collection->columns() as $column) {
-      if (Collection::isGeometryColumn($column)) {
-        if ($column['column_name'] == $collection->geomColName())
+    $collection = new CollOnSql(basename($this->path), $collId);
+    foreach ($collection->columns as $column) {
+      if (SqlSchema::isGeometryColumn($column)) {
+        if ($column['column_name'] == $collection->geomColName)
           $columns[] = "ST_AsGeoJSON($column[column_name]) st_asgeojson";
       }
-      elseif ($this->isJsonColumn($column)) {
+      elseif (SqlSchema::isJsonColumn($column)) {
         $columns[] = $column['column_name'];
         $jsonCols[] = $column['column_name'];
       }
@@ -448,11 +565,11 @@ class FeatureServerOnSql extends FeatureServer {
         $columns[] = $column['column_name'];
     }
     
-    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table_name();
+    $sql = "select ".implode(',', $columns)."\nfrom $collection->table_name";
     $where = null;
     if ($bbox) {
       self::checkBbox($bbox);
-      $geomColName = $collection->geomColName();
+      $geomColName = $collection->geomColName;
       //$where = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
       $polygonWkt = "POLYGON(($bbox[0] $bbox[1],$bbox[0] $bbox[3],$bbox[2] $bbox[3],$bbox[2] $bbox[1],$bbox[0] $bbox[1]))";
       $where = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt', 4326))\n";
@@ -474,7 +591,7 @@ class FeatureServerOnSql extends FeatureServer {
         $geom = null;
       foreach ($jsonCols as $jsonCol)
         $tuple[$jsonCol] = json_decode($tuple[$jsonCol], true);
-      $items[] = ['type'=> 'Feature', 'id'=> $tuple[$collection->idColName()], 'properties'=> $tuple, 'geometry'=> $geom];
+      $items[] = ['type'=> 'Feature', 'id'=> $tuple[$collection->idColName], 'properties'=> $tuple, 'geometry'=> $geom];
     }
     $selfurl = FeatureServer::selfUrl()
         ."?startindex=$startindex&limit=$limit"
@@ -528,13 +645,13 @@ class FeatureServerOnSql extends FeatureServer {
   function item(string $collId, string $itemId): array {
     $jsonCols = [];
     $columns = [];
-    $collection = new Collection(basename($this->path), $collId);
-    foreach ($collection->columns() as $column) {
-      if (Collection::isGeometryColumn($column)) {
-        if ($column['column_name'] == $collection->geomColName())
+    $collection = new CollOnSql(basename($this->path), $collId);
+    foreach ($collection->columns as $column) {
+      if (SqlSchema::isGeometryColumn($column)) {
+        if ($column['column_name'] == $collection->geomColName)
           $columns[] = "ST_AsGeoJSON($column[column_name]) st_asgeojson";
       }
-      elseif ($this->isJsonColumn($column)) {
+      elseif (SqlSchema::isJsonColumn($column)) {
         $columns[] = $column['column_name'];
         $jsonCols[] = $column['column_name'];
       }
@@ -542,8 +659,8 @@ class FeatureServerOnSql extends FeatureServer {
         $columns[] = $column['column_name'];
     }
     
-    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table_name()
-      ."\nwhere ".$collection->idColName()."='$itemId'";
+    $sql = "select ".implode(',', $columns)."\nfrom $collection->table_name"
+      ."\nwhere $collection->idColName='$itemId'";
     //echo "sql=$sql\n";
     $tuples = Sql::getTuples($sql);
     if (!$tuples)
@@ -559,7 +676,7 @@ class FeatureServerOnSql extends FeatureServer {
       $tuple[$jsonCol] = json_decode($tuple[$jsonCol], true);
     return [
       'type'=> 'Feature',
-      'id'=> $tuple[$collection->idColName()],
+      'id'=> $tuple[$collection->idColName],
       'properties'=> $tuple,
       'geometry'=> $geom,
     ];

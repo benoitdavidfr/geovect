@@ -3,57 +3,60 @@
 name: ftps.php
 title: fts.php - exposition de données au protocoles API Features
 doc: |
-  Proxy exposant des données initialement stocké soit dans un serveur WFS, soit dans une BD, soit dans un fichier GeoJSON.
+  Proxy exposant en API Features des données initialement stockées soit dans une BD MySql ou PgSql, soit dans un serveur WFS2,
+  soit dans un fichier GeoJSON.
+
+  Permet soit d'utiliser un serveur non enregistré en utilisant par exemple pour un serveur WFS l'url:
+    https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
+     ou en local:
+      http://localhost/geovect/features/fts.php/wfs/services.data.shom.fr/INSPIRE/wfs
+  soit d'utiliser des serveurs biens connus et documentés comme dans l'url:
+   https://features.geoapi.fr/shomwfs
+    ou en local:
+      http://localhost/geovect/features/fts.php/shomwfs
   
-  Définir un fichier stockant des options et des paramètres ?
-    - utilisé comme cache pour renseigner certains paramètres pour éviter de les interroger systématiquement ?
-    - renseigner des paramètres complémentaire, ex quel id dans une table ?
-    - fournir de la doc complémentaire ?
-    - reprendre la logique de raccourci ?
+  Un appel sans paramètre liste les serveurs bien connus et des exemples d'appel.
 
-  Exemples:
-    - https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
-    - http://localhost/geovect/features/fts.php/wfs/services.data.shom.fr/INSPIRE/wfs
+  A faire:
+    - voir la gestion des erreurs
+    - gérer correctement les types non string comme les nombres
+    - renvoyer une erreur lors de l'existence d'un paramètre non prévu
+    - satisfaire le test CITE
+  Réflexions:
+    - distinguer un outil d'admin différent de l'outil fts.php de consultation
+      - y transférer l'opération check de vérif. de clé primaire et de création éventuelle
+      - ajouter une fonction de test de cohérence doc / service déjà écrite dans doc
+    - intégration de la doc ???
+      - remplacer les raccourcis par la doc
+      - renvoyer un schéma dans onsql, soit généré à partir du schéma Sql, soit issu de la doc
 
-  https://features.geoapi.fr/{raccourci}
-  https://features.geoapi.fr/pgsql/benoit@db207552-001.dbaas.ovh.net/comhisto/public
-  https://features.geoapi.fr/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m/countries
-  https://features.geoapi.fr/file/{path}
-  https://features.geoapi.fr/wfs/referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
-  https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
-
-  
+    - Définir un fichier stockant des options et des paramètres ?
+      - utilisé comme cache pour renseigner certains paramètres pour éviter de les interroger systématiquement ?
+      - renseigner des paramètres complémentaire, ex quel id dans une table ?
+  Idées:
+    - renommer geovect en gdata pour green data
+    - faire une version html qui présente le Yaml avec des liens cliquables
+    - QGis propose de gziper le retour, le tester !
 journal: |
+  20-21/1/2021:
+    - intégration de la doc
   17/1/2021:
-    - A faire
-      - voir la gestion des erreurs
-      - vérifier que les paramètres non prévus sont testés et qu'une erreur est renvoyée
-      - voir comment ajouter de la doc complémentaire !
+    - onsql fonctionne avec QGis
   30/12/2020:
     - création
+includes:
+  - doc.php
+  - ftrserver.inc.php
 */
 require_once __DIR__.'/../vendor/autoload.php';
-require_once __DIR__.'/onwfs.inc.php';
-require_once __DIR__.'/onfile.inc.php';
-require_once __DIR__.'/onsql.inc.php';
+require_once __DIR__.'/doc.php';
+require_once __DIR__.'/ftrserver.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
 //echo "<pre>"; print_r($_SERVER); die();
 
 ini_set('memory_limit', '1G');
-
-define('RACCOURCIS', [
-  'shomwfs'=> '/wfs/services.data.shom.fr/INSPIRE/wfs',
-  'igngpwfs'=> '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr',
-  'test@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect',
-  'ne_110m'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m',
-  'ne_10m'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m',
-  'route500@mysql'=> '/mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500',
-  'localgis'=> '/pgsql/docker@172.17.0.4/gis/public',
-  'comhisto'=> '/pgsql/benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public',
-]
-);
 
 define('EXEMPLES_DAPPELS', [
   'wfs/services.data.shom.fr/INSPIRE/wfs' => [
@@ -66,24 +69,24 @@ define('EXEMPLES_DAPPELS', [
     'BDCARTO_BDD_WLD_WGS84G:region',
   ],
   'file/var/www/html/geovect/fcoll/ne_10m' => [
-    'admin_0_countries'=> 'count=5&startindex=100',
+    'admin_0_countries'=> 'limit=5&startindex=100',
   ],
   'mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m'=> [],
   'ne_110m' => [
-    'admin_0_countries' => 'count=10&startindex=5',
+    'admin_0_countries' => 'limit=10&startindex=5',
   ],
   'ne_10m' => [
-    'admin_0_countries' => 'count=10&startindex=5',
+    'admin_0_countries' => 'limit=10&startindex=5',
   ],
-  'route500@mysql' => [
-    'troncon_voie_ferree' => 'count=10&startindex=5',
+  'ignf-route500' => [
+    'troncon_voie_ferree' => 'limit=10&startindex=5',
   ],
   'mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect'=>[],
   'test@mysql' => [
-    'unchampstretunegeom' => 'count=10',
+    'unchampstretunegeom' => 'limit=10',
   ],
   'localgis'=> [
-    'departement_carto' => 'count=5&startindex=10&f=json',
+    'departement_carto' => 'limit=5&startindex=10&f=json',
   ],
   'comhisto'=> [
     'comhistog3',
@@ -91,45 +94,61 @@ define('EXEMPLES_DAPPELS', [
 ]
 );
 
-// génère un affichage en JSON ou Yaml en fonction du paramètre $f
+FeatureServer::log([
+  'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
+  'Hedaders'=> getallheaders(),
+]
+); // log de la requête pour deboggage, a supprimer en production
+
+// affiche $array en JSON, GeoJSON, Html ou Yaml en fonction du paramètre $f
+// JSON ou GeoJSON sont utilisés dans les échanges entre programmes, je pourrais ultérieurement supprimer les options
+// Html ou Yaml sont utilisés pour affichage aux humains, levels est le niveau de développement en Yaml
 function output(string $f, array $array, int $levels=3) {
   switch ($f) {
-    case 'yaml': die(Yaml::dump($array, $levels, 2));
-    case 'html': die(Yaml::dump($array, $levels, 2));
-    case 'json': die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+    case 'json': {
+      header('Content-type: application/json; charset="utf8"');
+      //header('Content-type: text/plain; charset="utf8"');
+      die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+    }
+    case 'geojson': {
+      header('Content-type: application/geo+json; charset="utf8"');
+      //header('Content-type: text/plain; charset="utf8"');
+      die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+    }
+    case 'yaml': die(Yaml::dump($array, $levels, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+    case 'html': {
+      $yaml = Yaml::dump($array, $levels, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+      // remplace les URL par des liens HTML
+      $html = preg_replace("!(https?://[^' ]+)!", "<a href='$1'>$1</a>", $yaml);
+      die($html);
+    }
   }
 }
 
-if (isset($_GET['f']))
-  $f = $_GET['f'];
-elseif (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')))
-  $f = 'yaml';
-else
-  $f = 'json';
-switch ($f) {
-  case 'yaml': {
-    echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>shomwfs</title></head><body><pre>\n";
-    break;
-  }
+// si _GET[f] est défini alors il est utilisé, sinon si appel navigateur (header Accept) alors 'html' sinon 'json'
+// si ni 'yaml', ni 'json', ni 'geojson' alors 'html'
+switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')) ? 'html' : 'json')) {
+  case 'html':
+  case 'yaml': echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n"; break;
   case 'json':
-  case 'geojson': {
-    header('Content-type: application/json; charset="utf8"');
-    //header('Content-type: text/plain; charset="utf8"');
-    $f = 'json';
-    break;
-  }
+  // si $f vaut geojson alors  transformation en 'json'. A l'affichage si geo alors geojson
+  case 'geojson': $f = 'json'; break;
+  // $f doit valoir 'html', 'yaml' ou 'json' sinon 'html'
   default: {
-    $f = 'yaml';
+    $f = 'html';
+    echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n";
+    break;
   }
 }
 
 //print_r($_SERVER);
-FeatureServer::log($_SERVER['REQUEST_URI']);
   
-if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) {
-  echo "Raccourcis:\n";
-  foreach (RACCOURCIS as $raccourci => $url) {
-    echo "  - <a href='$_SERVER[SCRIPT_NAME]/$raccourci'>$raccourci</a> => $url\n";
+$doc = new Doc; // documentation des serveurs biens connus 
+
+if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) { // appel sans paramètre 
+  echo "Serveurs biens connus:\n";
+  foreach ($doc->datasets as $dsid => $dsDoc) {
+    echo "  - <a href='$_SERVER[SCRIPT_NAME]/$dsid'>$dsDoc->title</a> => $dsDoc->path\n";
   }
   echo "Exemples:\n";
   foreach (EXEMPLES_DAPPELS as $ex => $colls) {
@@ -149,7 +168,7 @@ if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) {
   die();
 }
 
-if (preg_match('!^((/[^/]+)+)/(conformance|api|check)!', $_SERVER['PATH_INFO'], $matches)) {
+if (preg_match('!^((/[^/]+)+)/(conformance|api|check)!', $_SERVER['PATH_INFO'], $matches)) { // cmde 1er niveau sur fserver
   $fserverId = $matches[1];
   $action = $matches[3];
   $action2 = null;
@@ -174,13 +193,14 @@ else { // sinon, c'est l'URL ou un raccourci
 }
 
 // détection du cas d'utilisation d'un raccourci et dans ce cas transformation dans le path résolu
+$datasetDoc = null; // la doc du dataset si elle est définie
 if (preg_match('!^/([^/]+)/?$!', $fserverId, $matches)) {
   //echo 'matches2='; print_r($matches);
-  $raccourci = $matches[1];
+  $datasetId = $matches[1];
   //echo "raccourci $raccourci<br>\n";
-  if (!isset(RACCOURCIS[$raccourci]))
-    output($f, ['error'=> "$raccourci n'est pas un raccourci enregistré"]);
-  $fserverId = RACCOURCIS[$raccourci];
+  if (!($datasetDoc = $doc->datasets[$datasetId]))
+    output($f, ['error'=> "$datasetId n'est pas l'identifiant d'un serveur bien connu"]);
+  $fserverId = $datasetDoc->path;
   //echo "fserverId=$fserverId<br>\n";
 }
 
@@ -191,24 +211,8 @@ if (!preg_match('!^/(wfs|pgsql|mysql|file)(/.*)$!', $fserverId, $matches)) {
 //echo 'matches3='; print_r($matches);
 $type = $matches[1];
 $path = $matches[2];
-switch($type) {
-  case 'wfs': {
-    $fServer = new FeatureServerOnWfs("https:/$path");
-    break;
-  }
-  case 'file': {
-    $fServer = new FeatureServerOnFile($path);
-    break;
-  }
-  case 'mysql':
-  case 'pgsql': {
-    $fServer = new FeatureServerOnSql("$type:/$path");
-    break;
-  }
+$fServer = FeatureServer::new($type, $path, $datasetDoc);
   
-  default: output($f, ['error'=> "traitement $type non défini"]);
-}
-
 if (!$action) { // /
   output($f, $fServer->landingPage($f));
 }
@@ -216,7 +220,7 @@ elseif ($action == 'conformance') { // /conformance
   output($f, $fServer->conformance());
 }
 elseif ($action == 'api') { // /api
-  output($f, $fServer->api());
+  output($f, $fServer->api(), 6);
 }
 elseif ($action == 'check') { // /check
   //output($f, $fServer->checkTables());
@@ -235,10 +239,10 @@ elseif ($action == 'check') { // /check
   die();
 }
 elseif (!$collId) { // /collections
-  output($f, $fServer->collections(), 4);
+  output($f, $fServer->collections($f), 4);
 }
 elseif (!$action2) { // /collections/{collId}
-  output($f, $fServer->collection($collId), 4);
+  output($f, $fServer->collection($f, $collId), 4);
 }
 elseif ($action2 == '/describedBy') { // /collections/{collId}/describedBy
   output($f, $fServer->collDescribedBy($collId), 6);
@@ -247,16 +251,16 @@ elseif ($action2 == '/createPrimaryKey') { // /collections/{collId}/createPrimar
   $fServer->repairTable('createPrimaryKey', $collId);
 }
 elseif (!$itemId) { // /collections/{collId}/items
-  output($f,
+  output(($f == 'json' ? 'geojson' : $f),
     $fServer->items(
       collId: $collId,
       bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
-      limit: $_GET['limit'] ?? 100,
+      limit: $_GET['limit'] ?? 10,
       startindex: $_GET['startindex'] ?? 0
     ), 6
   );
 }
 else { // /collections/{collId}/items/{itemId}
-  output($f, $fServer->item($collId, $itemId), 6);
+  output(($f == 'json' ? 'geojson' : $f), $fServer->item($collId, $itemId), 6);
 }
 

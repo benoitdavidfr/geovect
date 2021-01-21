@@ -25,11 +25,12 @@ require_once __DIR__.'/ftrserver.inc.php';
 class FeatureServerOnFile extends FeatureServer {
   protected string $path; // chemin du répertoire
   
-  function __construct(string $path) {
+  function __construct(string $path, ?DatasetDoc $datasetDoc) {
     $this->path = $path;
+    $this->datasetDoc = $datasetDoc;
   }
   
-  function collections(): array { // retourne la liste des collections
+  function collections(string $f): array { // retourne la liste des collections
     $files = [];
     foreach (new DirectoryIterator(utf8_decode($this->path)) as $fileInfo) {
         if ($fileInfo->isDot()) continue;
@@ -41,7 +42,7 @@ class FeatureServerOnFile extends FeatureServer {
     return $files;
   }
   
-  function collection(string $id): array { // retourne la description du FeatureType de la collection
+  function collection(string $f, string $id): array { // retourne la description du FeatureType de la collection
     return ['id'=> $id, 'title'=> $id];
   }
   

@@ -125,7 +125,7 @@ paths:
         - collectionId
   /collections/{collectionId}/items:
     get:
-      description: Version de Commune
+      description: Obtenir les enregistrements de la collection {collectionId}
       summary: Obtenir les enregistrements de la collection {collectionId}
       operationId: items
       parameters:
@@ -136,7 +136,7 @@ paths:
         - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/bbox'
         - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/datetime'
         - name: properties
-          description: |
+          description: >-
             The properties that should be included for each feature. The parameter value is a comma-separated list
             of property names.
           explode: false
