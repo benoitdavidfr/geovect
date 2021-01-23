@@ -1,19 +1,30 @@
 info:
-  title: norme API Features
+  title: Accès à des données conformément à la norme API Features
   description: |
     Accès à des données conformément à la norme [OGC API Features](http://docs.opengeospatial.org/is/17-069r3/17-069r3.html).
+    Ce document est générique, il doit être configuré a minima avec les propriétés suivantes:
+      servers/url: l'URL de la landingPage {landingPageUrl}
+      info/licence: la licence si ce n'est pas la bonne
+      info/title et info/description
+    Il est aussi préférable de remplacer les propriétés suivantes par un path pour chaque collection:
+      - paths/collections/{collectionId}
+      - paths/collections/{collectionId}/items
+      - paths/collections/{collectionId}/items/{featureId}
   version: '0.1'
   contact:
     email: contact@geoapi.fr
     name: Benoit DAVID
     url: https://github.com/benoitdavidfr/geovect
   license:
-    name: Public domain
-    url: https://www.naturalearthdata.com/about/terms-of-use/
+    name: 'Licence ouverte Etalab'
+    url: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence'
   termsOfService: https://benoitdavidfr.github.io/geovect/termsOfService.html
   x-keywords:
     - OGC API Features
 openapi: 3.0.0
+servers:
+  - description: Service d'accès à des données conformément à la norme OGC API Features.
+    url: '{landingPageUrl}'
 components:
   parameters:
     f:
@@ -106,12 +117,12 @@ paths:
         - server
   /collections/{collectionId}:
     get:
-      description: collection
+      description: Get the metadata of the {collectionId} Collection 
       summary: Get the metadata of the {collectionId} Collection 
       operationId: getCollection
       parameters:
-        - $ref: '#/components/parameters/f'
         - $ref:  'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/f'
       responses:
         200:
           $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection'
@@ -129,8 +140,8 @@ paths:
       summary: Obtenir les enregistrements de la collection {collectionId}
       operationId: items
       parameters:
-        - $ref: '#/components/parameters/f'
         - $ref:  'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/f'
         - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit'
         - $ref: '#/components/parameters/startindex'
         - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/bbox'
@@ -160,7 +171,7 @@ paths:
         - collectionId
   /collections/{collectionId}/items/{featureId}:
     get:
-      description: Version de Commune
+      description: Obtenir un enregistrement en fonction de son id
       summary: Obtenir un enregistrement en fonction de son id
       operationId: featureId
       parameters:
@@ -178,10 +189,6 @@ paths:
           $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError'
       tags:
         - collectionId
-
-servers:
-  - description: Service d'accès à des données conformément à la norme OGC API Features.
-    url: http://bdavid.alwaysdata.net/geovect/features/fts.php/ne_110m
 tags:
   - name: server
     description: opérations de base

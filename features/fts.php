@@ -18,25 +18,22 @@ doc: |
   Un appel sans paramètre liste les serveurs bien connus et des exemples d'appel.
 
   A faire:
-    - voir la gestion des erreurs
-    - gérer correctement les types non string comme les nombres
+    - gérer correctement les erreurs
+    - gérer correctement les types non string dans les données comme les nombres
+    - intégrer la doc dans la description de l'API
     - renvoyer une erreur lors de l'existence d'un paramètre non prévu
-    - satisfaire le test CITE
+    - satisfaire au test CITE
   Réflexions:
     - distinguer un outil d'admin différent de l'outil fts.php de consultation
       - y transférer l'opération check de vérif. de clé primaire et de création éventuelle
       - ajouter une fonction de test de cohérence doc / service déjà écrite dans doc
-    - intégration de la doc ???
-      - remplacer les raccourcis par la doc
-      - renvoyer un schéma dans onsql, soit généré à partir du schéma Sql, soit issu de la doc
-
     - Définir un fichier stockant des options et des paramètres ?
       - utilisé comme cache pour renseigner certains paramètres pour éviter de les interroger systématiquement ?
-      - renseigner des paramètres complémentaire, ex quel id dans une table ?
   Idées:
     - renommer geovect en gdata pour green data
-    - faire une version html qui présente le Yaml avec des liens cliquables
-    - QGis propose de gziper le retour, le tester !
+    - étendre features aux autres OGC API ?
+    - QGis propose de gziper le retour, le tester notamment les items !
+    - regarder l'utilisation i18n
 journal: |
   20-21/1/2021:
     - intégration de la doc
@@ -128,8 +125,8 @@ function output(string $f, array $array, int $levels=3) {
 // si _GET[f] est défini alors il est utilisé, sinon si appel navigateur (header Accept) alors 'html' sinon 'json'
 // si ni 'yaml', ni 'json', ni 'geojson' alors 'html'
 switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')) ? 'html' : 'json')) {
-  case 'html':
-  case 'yaml': echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n"; break;
+  case 'html': echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n"; break;
+  case 'yaml': header('Content-type: text/plain; charset="utf8"'); break;
   case 'json':
   // si $f vaut geojson alors  transformation en 'json'. A l'affichage si geo alors geojson
   case 'geojson': $f = 'json'; break;
@@ -220,7 +217,7 @@ elseif ($action == 'conformance') { // /conformance
   output($f, $fServer->conformance());
 }
 elseif ($action == 'api') { // /api
-  output($f, $fServer->api(), 6);
+  output($f, $fServer->api(), 999);
 }
 elseif ($action == 'check') { // /check
   //output($f, $fServer->checkTables());

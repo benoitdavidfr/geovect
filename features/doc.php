@@ -151,27 +151,27 @@ class CollectionDoc {
   ];
   const GEOM_TYPE_PROP = [
     'Point2D'=> [
-      'type' => ['type'=> 'string', 'const'=> 'Point'],
+      'type' => ['type'=> 'string', 'enum'=> ['Point']],
       'coordinates'=> self::COORDS_TYPE['pos2'],
     ],
     'MultiPoint2D'=> [
-      'type' => ['type'=> 'string', 'const'=> 'MultiPoint'],
+      'type' => ['type'=> 'string', 'enum'=> ['MultiPoint']],
       'coordinates'=> self::COORDS_TYPE['lpos2'],
     ],
     'LineString2D'=> [
-      'type' => ['type'=> 'string', 'const'=> 'LineString'],
+      'type' => ['type'=> 'string', 'enum'=> ['LineString']],
       'coordinates'=> self::COORDS_TYPE['lpos2'],
     ],
     'MultiLineString2D'=> [
-      'type' => ['type'=> 'string', 'const'=> 'Polygon'],
+      'type' => ['type'=> 'string', 'enum'=> ['Polygon']],
       'coordinates'=> self::COORDS_TYPE['llpos2'],
     ],
     'Polygon2D'=> [
-      'type' => ['type'=> 'string', 'const'=> 'Polygon'],
+      'type' => ['type'=> 'string', 'enum'=> ['Polygon']],
       'coordinates'=> self::COORDS_TYPE['llpos2'],
     ],
     'MultiPolygon2D'=> [
-      'type' => ['type'=> 'string', 'const'=> 'MultiPolygon'],
+      'type' => ['type'=> 'string', 'enum'=> ['MultiPolygon']],
       'coordinates'=> self::COORDS_TYPE['l3pos2'],
     ],
   ];
@@ -182,6 +182,64 @@ class CollectionDoc {
   protected string|array $geometryType;
   protected array $properties;
   
+  function schema() { /* Schema JSON 
+    collection:
+      description: description d'une collection d'un jeu de données
+      type: object
+      additionalProperties: false
+      required: [title, geometryType]
+      properties:
+        title:
+          description: titre de la collection destiné à un humain
+          type: string
+        description:
+          description: |
+            description plus détaillée, comprend la définition, les critères de sélection, ...
+            Possibilité d'utiliser du markdown.
+          type: string
+        geometryType:
+          description: |
+            Type(s) de géométrie des objets de la classe.
+            Construit à partir du type GeoJSON en y ajoutant éventuellement 2D/3D ainsi que le type none
+            indiquant que les objets n'ont pas de géométrie.
+            Peut être soit un type ou une liste de types possibles.
+          oneOf:
+            - $ref: '#/definitions/elementaryGeometryTypeType'
+            - type: array
+              items:
+                $ref: '#/definitions/elementaryGeometryTypeType'
+          enum:
+            - Point
+            - Point2D
+            - Point3D
+            - MultiPoint
+            - MultiPoint2D
+            - MultiPoint3D
+            - LineString
+            - LineString2D
+            - LineString3D
+            - MultiLineString
+            - MultiLineString2D
+            - MultiLineString3D
+            - Polygon
+            - Polygon2D
+            - Polygon3D
+            - MultiPolygon
+            - MultiPolygon2D
+            - MultiPolygon3D
+            - GeometryCollection
+            - none
+        properties:
+          description: |
+            Dictionnaire des propriétés des items de la collection indexé sur le nom de la propriété.
+            La description est optionelle.
+          type: object
+          patternProperties:
+            ^[-a-zA-Z0-9_]*$:
+              $ref: '#/definitions/property'
+    */
+  }
+    
   function __construct(string $id, array $yaml) {
     $this->id = $id;
     $this->title = $yaml['title'];
@@ -192,6 +250,8 @@ class CollectionDoc {
     }
   }
   
+  function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
+
   function asArray(): array {
     $array = ['title'=> $this->title];
     if ($this->description)
@@ -243,20 +303,68 @@ class CollectionDoc {
   }
 };
 
-class DatasetDoc {
+class DatasetDoc { // Doc d'un Dataset 
   protected string $id;
   protected string $title;
+  protected ?string $abstract;
+  protected array $licence;
   protected string $path;
   protected array $collections = [];
+  
+  function schema() { /* Schema JSON: 
+    dataset:
+      type: object
+      additionalProperties: false
+      required: [title, path]
+      properties:
+        title:
+          description: titre du jeu de données
+          type: string
+        abstract:
+          description: résumé du jeu de données
+          type: string
+        source:
+          description: URL de référence du jeu de données
+          type: string
+        licence:
+          description: définition de la licence d'utilisation des données
+          $ref: '#/definitions/link'
+        path:
+          description: chemin du jeu de données pour https://features.geoapi.fr/
+          type: string
+        doc_url:
+          description: lien vers une documentation plus complète
+          type: string
+          format: uri
+        metadata:
+          description: lien vers des MD par ex. ISO 19139
+          type: string
+          format: uri
+        precision:
+          description: |
+            nbre de chiffres signficatifs dans les coordonnées géographiques
+            ex: 4 => résolution de de 1e-4 degrés soit 1e-4° * 40 km / 360° = 11 m
+        collections:
+          description: dictionnaire des collections indexées sur l'id de la collection
+          type: object
+          patternProperties:
+            ^[-a-zA-Z0-9_]*$:
+              $ref: '#/definitions/collection'
+    */
+  }
   
   function __construct(string $id, array $yaml) {
     $this->id = $id;
     $this->title = $yaml['title'];
+    $this->abstract = $yaml['abstract'] ?? null;
+    $this->licence = $yaml['licence'] ?? [];
     $this->path = $yaml['path'];
     foreach ($yaml['collections'] ?? [] as $collid => $collection) {
       $this->collections[$collid] = new CollectionDoc($collid, $collection);
     }
   }
+  
+  function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
   
   function asArray(): array {
     $array = [];
@@ -265,12 +373,9 @@ class DatasetDoc {
     }
     return $array;
   }
-  
-  function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
 };
 
-// Doc en mémoire
-class Doc {
+class Doc { // Doc globale 
   const PATH = __DIR__.'/doc.'; // chemin des fichiers stockant la doc en pser ou en yaml, lui ajouter l'extension
   const PATH_PSER = self::PATH.'pser'; // chemin du fichier stockant la doc en pser
   const PATH_YAML = self::PATH.'yaml'; // chemin du fichier stockant la doc en Yaml

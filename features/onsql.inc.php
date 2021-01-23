@@ -11,6 +11,8 @@ doc: |
   Si la table a plus d'un champ géométrique alors plusieurs collections sont définies, une pour chacun des champs.
   En PgSql les champs de type JSON sont traduits en JSON
 journal: |
+  22-23/1/2021:
+    - paramétrage de l'API avec la liste des collections et leur schéma
   20-21/1/2021:
     - ajout du schema JSON de chaque collection
   15-17/1/2021:
@@ -57,9 +59,12 @@ class SqlSchema {
     foreach (Sql::query($sql) as $tuple) {
       //print_r($tuple);
       $table_name = $tuple['TABLE_NAME'] ?? $tuple['table_name'] ?? null;
-      $tables[$table_name][] = $tuple['geom_column_name'];
+      if ($tuple['geom_column_name'])
+        $tables[$table_name][] = $tuple['geom_column_name'];
+      else
+        $tables[$table_name] = [];
     }
-    //print_r($tables);
+    //echo 'listOfTables()$tables='; print_r($tables);
     return $tables;
   }
   
@@ -147,6 +152,7 @@ class CollOnSql {
 };
 
 class FeatureServerOnSql extends FeatureServer {
+  const OGC_SCHEMA_URI = 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml';
   //protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données - déclaré dans la sur-classe
   protected string $path;
   //protected ?CollOnSql $collection = null;
@@ -156,6 +162,401 @@ class FeatureServerOnSql extends FeatureServer {
     //echo "path=$path\n";
     Sql::open($this->path);
     $this->datasetDoc = $datasetDoc;
+  }
+  
+  function featureGeoJsonSchema(string $collName): array { // schema d'un Feature GeoJSON 
+    $collDoc = $this->datasetDoc->collections[$collName] ?? null;
+    $fSchema = $this->collDescribedBy($collName);
+    if ($collDoc) {
+      $fSchema['title'] = "Schema d'un Feature de \"$collDoc->title\" ($collName)";
+      if ($collDoc->description)
+        $fcSchema['description'] = $collDoc->description;
+    }
+    unset($fSchema['@id']);
+    unset($fSchema['$schema']);
+    $fschema['properties'] = array_merge($fSchema['properties'], [
+      'links'=> [
+        'type'=> 'array',
+        'items'=> [ '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/link' ],
+      ],
+      'timeStamp'=> [ '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/timeStamp' ],
+      'numberMatched'=> [ '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/numberMatched' ],
+      'numberReturned'=> [ '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/numberReturned' ],
+    ]);
+    return $fschema;
+    {/*Schema: ogcSchemaUri::#/components/schemas/featureGeoJSON
+    featureGeoJSON:
+      type: object
+      required:
+        - type
+        - geometry
+        - properties
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: "#/components/schemas/geometryGeoJSON"
+        properties:
+          type: object
+          nullable: true
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/link"
+    */}
+  }
+  
+  function featureCollectionGeoJsonSchema(string $collName): array { // schema d'une FeatureCollection GeoJSON 
+    static $ogcSchemaUri = 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml';
+    $fcSchema = [];
+    $collDoc = $this->datasetDoc->collections[$collName] ?? null;
+    if ($collDoc) {
+      $fcSchema['title'] = "Schema d'une FeatureCollection de \"$collDoc->title\" ($collName)";
+      if ($collDoc->description)
+        $fcSchema['description'] = $collDoc->description;
+    }
+    $fSchema = $this->collDescribedBy($collName);
+    unset($fSchema['@id']);
+    unset($fSchema['$schema']);
+    unset($fSchema['title']);
+    $fSchema['description'] = "Schema d'un Feature de \"$collDoc->title\" ($collName)";
+    return array_merge($fcSchema, [
+      'type'=> 'object',
+      'required'=> ['type','features'],
+      'properties'=> [
+        'type'=> [
+          'type'=> 'string',
+          'enum'=> ['FeatureCollection'],
+        ],
+        'features'=> [
+          'type'=> 'array',
+          'items'=> $fSchema,
+        ],
+        'links'=> [
+          'type'=> 'array',
+          'items'=> [ '$ref'=> $ogcSchemaUri.'#/components/schemas/link' ],
+        ],
+        'timeStamp'=> [ '$ref'=> $ogcSchemaUri.'#/components/schemas/timeStamp' ],
+        'numberMatched'=> [ '$ref'=> $ogcSchemaUri.'#/components/schemas/numberMatched' ],
+        'numberReturned'=> [ '$ref'=> $ogcSchemaUri.'#/components/schemas/numberReturned' ],
+      ],
+    ]);
+    {/*Schema: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml
+        #/components/schemas/featureCollectionGeoJSON
+      type: object
+      required:
+        - type
+        - features
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/featureGeoJSON"
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/link"
+        timeStamp:
+          $ref: "#/components/schemas/timeStamp"
+        numberMatched:
+          $ref: "#/components/schemas/numberMatched"
+        numberReturned:
+          $ref: "#/components/schemas/numberReturned"
+    */}
+  }
+  
+  function api(): array { // retourne la définition de l'API
+    $urlLandingPage = ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
+          ."://$_SERVER[HTTP_HOST]".dirname($_SERVER['REQUEST_URI']);
+    $apidef = Yaml::parse(@file_get_contents(__DIR__.'/apidef.yaml'));
+    $title = $this->datasetDoc->title ?? $this->path;
+    $apidef['servers'][0] = [
+      'description'=> "Service d'accès aux données \"$title\"",
+      'url' => $urlLandingPage,
+    ];
+    $apidef['info']['title'] = "Accès aux données \"$title\" conformément à la norme API Features";
+    if ($abstract = $this->datasetDoc->abstract ?? null)
+      $apidef['info']['description'] = $abstract;
+    else
+      unset($apidef['info']['description']);
+    
+    $collIdPath = $apidef['paths']['/collections/{collectionId}'];
+    unset($apidef['paths']['/collections/{collectionId}']);
+    // supprime le paramètre {collectionId} qui doit être le premier paramètre dans apidef.yaml
+    array_shift($collIdPath['get']['parameters']);
+    
+    $itemsPath = $apidef['paths']['/collections/{collectionId}/items'];
+    unset($apidef['paths']['/collections/{collectionId}/items']);
+    // supprime le paramètre {collectionId} qui doit être le premier paramètre dans apidef.yaml
+    array_shift($itemsPath['get']['parameters']);
+
+    $itemIdPath = $apidef['paths']['/collections/{collectionId}/items/{featureId}'];
+    unset($apidef['paths']['/collections/{collectionId}/items/{featureId}']);
+    // supprime le paramètre {collectionId} qui doit être le premier paramètre dans apidef.yaml
+    array_shift($itemIdPath['get']['parameters']);
+
+    array_pop($apidef['tags']); // supprime le tag collectionId
+    foreach ($this->collNames() as $collName) {
+      $collDoc = $this->datasetDoc->collections[$collName] ?? null;
+      
+      // paths: /collections/{collId}
+      $collTitle = $collDoc->title ?? $collName;
+      $get = ['summary' => "Get the metadata of the collection \"$collTitle\" ($collName)"];
+      if (isset($collDoc->description))
+        $get['description'] = "title: $collDoc->title\n"
+          .$collDoc->description;
+      elseif (isset($collDoc->title))
+        $get['description'] = "title: $collDoc->title";
+      // modifie la réponse pour 200
+      $responses = $collIdPath['get']['responses'];
+      {/* OGC_SCHEMA_URI.'#/components/responses/Collection'
+        Collection:
+          description: |-
+            Information about the feature collection with id `collectionId`.
+
+            The response contains a linkto the items in the collection
+            (path `/collections/{collectionId}/items`,link relation `items`)
+            as well as key information about the collection. This information
+            includes:
+
+            * A local identifier for the collection that is unique for the dataset;
+            * A list of coordinate reference systems (CRS) in which geometries may be returned by the server.
+              The first CRS is the default coordinate reference system (the default is always WGS 84
+              with axis order longitude/latitude);
+            * An optional title and description for the collection;
+            * An optional extent that can be used to provide an indication of the spatial and temporal
+              extent of the collection - typically derived from the data;
+            * An optional indicator about the type of the items in the collection (the default value, if the indicator
+              is not provided, is 'feature').
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/collection'
+            text/html:
+              schema:
+                type: string
+      */}
+      $responses[200] = [
+        'description' => "Information about the feature collection $collName.
+
+The response contains a linkto the items in the collection (path `/collections/$collName/items`,link relation `items`)
+as well as key information about the collection. This information includes:
+
+* The local identifier '$collName' for the collection that is unique for the dataset;
+* A list of coordinate reference systems (CRS) in which geometries may be returned by the server. The first CRS is the default coordinate reference system (the default is always WGS 84 with axis order longitude/latitude);
+* An optional title and description for the collection;
+* An optional extent that can be used to provide an indication of the spatial and temporal extent of the collection - typically derived from the data;
+* An optional indicator about the type of the items in the collection (the default value, if the indicator is not provided, is         'feature').",
+         'content'=> [
+           'application/json'=> [
+             'schema'=> ['$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/collection'],
+           ],
+           'text/html'=> ['schema'=> ['type'=> 'string']],
+         ],
+      ];
+      $get = $get + [
+        'operationId' => "getMetadataOf$collName",
+        'parameters'=> $collIdPath['get']['parameters'],
+        'responses'=> $responses,
+        'tags'=> ["c_$collName"],
+      ];
+      $apidef['paths']["/collections/$collName"] = ['get'=> $get];
+
+      // paths: /collections/{collId}/items
+      // modifie les réponses 
+      $responses = $itemsPath['get']['responses'];
+      if ($collDoc) {
+        {/* http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+          Features:
+            description: |-
+              The response is a document consisting of features in the collection.
+              The features included in the response are determined by the server
+              based on the query parameters of the request. To support access to
+              larger collections without overloading the client, the API supports
+              paged access with links to the next page, if more features are selected
+              that the page size.
+
+              The `bbox` and `datetime` parameter can be used to select only a
+              subset of the features in the collection (the features that are in the
+              bounding box or time interval). The `bbox` parameter matches all features
+              in the collection that are not associated with a location, too. The
+              `datetime` parameter matches all features in the collection that are
+              not associated with a time stamp or interval, too.
+
+              The `limit` parameter may be used to control the subset of the
+              selected features that should be returned in the response, the page size.
+              Each page may include information about the number of selected and
+              returned features (`numberMatched` and `numberReturned`) as well as
+              links to support paging (link relation `next`).
+            content:
+              application/geo+json:
+                schema:
+                  $ref: '#/components/schemas/featureCollectionGeoJSON'
+                example:
+                  type: FeatureCollection
+                  links:
+                    - href: 'http://data.example.com/collections/buildings/items.json'
+                      rel: self
+                      type: application/geo+json
+                      title: this document
+                    - href: 'http://data.example.com/collections/buildings/items.html'
+                      rel: alternate
+                      type: text/html
+                      title: this document as HTML
+                    - href: 'http://data.example.com/collections/buildings/items.json&offset=10&limit=2'
+                      rel: next
+                      type: application/geo+json
+                      title: next page
+                  timeStamp: '2018-04-03T14:52:23Z'
+                  numberMatched: 123
+                  numberReturned: 2
+                  features:
+                    - type: Feature
+                      id: '123'
+                      geometry:
+                        type: Polygon
+                        coordinates:
+                          - ...
+                      properties:
+                        function: residential
+                        floors: '2'
+                        lastUpdate: '2015-08-01T12:34:56Z'
+                    - type: Feature
+                      id: '132'
+                      geometry:
+                        type: Polygon
+                        coordinates:
+                          - ...
+                      properties:
+                        function: public use
+                        floors: '10'
+                        lastUpdate: '2013-12-03T10:15:37Z'
+              text/html:
+                schema:
+                  type: string
+        
+        */}
+        $responses[200] = [
+          'description'=> "The response is a document consisting of features in the \"$collTitle\" collection.
+The features included in the response are determined by the server
+based on the query parameters of the request. To support access to
+larger collections without overloading the client, the API supports
+paged access with links to the next page, if more features are selected
+that the page size.
+
+The `bbox` and `datetime` parameter can be used to select only a
+subset of the features in the collection (the features that are in the
+bounding box or time interval). The `bbox` parameter matches all features
+in the collection that are not associated with a location, too. The
+`datetime` parameter matches all features in the collection that are
+not associated with a time stamp or interval, too.
+
+The `limit` parameter may be used to control the subset of the
+selected features that should be returned in the response, the page size.
+Each page may include information about the number of selected and
+returned features (`numberMatched` and `numberReturned`) as well as
+links to support paging (link relation `next`).",
+          'content'=> [
+            'application/geo+json'=> [
+              'schema'=> $this->featureCollectionGeoJsonSchema($collName),
+            ],
+            'text/html'=> [
+              'schema'=> ['type'=> 'string'],
+            ],
+          ],
+        ];
+      }
+      $apidef['paths']["/collections/$collName/items"] = [
+        'get'=> [
+          'summary'=> "Get the items of the \"$collName\" Collection",
+          'operationId' => "getItemsOf$collName",
+          'parameters'=> $itemsPath['get']['parameters'],
+          'responses'=> $responses,
+          'tags'=> ["c_$collName"],
+        ],
+      ];
+
+      // paths: /collections/{collId}/items/{featureId}
+      // modifie les réponses 
+      $responses = $itemIdPath['get']['responses'];
+      if ($collDoc) {
+        {/* http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+        Feature:
+          description: |-
+            fetch the feature with id `featureId` in the feature collection
+            with id `collectionId`
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/featureGeoJSON'
+              example:
+                type: Feature
+                links:
+                  - href: 'http://data.example.com/id/building/123'
+                    rel: canonical
+                    title: canonical URI of the building
+                  - href: 'http://data.example.com/collections/buildings/items/123.json'
+                    rel: self
+                    type: application/geo+json
+                    title: this document
+                  - href: 'http://data.example.com/collections/buildings/items/123.html'
+                    rel: alternate
+                    type: text/html
+                    title: this document as HTML
+                  - href: 'http://data.example.com/collections/buildings'
+                    rel: collection
+                    type: application/geo+json
+                    title: the collection document
+                id: '123'
+                geometry:
+                  type: Polygon
+                  coordinates:
+                    - ...
+                properties:
+                  function: residential
+                  floors: '2'
+                  lastUpdate: '2015-08-01T12:34:56Z'
+            text/html:
+              schema:
+                type: string
+        */}
+        $responses[200] = [
+          'description'=> "fetch the feature with id `featureId` in the feature collection \"$collTitle\"",
+          'content'=> [
+            'application/geo+json'=> [
+              'schema'=> $this->featureGeoJsonSchema($collName),
+            ],
+            'text/html'=> [
+              'schema'=> ['type'=> 'string'],
+            ],
+          ],
+        ];
+      }
+      $apidef['paths']["/collections/$collName/items/{featureId}"] = [
+        'get'=> [
+          'summary'=> "Get the {featureId} item of the \"$collName\" Collection",
+          'operationId' => "getItemOf$collName",
+          'parameters'=> $itemIdPath['get']['parameters'],
+          'responses'=> $responses,
+          'tags'=> ["c_$collName"],
+        ],
+      ];
+      $apidef['tags'][] = [
+        'name'=> "c_$collName",
+        'description'=> "operations on the $collName collection",
+      ];
+    }
+    return $apidef;
   }
   
   function checkTables(): array { // liste les tables et leur éligibilité comme collection
@@ -386,21 +787,27 @@ class FeatureServerOnSql extends FeatureServer {
     */}
   }
   
-  function collections(string $f): array { // retourne la liste des collections
+  function collNames(): array { // retourne la liste des noms de collection
     $schema = basename($this->path);
     $tables = SqlSchema::listOfTables($schema); // sélectionne les tables du schema
-    $selfurl = FeatureServer::selfUrl();
-    $colls = [];
+    $collNames = [];
     foreach ($tables as $table_name => $geomColumnNames) {
       if (count($geomColumnNames) <= 1) { // cas std avec une collection 
-        //$collDoc = $doc
-        $colls[] = self::collection_structuration("$selfurl/${table_name}", $table_name, $f);
+        $collNames[] = $table_name;
       }
       else { // cas particuliers avec une collection par attribut géométrique
         foreach ($geomColumnNames as $geomColumnName)
-          $colls[] = self::collection_structuration(
-            "$selfurl/${table_name}_$geomColumnName", $table_name.'_'.$geomColumnName, $f);
+          $collNames[] = $table_name.'_'.$geomColumnName;
       }
+    }
+    return $collNames;
+  }
+  
+  function collections(string $f): array { // retourne la description des collections
+    $selfurl = FeatureServer::selfUrl();
+    $colls = [];
+    foreach ($this->collNames() as $collName) {
+      $colls[] = self::collection_structuration("$selfurl/${collName}", $collName, $f);
     }
     return [
       'links'=> [
@@ -443,7 +850,7 @@ class FeatureServerOnSql extends FeatureServer {
     return self::collection_structuration($selfurl, $collId, $f);
   }
   
-  function collDescribedBy(string $collId): array { // retourne la description d'un FeatureType de la collection
+  function collDescribedBy(string $collId): array { // retourne la description d'un Feature de la collection
     $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
     $docFSchema = $collDoc ? $collDoc->featureSchema() : []; // schema issu de la doc
     //echo Yaml::dump(['$docFSchema'=> $docFSchema], 5, 2);
@@ -451,18 +858,17 @@ class FeatureServerOnSql extends FeatureServer {
     $propertiesSchema = [];
     foreach ($columns as $column) {
       if (!SqlSchema::isGeometryColumn($column)) {
-        $propertiesSchema[$column['column_name']] =
-            $docFSchema['properties']['properties']['properties'][$column['column_name']] ?? ['type'=> 'string'];
+        $prop = $docFSchema['properties']['properties']['properties'][$column['column_name']] ?? ['type'=> 'string'];
+        $propertiesSchema[$column['column_name']] = $prop;
       }
     }
-    $geomSchema = $docFSchema['properties']['geometry']['properties'] ??
-        [
-          'type'=> 'object',
-          'properties'=> [
-            'type'=> ['type'=> 'string'],
-            'coordinates'=> ['type'=> 'array'],
-          ],
-        ];
+    $geomSchema = $docFSchema['properties']['geometry'] ?? [
+      'type'=> 'object',
+      'properties'=> [
+        'type'=> ['type'=> 'string'],
+        'coordinates'=> ['type'=> 'array'],
+      ],
+    ];
     $schema = ['@id'=> self::selfUrl()];
     $title = $docFSchema['title'] ?? $collId;
     $schema['title'] = "Schema JSON d'un Feature de la collection \"$title\"";
@@ -483,7 +889,7 @@ class FeatureServerOnSql extends FeatureServer {
         ],
       ]
     );
-      /*
+    {/* Schema 
       type: object
       required:
         - id
@@ -524,7 +930,7 @@ class FeatureServerOnSql extends FeatureServer {
                 minItems: 2
                 maxItems: 2
                 items: { type: number }
-      */
+    */}
   }
   
   static function checkBbox(array $bbox): void { // vérifie que la bbox est correcte, sinon lève une exception 
