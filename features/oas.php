@@ -36,10 +36,9 @@ $schema = new JsonSchema($schema);
   
 try {
   //$yaml = Yaml::parseFile(Oas::DOC_PATH_YAML);
-  $path = 'http://localhost/geovect/features/fts.php/ignf-route500/api?f=yaml'; // ignf-route500 
+  //$path = 'http://localhost/geovect/features/fts.php/ignf-route500/api?f=yaml'; // ignf-route500 
+  $path = 'http://localhost/geovect/features/fts.php/comhisto/api?f=yaml'; // comhisto
   $text = file_get_contents($path);
-  //printf("ord= X%x X%x X%x\n", ord($text[0]), ord($text[1]), ord($text[2]));
-  //echo 'XX',$text,'YY',"\n";
   $yaml = Yaml::parse($text);
 }
 catch (ParseException $e) {
@@ -50,5 +49,5 @@ $check = $schema->check($yaml);
 if (!$check->ok())
   echo Yaml::dump(['checkErrors'=> $check->errors()]);
 else
-  echo "Doc conforme au schéma OAS\n";
+  echo "Doc conforme $path au schéma OAS\n";
 

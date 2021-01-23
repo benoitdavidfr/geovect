@@ -10,6 +10,9 @@ doc: |
   Si la table n'a pas de champ géométrique alors les feature seront créés avec une géométrie null.
   Si la table a plus d'un champ géométrique alors plusieurs collections sont définies, une pour chacun des champs.
   En PgSql les champs de type JSON sont traduits en JSON
+
+  Notes:
+    - le schema geometry d'une table sans géométrie est incorrect
 journal: |
   22-23/1/2021:
     - paramétrage de l'API avec la liste des collections et leur schéma
@@ -103,7 +106,7 @@ class CollOnSql {
   protected string $table_name;
   protected array $columns; // [[properties]]
   protected string $idColName; // nom de la colonne clé primaire
-  protected string $geomColName; // nom de la colonne géométrique
+  protected ?string $geomColName=null; // nom de la colonne géométrique
   
   // $collId peut être soit le nom d'une table soit la concaténation du nom d'une table et du nom d'un de ses champs géom.
   function __construct(string $schema, string $collId) {
@@ -213,7 +216,6 @@ class FeatureServerOnSql extends FeatureServer {
   }
   
   function featureCollectionGeoJsonSchema(string $collName): array { // schema d'une FeatureCollection GeoJSON 
-    static $ogcSchemaUri = 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml';
     $fcSchema = [];
     $collDoc = $this->datasetDoc->collections[$collName] ?? null;
     if ($collDoc) {
@@ -225,7 +227,8 @@ class FeatureServerOnSql extends FeatureServer {
     unset($fSchema['@id']);
     unset($fSchema['$schema']);
     unset($fSchema['title']);
-    $fSchema['description'] = "Schema d'un Feature de \"$collDoc->title\" ($collName)";
+    if ($collDoc)
+      $fSchema['description'] = "Schema d'un Feature de \"$collDoc->title\" ($collName)";
     return array_merge($fcSchema, [
       'type'=> 'object',
       'required'=> ['type','features'],
@@ -240,15 +243,14 @@ class FeatureServerOnSql extends FeatureServer {
         ],
         'links'=> [
           'type'=> 'array',
-          'items'=> [ '$ref'=> $ogcSchemaUri.'#/components/schemas/link' ],
+          'items'=> [ '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/link' ],
         ],
-        'timeStamp'=> [ '$ref'=> $ogcSchemaUri.'#/components/schemas/timeStamp' ],
-        'numberMatched'=> [ '$ref'=> $ogcSchemaUri.'#/components/schemas/numberMatched' ],
-        'numberReturned'=> [ '$ref'=> $ogcSchemaUri.'#/components/schemas/numberReturned' ],
+        'timeStamp'=> [ '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/timeStamp' ],
+        'numberMatched'=> [ '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/numberMatched' ],
+        'numberReturned'=> [ '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/numberReturned' ],
       ],
     ]);
-    {/*Schema: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml
-        #/components/schemas/featureCollectionGeoJSON
+    {/*Schema: OGC_SCHEMA_URI.'#/components/schemas/featureCollectionGeoJSON'
       type: object
       required:
         - type
@@ -375,8 +377,8 @@ as well as key information about the collection. This information includes:
       // paths: /collections/{collId}/items
       // modifie les réponses 
       $responses = $itemsPath['get']['responses'];
-      if ($collDoc) {
-        {/* http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+      if (1 || $collDoc) {
+        {/* OGC_SCHEMA_URI.'#/components/responses/Features' 
           Features:
             description: |-
               The response is a document consisting of features in the collection.
@@ -489,8 +491,8 @@ links to support paging (link relation `next`).",
       // paths: /collections/{collId}/items/{featureId}
       // modifie les réponses 
       $responses = $itemIdPath['get']['responses'];
-      if ($collDoc) {
-        {/* http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+      if (1 || $collDoc) {
+        {/* OGC_SCHEMA_URI.'#/components/responses/Feature'
         Feature:
           description: |-
             fetch the feature with id `featureId` in the feature collection
@@ -850,25 +852,36 @@ links to support paging (link relation `next`).",
     return self::collection_structuration($selfurl, $collId, $f);
   }
   
-  function collDescribedBy(string $collId): array { // retourne la description d'un Feature de la collection
+  function collDescribedBy(string $collId): array { // retourne le schema d'un Feature de la collection
     $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
     $docFSchema = $collDoc ? $collDoc->featureSchema() : []; // schema issu de la doc
     //echo Yaml::dump(['$docFSchema'=> $docFSchema], 5, 2);
-    $columns = (new CollOnSql(basename($this->path), $collId))->columns;
+    $collOnSql = new CollOnSql(basename($this->path), $collId);
     $propertiesSchema = [];
-    foreach ($columns as $column) {
+    foreach ($collOnSql->columns as $column) {
       if (!SqlSchema::isGeometryColumn($column)) {
         $prop = $docFSchema['properties']['properties']['properties'][$column['column_name']] ?? ['type'=> 'string'];
         $propertiesSchema[$column['column_name']] = $prop;
       }
     }
-    $geomSchema = $docFSchema['properties']['geometry'] ?? [
-      'type'=> 'object',
+    $geomSchema = !$collOnSql->geomColName ? [
+      'description'=> "no geometry coded as a GeometryCollection with 0 geometries",
+      '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/geometrycollectionGeoJSON',
+      /*'type'=> 'object',
       'properties'=> [
-        'type'=> ['type'=> 'string'],
-        'coordinates'=> ['type'=> 'array'],
-      ],
-    ];
+        'type'=> ['type'=> 'string', 'enum'=> ['GeometryCollection']],
+        'geometries'=> ['type'=> 'array', 'maxItems'=> 0, 'items'=> ['type'=> 'string']],
+      ],*/
+    ]
+    : ($docFSchema['properties']['geometry'] ?? [
+        'description'=> "geometry of unknown type",
+        '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/geometryGeoJSON',
+        /*'type'=> 'object',
+        'properties'=> [
+          'type'=> ['type'=> 'string'],
+          'coordinates'=> ['type'=> 'array'],
+        ],*/
+      ]);
     $schema = ['@id'=> self::selfUrl()];
     $title = $docFSchema['title'] ?? $collId;
     $schema['title'] = "Schema JSON d'un Feature de la collection \"$title\"";
@@ -880,9 +893,11 @@ links to support paging (link relation `next`).",
         'type'=> 'object',
         'required'=> ['id','properties','geometry'],
         'properties'=> [
+          'type'=> ['type'=> 'string', 'enum'=> ['Feature']],
           'id'=> ['type'=> 'string'],
           'properties'=> [
             'type'=> 'object',
+            'required'=> array_keys($propertiesSchema),
             'properties'=> $propertiesSchema,
           ],
           'geometry'=> $geomSchema,
@@ -994,7 +1009,10 @@ links to support paging (link relation `next`).",
         unset($tuple['st_asgeojson']);
       }
       else
-        $geom = null;
+      $geom = [
+        'type'=> 'GeometryCollection',
+        'geometries'=> [],
+      ];
       foreach ($jsonCols as $jsonCol)
         $tuple[$jsonCol] = json_decode($tuple[$jsonCol], true);
       $items[] = ['type'=> 'Feature', 'id'=> $tuple[$collection->idColName], 'properties'=> $tuple, 'geometry'=> $geom];
@@ -1077,7 +1095,10 @@ links to support paging (link relation `next`).",
       unset($tuple['st_asgeojson']);
     }
     else
-      $geom = null;
+      $geom = [
+        'type'=> 'GeometryCollection',
+        'geometries'=> [],
+      ];
     foreach ($jsonCols as $jsonCol)
       $tuple[$jsonCol] = json_decode($tuple[$jsonCol], true);
     return [
