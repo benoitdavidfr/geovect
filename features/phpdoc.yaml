@@ -26,6 +26,8 @@ doc: |
     https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
 phpScripts:
   - /geovect/features/fts.php
+  - /geovect/features/doc.php
+  - /geovect/features/oas.php
 phpIncludes:
   - /geovect/features/ftrserver.inc.php
   - /geovect/features/onwfs.inc.php

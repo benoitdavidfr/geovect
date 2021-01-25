@@ -24,7 +24,7 @@ methods:
 doc: |
 */
 abstract class FeatureServer {
-  const LOG_FILENAME = __DIR__.'/fts_logfile.yaml'; // chemin du fichier Yaml de log, si vide alors pas de log
+  const LOG_FILENAME = __DIR__.'/fts.log.yml'; // chemin du fichier Yaml de log, si vide alors pas de log
   protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données
   
   static function log(string|array $message): void { // écrit un message dans le fichier Yaml des logs

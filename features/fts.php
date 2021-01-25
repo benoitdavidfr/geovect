@@ -17,25 +17,36 @@ doc: |
   
   Un appel sans paramètre liste les serveurs bien connus et des exemples d'appel.
 
-  A faire:
+  Utilisation avec QGis:
+    - les dernières versions de QGis (3.16) peuvent utiliser les serveurs OGC API Features
+    - a priori elles n'exploitent pas ni n'affichent la doc, notamment les schemas
+    - lors d'une requête QGis demande des données zippées ou deflate
+
+  Perf:
+    - 3'05" pour troncon_hydro R500 sur FX depuis Alwaysdata
+    - 47' même données gzippées et !JSON_PRETTY_PRINT soit 1/4
+
+  A faire (court-terme):
+    - ajouter les filtres, tester leur utilisation et leur efficacité avec QGis
     - gérer correctement les erreurs
     - gérer correctement les types non string dans les données comme les nombres
-    - intégrer la doc dans la description de l'API
     - renvoyer une erreur lors de l'existence d'un paramètre non prévu
     - satisfaire au test CITE
-  Réflexions:
+  Réflexions (à mûrir):
     - distinguer un outil d'admin différent de l'outil fts.php de consultation
       - y transférer l'opération check de vérif. de clé primaire et de création éventuelle
       - ajouter une fonction de test de cohérence doc / service déjà écrite dans doc
-    - Définir un fichier stockant des options et des paramètres ?
-      - utilisé comme cache pour renseigner certains paramètres pour éviter de les interroger systématiquement ?
-  Idées:
+    - définir pour chaque raccourci un fichier pser stockant le schéma des collections et leur extension
+      afin d'éviter d'avoir à interroger la base à chque requête
+      - pb ca modifie beaucoup le code sans que je sois certain que cela apporte des améliorations significatives
+      - il faudrait mesurer l'impact
+  Idées (plus long terme):
+    - mettre en oeuvre le mécanisme i18n défini pour OGC API Features
+    - remplacer l'appel sans paramètre par l'exposition d'un catalogue DCAT
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
-    - QGis propose de gziper le retour, le tester notamment les items !
-    - regarder l'utilisation i18n
 journal: |
-  20-21/1/2021:
+  20-23/1/2021:
     - intégration de la doc
   17/1/2021:
     - onsql fonctionne avec QGis
@@ -108,9 +119,17 @@ function output(string $f, array $array, int $levels=3) {
       die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
     }
     case 'geojson': {
-      header('Content-type: application/geo+json; charset="utf8"');
-      //header('Content-type: text/plain; charset="utf8"');
-      die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+      if (in_array('gzip', explode(',', getallheaders()['Accept-Encoding'] ?? ''))) {
+        header('Content-type: application/geo+json; charset="utf8"');
+        header('Content-Encoding: gzip');
+        die(gzencode(json_encode($array, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)));
+      }
+      else {
+        header('Content-type: application/geo+json; charset="utf8"');
+        //header('Content-type: text/plain; charset="utf8"');
+        //die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+        die(json_encode($array, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
+      }
     }
     case 'yaml': die(Yaml::dump($array, $levels, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
     case 'html': {

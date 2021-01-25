@@ -11,9 +11,11 @@ doc: |
   Si la table a plus d'un champ géométrique alors plusieurs collections sont définies, une pour chacun des champs.
   En PgSql les champs de type JSON sont traduits en JSON
 
-  Notes:
-    - le schema geometry d'une table sans géométrie est incorrect
+  A faire:
+    - mettre en oeuvre la possibilité d'effectuer des requêtes sur un champ particulier
 journal: |
+  25/1/2021:
+    - utilisation de \Sql\Schema au lieu des requêtes dans information_schema
   22-23/1/2021:
     - paramétrage de l'API avec la liste des collections et leur schéma
   20-21/1/2021:
@@ -24,144 +26,73 @@ journal: |
       - écrire le schéma ??? optionnel skippé pour le moment
   30/12/2020:
     - création
-includes: [ftrserver.inc.php, ../../phplib/sql.inc.php]
+includes: [ftrserver.inc.php, ../../phplib/sql.inc.php, ../../phplib/sqlschema.inc.php]
 */
 require_once __DIR__.'/ftrserver.inc.php';
 require_once __DIR__.'/../../phplib/sql.inc.php';
+require_once __DIR__.'/../../phplib/sqlschema.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
 /*PhpDoc: classes
-name: SqlSchema
-title: class SqlSchema - Début de gestion du schema Sql
-doc: |
-  L'objectif est de gérer les requêtes sur INFORMATION_SCHEMA
-*/
-class SqlSchema {
-  // liste les tables du schema avec le nom de la colonne géométrique et le nom de la colonne clé primaire
-  // S'il y a plusieurs colonnes géométriques alors la table est dupliquée pour chacune
-  static function listOfTables(string $schema): array {
-    $sql = [
-      "select t.table_name, g.column_name geom_column_name, pk.column_name pk_column_name\n",
-      "from INFORMATION_SCHEMA.TABLES t\n",
-      "  left join INFORMATION_SCHEMA.columns g\n",
-      "    on g.table_schema=t.table_schema and g.table_name=t.table_name ",
-      [
-        'MySql'=> "and g.data_type='geometry'\n",
-        'PgSql'=> "and g.data_type='USER-DEFINED' and g.udt_schema='public' and g.udt_name='geometry'\n",
-      ],
-      "  join INFORMATION_SCHEMA.key_column_usage pk\n",
-      "    on pk.table_schema=t.table_schema and pk.table_name=t.table_name\n",
-      "where t.table_schema='$schema' ",
-      [
-        'MySql'=> " and pk.constraint_name='PRIMARY'\n",
-      ]
-    ];
-    //echo "sql=",Sql::toString($sql),"\n";
-    $tables = [];
-    foreach (Sql::query($sql) as $tuple) {
-      //print_r($tuple);
-      $table_name = $tuple['TABLE_NAME'] ?? $tuple['table_name'] ?? null;
-      if ($tuple['geom_column_name'])
-        $tables[$table_name][] = $tuple['geom_column_name'];
-      else
-        $tables[$table_name] = [];
-    }
-    //echo 'listOfTables()$tables='; print_r($tables);
-    return $tables;
-  }
-  
-  // liste des colonnes de la table $table_name
-  static function listOfColumnsOfTable(string $schema, string $table_name): array { 
-    $sql = [
-      "select column_name, data_type, character_maximum_length, column_default, is_nullable",
-      [
-        'MySql'=> "\n",
-        'PgSql'=> ", udt_catalog, udt_schema, udt_name\n",
-      ],
-        "from INFORMATION_SCHEMA.COLUMNS where table_schema='$schema' and table_name='$table_name'\n",
-    ];
-    return Sql::getTuples($sql);
-  }
-  
-  static function isGeometryColumn(array $column): bool { // la colonne est-elle de type geometry ?
-    return ($column['data_type']=='geometry') // MySql
-      // PgSql
-      || (($column['data_type']=='USER-DEFINED') && ($column['udt_schema']=='public') && ($column['udt_name']=='geometry'));
-  }
-
-  // ne fonctionne qu'en PgSql, je ne sais pas le faire en MySql
-  static function isJsonColumn(array $column): bool { return ($column['data_type']=='jsonb'); }
-};
-
-/*PhpDoc: classes
 name: CollOnSql
-title: class CollOnSql - Un objet CollOnSql est initialisé par un collId et gère le mapping avec la table et ses colonnes
+title: class CollOnSql - gestion du mapping entre une collection et la table de stockage correspondnte
 doc: |
+  Un objet CollOnSql est initialisé par un \Sql\Schema et un collId.
   Ne gère pas le cas de collision entre le nom généré et un nom existant de table
-  La création de l'objet génère 2 requêtes Sql dans les cas stds et 3 dans les cas particuliers
 */
 class CollOnSql {
-  protected string $schema;
-  protected string $table_name;
-  protected array $columns; // [[properties]]
-  protected string $idColName; // nom de la colonne clé primaire
+  const SEP = '__'; // séparateur entre nom de table et nom de colonne pour créer le nom de collection
+  protected \Sql\Table $table; // Table correspondant à la collection
   protected ?string $geomColName=null; // nom de la colonne géométrique
-  
-  // $collId peut être soit le nom d'une table soit la concaténation du nom d'une table et du nom d'un de ses champs géom.
-  function __construct(string $schema, string $collId) {
-    $this->schema = $schema;
-    //echo "listOfColumnsOfTable="; print_r(SqlSchema::listOfColumnsOfTable($schema, $collId));
-    if ($columns = SqlSchema::listOfColumnsOfTable($schema, $collId)) { // cas normal 
-      $this->table_name = $collId;
-      $this->columns = $columns;
-      foreach ($columns as $column) {
-        if (SqlSchema::isGeometryColumn($column))
-          $this->geomColName = $column['column_name'];
+  protected array $columns; // [ \Sql\Column ]
+
+  static function collNames(\Sql\Schema $sqlSchema): array { // retourne la liste des noms de collection
+    $collNames = [];
+    foreach ($sqlSchema->tables as $table_name => $sqlTable) {
+      $geomColumns = $sqlTable->listOfColumnOfType('geometry');
+      if (count($geomColumns) <= 1) {
+        $collNames[] = $table_name;
+      }
+      else {
+        foreach (array_keys($geomColumns) as $geomColumnName)
+          $collNames[] = $table_name.self::SEP.$geomColumnName;
       }
     }
-    else { // cas où {collId} est la concaténation des noms de table et de la colonne géométrique
-      $sql = "select table_name, column_name
-        from INFORMATION_SCHEMA.COLUMNS
-        where table_schema='$schema'
-          and concat(table_name,'_',column_name)='$collId'";
-      //echo "sql=$sql\n";
-      $tuples = Sql::getTuples($sql);
-      if (count($tuples) <> 1)
-        throw new Exception("Erreur sur la détection de table_name pour collId='$collId'");
-      $this->table_name = $tuples[0]['table_name'];
-      $this->geomColName = $tuples[0]['column_name'];
-      $this->columns = SqlSchema::listOfColumnsOfTable($schema, $this->table_name);
-      if (!$this->columns)
-        throw new Exception("Erreur aucune colonne collId='$collId'");
+    return $collNames;
+  }
+
+  // $collId peut être soit le nom d'une table soit la concaténation du nom d'une table et du nom d'un de ses champs géom.
+  function __construct(\Sql\Schema $schema, string $collId) {
+    //echo "listOfColumnsOfTable="; print_r(SqlSchema::listOfColumnsOfTable($schema, $collId));
+    if ($table = $schema->tables[$collId] ?? null) { // cas normal 
+      $this->table = $table;
+      $geomColumns = $this->table->listOfColumnOfType('geometry');
+      if (count($geomColumns) == 1)
+        $this->geomColName = array_keys($geomColumns)[0];
     }
-    
-    $table_name = $this->table_name;
-    $sql = [
-      "select column_name, constraint_name from INFORMATION_SCHEMA.key_column_usage\n",
-      "where table_schema='$schema' and table_name='$table_name'",
-      [
-        'MySql'=> " and constraint_name='PRIMARY'",
-      ],
-    ];
-    $tuples = Sql::getTuples($sql);
-    if (!$tuples)
-      throw new Exception("erreur sur $schema.$collId et $schema.$table_name aucune clé définie");
-    $this->idColName = $tuples[0]['column_name'];
-    //"collection="; print_r($this);
+    else { // cas où {collId} est la concaténation des noms de table et de la colonne géométrique
+      $geomCol = $schema->concatTableGeomNames($collId, self::SEP); 
+      $this->geomColName = $geomCol->name;
+      $this->table = $geomCol->table;
+    }
   }
   
   function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
+  function pkeyCol(): \Sql\Column { return $this->table->pkeyCol(); }
+  function columns(): array { return $this->table->columns; } // [ {name}=> \Sql\Column]
 };
 
 class FeatureServerOnSql extends FeatureServer {
   const OGC_SCHEMA_URI = 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml';
   //protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données - déclaré dans la sur-classe
   protected string $path;
+  protected \Sql\Schema $sqlSchema; // Le schema Sql de la base Sql dans laquelle sont stockées les données
   //protected ?CollOnSql $collection = null;
   
   function __construct(string $path, ?DatasetDoc $datasetDoc) {
     $this->path = $path;
+    $this->sqlSchema = new \Sql\Schema($path);
     //echo "path=$path\n";
     Sql::open($this->path);
     $this->datasetDoc = $datasetDoc;
@@ -308,7 +239,7 @@ class FeatureServerOnSql extends FeatureServer {
     array_shift($itemIdPath['get']['parameters']);
 
     array_pop($apidef['tags']); // supprime le tag collectionId
-    foreach ($this->collNames() as $collName) {
+    foreach (collOnSql::collNames($this->sqlSchema) as $collName) {
       $collDoc = $this->datasetDoc->collections[$collName] ?? null;
       
       // paths: /collections/{collId}
@@ -377,79 +308,78 @@ as well as key information about the collection. This information includes:
       // paths: /collections/{collId}/items
       // modifie les réponses 
       $responses = $itemsPath['get']['responses'];
-      if (1 || $collDoc) {
-        {/* OGC_SCHEMA_URI.'#/components/responses/Features' 
-          Features:
-            description: |-
-              The response is a document consisting of features in the collection.
-              The features included in the response are determined by the server
-              based on the query parameters of the request. To support access to
-              larger collections without overloading the client, the API supports
-              paged access with links to the next page, if more features are selected
-              that the page size.
+      {/* OGC_SCHEMA_URI.'#/components/responses/Features' 
+        Features:
+          description: |-
+            The response is a document consisting of features in the collection.
+            The features included in the response are determined by the server
+            based on the query parameters of the request. To support access to
+            larger collections without overloading the client, the API supports
+            paged access with links to the next page, if more features are selected
+            that the page size.
 
-              The `bbox` and `datetime` parameter can be used to select only a
-              subset of the features in the collection (the features that are in the
-              bounding box or time interval). The `bbox` parameter matches all features
-              in the collection that are not associated with a location, too. The
-              `datetime` parameter matches all features in the collection that are
-              not associated with a time stamp or interval, too.
+            The `bbox` and `datetime` parameter can be used to select only a
+            subset of the features in the collection (the features that are in the
+            bounding box or time interval). The `bbox` parameter matches all features
+            in the collection that are not associated with a location, too. The
+            `datetime` parameter matches all features in the collection that are
+            not associated with a time stamp or interval, too.
 
-              The `limit` parameter may be used to control the subset of the
-              selected features that should be returned in the response, the page size.
-              Each page may include information about the number of selected and
-              returned features (`numberMatched` and `numberReturned`) as well as
-              links to support paging (link relation `next`).
-            content:
-              application/geo+json:
-                schema:
-                  $ref: '#/components/schemas/featureCollectionGeoJSON'
-                example:
-                  type: FeatureCollection
-                  links:
-                    - href: 'http://data.example.com/collections/buildings/items.json'
-                      rel: self
-                      type: application/geo+json
-                      title: this document
-                    - href: 'http://data.example.com/collections/buildings/items.html'
-                      rel: alternate
-                      type: text/html
-                      title: this document as HTML
-                    - href: 'http://data.example.com/collections/buildings/items.json&offset=10&limit=2'
-                      rel: next
-                      type: application/geo+json
-                      title: next page
-                  timeStamp: '2018-04-03T14:52:23Z'
-                  numberMatched: 123
-                  numberReturned: 2
-                  features:
-                    - type: Feature
-                      id: '123'
-                      geometry:
-                        type: Polygon
-                        coordinates:
-                          - ...
-                      properties:
-                        function: residential
-                        floors: '2'
-                        lastUpdate: '2015-08-01T12:34:56Z'
-                    - type: Feature
-                      id: '132'
-                      geometry:
-                        type: Polygon
-                        coordinates:
-                          - ...
-                      properties:
-                        function: public use
-                        floors: '10'
-                        lastUpdate: '2013-12-03T10:15:37Z'
-              text/html:
-                schema:
-                  type: string
-        
-        */}
-        $responses[200] = [
-          'description'=> "The response is a document consisting of features in the \"$collTitle\" collection.
+            The `limit` parameter may be used to control the subset of the
+            selected features that should be returned in the response, the page size.
+            Each page may include information about the number of selected and
+            returned features (`numberMatched` and `numberReturned`) as well as
+            links to support paging (link relation `next`).
+          content:
+            application/geo+json:
+              schema:
+                $ref: '#/components/schemas/featureCollectionGeoJSON'
+              example:
+                type: FeatureCollection
+                links:
+                  - href: 'http://data.example.com/collections/buildings/items.json'
+                    rel: self
+                    type: application/geo+json
+                    title: this document
+                  - href: 'http://data.example.com/collections/buildings/items.html'
+                    rel: alternate
+                    type: text/html
+                    title: this document as HTML
+                  - href: 'http://data.example.com/collections/buildings/items.json&offset=10&limit=2'
+                    rel: next
+                    type: application/geo+json
+                    title: next page
+                timeStamp: '2018-04-03T14:52:23Z'
+                numberMatched: 123
+                numberReturned: 2
+                features:
+                  - type: Feature
+                    id: '123'
+                    geometry:
+                      type: Polygon
+                      coordinates:
+                        - ...
+                    properties:
+                      function: residential
+                      floors: '2'
+                      lastUpdate: '2015-08-01T12:34:56Z'
+                  - type: Feature
+                    id: '132'
+                    geometry:
+                      type: Polygon
+                      coordinates:
+                        - ...
+                    properties:
+                      function: public use
+                      floors: '10'
+                      lastUpdate: '2013-12-03T10:15:37Z'
+            text/html:
+              schema:
+                type: string
+      
+      */}
+      $responses[200] = [
+        'description'=> "The response is a document consisting of features in the \"$collTitle\" collection.
 The features included in the response are determined by the server
 based on the query parameters of the request. To support access to
 larger collections without overloading the client, the API supports
@@ -468,16 +398,15 @@ selected features that should be returned in the response, the page size.
 Each page may include information about the number of selected and
 returned features (`numberMatched` and `numberReturned`) as well as
 links to support paging (link relation `next`).",
-          'content'=> [
-            'application/geo+json'=> [
-              'schema'=> $this->featureCollectionGeoJsonSchema($collName),
-            ],
-            'text/html'=> [
-              'schema'=> ['type'=> 'string'],
-            ],
+        'content'=> [
+          'application/geo+json'=> [
+            'schema'=> $this->featureCollectionGeoJsonSchema($collName),
           ],
-        ];
-      }
+          'text/html'=> [
+            'schema'=> ['type'=> 'string'],
+          ],
+        ],
+      ];
       $apidef['paths']["/collections/$collName/items"] = [
         'get'=> [
           'summary'=> "Get the items of the \"$collName\" Collection",
@@ -491,59 +420,57 @@ links to support paging (link relation `next`).",
       // paths: /collections/{collId}/items/{featureId}
       // modifie les réponses 
       $responses = $itemIdPath['get']['responses'];
-      if (1 || $collDoc) {
-        {/* OGC_SCHEMA_URI.'#/components/responses/Feature'
-        Feature:
-          description: |-
-            fetch the feature with id `featureId` in the feature collection
-            with id `collectionId`
-          content:
-            application/geo+json:
-              schema:
-                $ref: '#/components/schemas/featureGeoJSON'
-              example:
-                type: Feature
-                links:
-                  - href: 'http://data.example.com/id/building/123'
-                    rel: canonical
-                    title: canonical URI of the building
-                  - href: 'http://data.example.com/collections/buildings/items/123.json'
-                    rel: self
-                    type: application/geo+json
-                    title: this document
-                  - href: 'http://data.example.com/collections/buildings/items/123.html'
-                    rel: alternate
-                    type: text/html
-                    title: this document as HTML
-                  - href: 'http://data.example.com/collections/buildings'
-                    rel: collection
-                    type: application/geo+json
-                    title: the collection document
-                id: '123'
-                geometry:
-                  type: Polygon
-                  coordinates:
-                    - ...
-                properties:
-                  function: residential
-                  floors: '2'
-                  lastUpdate: '2015-08-01T12:34:56Z'
-            text/html:
-              schema:
-                type: string
-        */}
-        $responses[200] = [
-          'description'=> "fetch the feature with id `featureId` in the feature collection \"$collTitle\"",
-          'content'=> [
-            'application/geo+json'=> [
-              'schema'=> $this->featureGeoJsonSchema($collName),
-            ],
-            'text/html'=> [
-              'schema'=> ['type'=> 'string'],
-            ],
+      {/* OGC_SCHEMA_URI.'#/components/responses/Feature'
+      Feature:
+        description: |-
+          fetch the feature with id `featureId` in the feature collection
+          with id `collectionId`
+        content:
+          application/geo+json:
+            schema:
+              $ref: '#/components/schemas/featureGeoJSON'
+            example:
+              type: Feature
+              links:
+                - href: 'http://data.example.com/id/building/123'
+                  rel: canonical
+                  title: canonical URI of the building
+                - href: 'http://data.example.com/collections/buildings/items/123.json'
+                  rel: self
+                  type: application/geo+json
+                  title: this document
+                - href: 'http://data.example.com/collections/buildings/items/123.html'
+                  rel: alternate
+                  type: text/html
+                  title: this document as HTML
+                - href: 'http://data.example.com/collections/buildings'
+                  rel: collection
+                  type: application/geo+json
+                  title: the collection document
+              id: '123'
+              geometry:
+                type: Polygon
+                coordinates:
+                  - ...
+              properties:
+                function: residential
+                floors: '2'
+                lastUpdate: '2015-08-01T12:34:56Z'
+          text/html:
+            schema:
+              type: string
+      */}
+      $responses[200] = [
+        'description'=> "fetch the feature with id `featureId` in the feature collection \"$collTitle\"",
+        'content'=> [
+          'application/geo+json'=> [
+            'schema'=> $this->featureGeoJsonSchema($collName),
           ],
-        ];
-      }
+          'text/html'=> [
+            'schema'=> ['type'=> 'string'],
+          ],
+        ],
+      ];
       $apidef['paths']["/collections/$collName/items/{featureId}"] = [
         'get'=> [
           'summary'=> "Get the {featureId} item of the \"$collName\" Collection",
@@ -562,40 +489,14 @@ links to support paging (link relation `next`).",
   }
   
   function checkTables(): array { // liste les tables et leur éligibilité comme collection
-    $schema = basename($this->path);
-    //echo "schema=$schema\n";
-    Sql::open($this->path);
-    $sql = [
-      "select t.table_name, g.column_name geom_column_name, pk.column_name pk_column_name\n",
-      "from INFORMATION_SCHEMA.TABLES t\n",
-      "  left join INFORMATION_SCHEMA.columns g\n",
-      "    on g.table_schema=t.table_schema and g.table_name=t.table_name ",
-      [
-        'MySql'=> "and g.data_type='geometry'\n",
-        'PgSql'=> "and g.data_type='USER-DEFINED' and g.udt_schema='public' and g.udt_name='geometry'\n",
-      ],
-      "  left join INFORMATION_SCHEMA.key_column_usage pk\n",
-      "    on pk.table_schema=t.table_schema and pk.table_name=t.table_name\n",
-      [
-        'MySql'=> " and pk.constraint_name='PRIMARY'",
-      ],
-      "where t.table_schema='$schema'\n",
-    ];
-    echo "sql=",Sql::toString($sql),"\n";
     $tables = [];
-    foreach (Sql::query($sql) as $tuple) {
-      print_r($tuple);
-      if (!isset($tables[$tuple['table_name']])) {
-        $tables[$tuple['table_name']] = [
-          'geomColumnNames'=> $tuple['geom_column_name'] ? [$tuple['geom_column_name']] : [],
-          'pkColumnName'=> $tuple['pk_column_name'],
-        ];
-      }
-      elseif ($tuple['geom_column_name']) {
-        $tables[$tuple['table_name']]['geomColumnNames'][] = $tuple['geom_column_name'];
-      }
+    foreach ($this->sqlSchema->tables as $tname => $table) {
+      $pkeyCol = $table->pkeyCol();
+      $tables[$tname] = [
+        'geomColumnNames'=> array_keys($table->listOfColumnOfType('geometry')),
+        'pkColumnName'=> $pkeyCol ? $pkeyCol->name : null,
+      ];
     }
-    print_r($tables);
     return $tables;
   }
 
@@ -789,26 +690,10 @@ links to support paging (link relation `next`).",
     */}
   }
   
-  function collNames(): array { // retourne la liste des noms de collection
-    $schema = basename($this->path);
-    $tables = SqlSchema::listOfTables($schema); // sélectionne les tables du schema
-    $collNames = [];
-    foreach ($tables as $table_name => $geomColumnNames) {
-      if (count($geomColumnNames) <= 1) { // cas std avec une collection 
-        $collNames[] = $table_name;
-      }
-      else { // cas particuliers avec une collection par attribut géométrique
-        foreach ($geomColumnNames as $geomColumnName)
-          $collNames[] = $table_name.'_'.$geomColumnName;
-      }
-    }
-    return $collNames;
-  }
-  
   function collections(string $f): array { // retourne la description des collections
     $selfurl = FeatureServer::selfUrl();
     $colls = [];
-    foreach ($this->collNames() as $collName) {
+    foreach (CollOnSql::collNames($this->sqlSchema) as $collName) {
       $colls[] = self::collection_structuration("$selfurl/${collName}", $collName, $f);
     }
     return [
@@ -829,7 +714,7 @@ links to support paging (link relation `next`).",
       ],
       'collections'=> $colls,
     ];
-    /*schemas:
+    {/*schemas:
       /collections.yaml:
         type: object
         required:
@@ -844,7 +729,7 @@ links to support paging (link relation `next`).",
             type: array
             items:
               $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/collection.yaml
-    */
+    */}
   }
   
   function collection(string $f, string $collId): array { // retourne la description du FeatureType de la collection
@@ -856,32 +741,22 @@ links to support paging (link relation `next`).",
     $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
     $docFSchema = $collDoc ? $collDoc->featureSchema() : []; // schema issu de la doc
     //echo Yaml::dump(['$docFSchema'=> $docFSchema], 5, 2);
-    $collOnSql = new CollOnSql(basename($this->path), $collId);
+    $collOnSql = new CollOnSql($this->sqlSchema, $collId);
     $propertiesSchema = [];
-    foreach ($collOnSql->columns as $column) {
-      if (!SqlSchema::isGeometryColumn($column)) {
-        $prop = $docFSchema['properties']['properties']['properties'][$column['column_name']] ?? ['type'=> 'string'];
-        $propertiesSchema[$column['column_name']] = $prop;
+    foreach ($collOnSql->columns() as $column) {
+      if ($column->dataType <> 'geometry') {
+        $prop = $docFSchema['properties']['properties']['properties'][$column->name] ?? ['type'=> 'string'];
+        $propertiesSchema[$column->name] = $prop;
       }
     }
     $geomSchema = !$collOnSql->geomColName ? [
-      'description'=> "no geometry coded as a GeometryCollection with 0 geometries",
-      '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/geometrycollectionGeoJSON',
-      /*'type'=> 'object',
-      'properties'=> [
-        'type'=> ['type'=> 'string', 'enum'=> ['GeometryCollection']],
-        'geometries'=> ['type'=> 'array', 'maxItems'=> 0, 'items'=> ['type'=> 'string']],
-      ],*/
-    ]
-    : ($docFSchema['properties']['geometry'] ?? [
-        'description'=> "geometry of unknown type",
-        '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/geometryGeoJSON',
-        /*'type'=> 'object',
-        'properties'=> [
-          'type'=> ['type'=> 'string'],
-          'coordinates'=> ['type'=> 'array'],
-        ],*/
-      ]);
+        'description'=> "no geometry coded as a GeometryCollection with 0 geometries",
+        '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/geometrycollectionGeoJSON',
+      ]
+      : ($docFSchema['properties']['geometry'] ?? [
+          'description'=> "geometry of unknown type",
+          '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/geometryGeoJSON',
+        ]);
     $schema = ['@id'=> self::selfUrl()];
     $title = $docFSchema['title'] ?? $collId;
     $schema['title'] = "Schema JSON d'un Feature de la collection \"$title\"";
@@ -970,23 +845,23 @@ links to support paging (link relation `next`).",
   // retourne les items de la collection comme FeatureCollection en array Php
   // L'usage de pFilter n'est pas implémenté
   function items(string $collId, array $bbox=[], array $pFilter=[], int $limit=10, int $startindex=0): array {
-    $jsonCols = [];
-    $columns = [];
-    $collection = new CollOnSql(basename($this->path), $collId);
-    foreach ($collection->columns as $column) {
-      if (SqlSchema::isGeometryColumn($column)) {
-        if ($column['column_name'] == $collection->geomColName)
-          $columns[] = "ST_AsGeoJSON($column[column_name]) st_asgeojson";
+    $jsonColNames = []; // liste des noms des colonnes de type JSON
+    $columns = []; // liste des noms des colonnes pour la requête Sql
+    $collection = new CollOnSql($this->sqlSchema, $collId);
+    foreach ($collection->columns() as $column) {
+      if ($column->dataType == 'geometry') {
+        if ($column->name == $collection->geomColName)
+          $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }
-      elseif (SqlSchema::isJsonColumn($column)) {
-        $columns[] = $column['column_name'];
-        $jsonCols[] = $column['column_name'];
+      elseif ($column->dataType == 'jsonb') {
+        $columns[] = $column->name;
+        $jsonCols[] = $column->name;
       }
       else
-        $columns[] = $column['column_name'];
+        $columns[] = $column->name;
     }
     
-    $sql = "select ".implode(',', $columns)."\nfrom $collection->table_name";
+    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table->name;
     $where = null;
     if ($bbox) {
       self::checkBbox($bbox);
@@ -1008,14 +883,15 @@ links to support paging (link relation `next`).",
         $geom = json_decode($tuple['st_asgeojson'], true);
         unset($tuple['st_asgeojson']);
       }
-      else
-      $geom = [
-        'type'=> 'GeometryCollection',
-        'geometries'=> [],
-      ];
-      foreach ($jsonCols as $jsonCol)
-        $tuple[$jsonCol] = json_decode($tuple[$jsonCol], true);
-      $items[] = ['type'=> 'Feature', 'id'=> $tuple[$collection->idColName], 'properties'=> $tuple, 'geometry'=> $geom];
+      else {
+        $geom = [
+          'type'=> 'GeometryCollection',
+          'geometries'=> [],
+        ];
+      }
+      foreach ($jsonColNames as $jsonColName)
+        $tuple[$jsonColName] = json_decode($tuple[$jsonColName], true);
+      $items[] = ['type'=> 'Feature', 'id'=> $tuple[$collection->pkeyCol()->name], 'properties'=> $tuple, 'geometry'=> $geom];
     }
     $selfurl = FeatureServer::selfUrl()
         ."?startindex=$startindex&limit=$limit"
