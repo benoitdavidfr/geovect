@@ -14,6 +14,10 @@ doc: |
   A faire:
     - mettre en oeuvre la possibilité d'effectuer des requêtes sur un champ particulier
 journal: |
+  26/1/2021:
+    - lors de la création d'une clé primaire, un nom spécifique, défini dans FeatureServerOnSql::IDPKEY_NAME,
+      lui est donné et il est exclu à la fois du schéma et des champs fournis dans items et items/{id}
+      Cette adaptation n'a ainsi pas d'impact sur la sémantique.
   25/1/2021:
     - utilisation de \Sql\Schema au lieu des requêtes dans information_schema
   22-23/1/2021:
@@ -84,7 +88,9 @@ class CollOnSql {
 };
 
 class FeatureServerOnSql extends FeatureServer {
+  // URI du schéma toolbox défini par l'OGC
   const OGC_SCHEMA_URI = 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml';
+  const IDPKEY_NAME = '_idpkey'; // nom du champ ajouté pour s'assurer de disposer d'une clé primaire
   //protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données - déclaré dans la sur-classe
   protected string $path;
   protected \Sql\Schema $sqlSchema; // Le schema Sql de la base Sql dans laquelle sont stockées les données
@@ -503,9 +509,10 @@ links to support paging (link relation `next`).",
   function repairTable(string $action, string $tableName): void {
     // permet de créer un id automatique
     if ($action == 'createPrimaryKey') {
+      $idpkeyName = self::IDPKEY_NAME;
       $sql = [
-        [ 'MySql'=> "alter table $tableName add id int not null auto_increment primary key",
-          'PgSql'=> "alter table $tableName add id serial primary key",
+        [ 'MySql'=> "alter table $tableName add $idpkeyName int not null auto_increment primary key",
+          'PgSql'=> "alter table $tableName add $idpkeyName serial primary key",
         ]
       ];
       Sql::query($sql); // génère une exception encas d'erreur
@@ -744,7 +751,7 @@ links to support paging (link relation `next`).",
     $collOnSql = new CollOnSql($this->sqlSchema, $collId);
     $propertiesSchema = [];
     foreach ($collOnSql->columns() as $column) {
-      if ($column->dataType <> 'geometry') {
+      if (($column->dataType <> 'geometry') && ($column->name <> self::IDPKEY_NAME)) {
         $prop = $docFSchema['properties']['properties']['properties'][$column->name] ?? ['type'=> 'string'];
         $propertiesSchema[$column->name] = $prop;
       }
@@ -891,7 +898,18 @@ links to support paging (link relation `next`).",
       }
       foreach ($jsonColNames as $jsonColName)
         $tuple[$jsonColName] = json_decode($tuple[$jsonColName], true);
-      $items[] = ['type'=> 'Feature', 'id'=> $tuple[$collection->pkeyCol()->name], 'properties'=> $tuple, 'geometry'=> $geom];
+      // La colonne IDPKEY_NAME n'est pas intégrée dans les données en sortie
+      // La valeur correspondante est par contre éventuellement fournie comme id du feature
+      // Cela permet de ne pas modifier la sémantique avec les éventuelles adaptations effectuées pour s'assurer
+      // de disposer d'une clé primaire
+      $id = $tuple[$collection->pkeyCol()->name];
+      unset($tuple[self::IDPKEY_NAME]);
+      $items[] = [
+        'type'=> 'Feature',
+        'id'=> $id,
+        'properties'=> $tuple,
+        'geometry'=> $geom,
+      ];
     }
     $selfurl = FeatureServer::selfUrl()
         ."?startindex=$startindex&limit=$limit"
@@ -945,22 +963,22 @@ links to support paging (link relation `next`).",
   function item(string $collId, string $itemId): array {
     $jsonCols = [];
     $columns = [];
-    $collection = new CollOnSql(basename($this->path), $collId);
-    foreach ($collection->columns as $column) {
-      if (SqlSchema::isGeometryColumn($column)) {
-        if ($column['column_name'] == $collection->geomColName)
-          $columns[] = "ST_AsGeoJSON($column[column_name]) st_asgeojson";
+    $collection = new CollOnSql($this->sqlSchema, $collId);
+    foreach ($collection->columns() as $column) {
+      if ($column->dataType == 'geometry') {
+        if ($column->name == $collection->geomColName)
+          $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }
-      elseif (SqlSchema::isJsonColumn($column)) {
-        $columns[] = $column['column_name'];
-        $jsonCols[] = $column['column_name'];
+      elseif ($column->dataType == 'jsonb') {
+        $columns[] = $column->name;
+        $jsonCols[] = $column->name;
       }
       else
-        $columns[] = $column['column_name'];
+        $columns[] = $column->name;
     }
     
-    $sql = "select ".implode(',', $columns)."\nfrom $collection->table_name"
-      ."\nwhere $collection->idColName='$itemId'";
+    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table->name
+      ."\nwhere ".$collection->pkeyCol()->name."='$itemId'";
     //echo "sql=$sql\n";
     $tuples = Sql::getTuples($sql);
     if (!$tuples)
@@ -977,9 +995,15 @@ links to support paging (link relation `next`).",
       ];
     foreach ($jsonCols as $jsonCol)
       $tuple[$jsonCol] = json_decode($tuple[$jsonCol], true);
+    // La colonne IDPKEY_NAME n'est pas intégrée dans les données en sortie
+    // La valeur correspondante est par contre éventuellement fournie comme id du feature
+    // Cela permet de ne pas modifier la sémantique avec les éventuelles adaptations effectuées pour s'assurer
+    // de disposer d'une clé primaire
+    $id = $tuple[$collection->pkeyCol()->name];
+    unset($tuple[self::IDPKEY_NAME]);
     return [
       'type'=> 'Feature',
-      'id'=> $tuple[$collection->idColName],
+      'id'=> $id,
       'properties'=> $tuple,
       'geometry'=> $geom,
     ];
