@@ -40,8 +40,10 @@ abstract class FeatureServer {
   }
   
   static function selfUrl(): string { // Url d'appel sans les paramètres GET
-    return ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
+    $url = ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
           ."://$_SERVER[HTTP_HOST]$_SERVER[SCRIPT_NAME]$_SERVER[PATH_INFO]";
+    //echo "selfUrl=$url\n";
+    return $url;
   }
   
   // création des différents types de FeatureServer
@@ -59,60 +61,86 @@ abstract class FeatureServer {
     $selfurl = self::selfUrl();
     $dataId = substr($_SERVER['REQUEST_URI'], strlen($_SERVER['SCRIPT_NAME']));
     $title = $this->datasetDoc->title ?? null;
+    $abstract = $this->datasetDoc->abstract ?? null;
     return [
       'title'=> $title ?? "Access to $dataId data using OGC API Features specification",
       'description'=>
         $title ?
-          "Accès au jeu de données \"$title\" au travers d'une API conforme à la norme OGC API Features" :
-          "Access to $dataId data via a Web API that conforms to the OGC API Features specification.",
+          "Accès au jeu de données \"$title\" au travers d'une API conforme à la norme OGC API Features"
+            .($abstract ? "\n\n$abstract": '')
+        : "Access to $dataId data via a Web API that conforms to the OGC API Features specification.",
       'links'=> [
         [
-          'href'=> $selfurl,
+          'href'=> $selfurl.(($f<>'json') ? '?f=json' : ''),
           'rel'=> ($f == 'json') ? 'self' : 'alternate',
           'type'=> 'application/json',
           'title'=> "this document in JSON",
         ],
         [
-          'href'=> $selfurl,
+          'href'=> $selfurl.(($f<>'html') ? '?f=html' : ''),
           'rel'=> ($f == 'html') ? 'self' : 'alternate',
           'type'=> 'text/html',
           'title'=> "this document in HTML",
         ],
         [
-          'href'=> $selfurl,
+          'href'=> $selfurl.(($f<>'yaml') ? '?f=yaml' : ''),
           'rel'=> ($f == 'yaml') ? 'self' : 'alternate',
           'type'=> 'application/x-yaml',
           'title'=> "this document in Yaml",
         ],
         [
-          'href'=> "$selfurl/api",
+          'href'=> "$selfurl/api".(($f<>'json') ? '?f=json' : ''),
           'rel'=> 'service-desc',
           'type'=> 'application/vnd.oai.openapi+json;version=3.0',
           'title'=> "the API documentation in JSON",
         ],
         [
-          'href'=> "$selfurl/api",
-          'rel'=> 'service-desc',
+          'href'=> "$selfurl/api".(($f<>'html') ? '?f=html' : ''),
+          'rel'=> 'service-doc',
           'type'=> 'text/html',
           'title'=> "the API documentation in HTML",
         ],
         [
-          'href'=> "$selfurl/conformance",
+          'href'=> "$selfurl/api".(($f<>'yaml') ? '?f=yaml' : ''),
+          'rel'=> 'service-desc',
+          'type'=> 'application/x-yaml',
+          'title'=> "the API documentation in Yaml",
+        ],
+        [
+          'href'=> "$selfurl/conformance".(($f<>'json') ? '?f=json' : ''),
           'rel'=> 'conformance',
           'type'=> 'application/json',
           'title'=> "OGC API conformance classes implemented by this server in JSON",
         ],
         [
-          'href'=> "$selfurl/collections",
-          'rel'=> 'data',
+          'href'=> "$selfurl/conformance".(($f<>'html') ? '?f=html' : ''),
+          'rel'=> 'conformance',
           'type'=> 'text/html',
-          'title'=> "Information about the feature collections in HTML",
+          'title'=> "OGC API conformance classes implemented by this server in Html",
         ],
         [
-          'href'=> "$selfurl/collections",
+          'href'=> "$selfurl/conformance".(($f<>'yaml') ? '?f=yaml' : ''),
+          'rel'=> 'conformance',
+          'type'=> 'application/x-yaml',
+          'title'=> "OGC API conformance classes implemented by this server in Yaml",
+        ],
+        [
+          'href'=> "$selfurl/collections".(($f<>'json') ? '?f=json' : ''),
           'rel'=> 'data',
           'type'=> 'application/json',
           'title'=> "Information about the feature collections in JSON",
+        ],
+        [
+          'href'=> "$selfurl/collections".(($f<>'html') ? '?f=html' : ''),
+          'rel'=> 'data',
+          'type'=> 'text/html',
+          'title'=> "Information about the feature collections in Html",
+        ],
+        [
+          'href'=> "$selfurl/collections".(($f<>'yaml') ? '?f=yaml' : ''),
+          'rel'=> 'data',
+          'type'=> 'application/x-yaml',
+          'title'=> "Information about the feature collections in Yaml",
         ],
       ],
     ];

@@ -16,6 +16,7 @@ journal: |
       lui est donné et il est exclu à la fois du schéma et des champs fournis dans items et items/{id}
       Cette adaptation n'a ainsi pas d'impact sur la sémantique.
     - exclusion des vues et des tables sans clé primaire
+    - ajout ext. spatiale sur PostGis
   25/1/2021:
     - utilisation de \Sql\Schema au lieu des requêtes dans information_schema
   22-23/1/2021:
@@ -45,8 +46,9 @@ doc: |
 */
 class CollOnSql {
   const SEP = '__'; // séparateur entre nom de table et nom de colonne pour créer le nom de collection
+  
   protected \Sql\Table $table; // Table correspondant à la collection
-  protected ?string $geomColName=null; // nom de la colonne géométrique
+  protected ?\Sql\Column $geomCol=null; // colonne géométrique
   protected array $columns; // [ \Sql\Column ]
 
   static function collNames(\Sql\Schema $sqlSchema): array { // retourne la liste des noms de collection
@@ -73,11 +75,11 @@ class CollOnSql {
       $this->table = $table;
       $geomColumns = $this->table->listOfColumnOfType('geometry');
       if (count($geomColumns) == 1)
-        $this->geomColName = array_keys($geomColumns)[0];
+        $this->geomCol = array_values($geomColumns)[0];
     }
     else { // cas où {collId} est la concaténation des noms de table et de la colonne géométrique
       $geomCol = $schema->concatTableGeomNames($collId, self::SEP); 
-      $this->geomColName = $geomCol->name;
+      $this->geomCol = $geomCol;
       $this->table = $geomCol->table;
     }
   }
@@ -85,6 +87,22 @@ class CollOnSql {
   function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
   function pkeyCol(): \Sql\Column { return $this->table->pkeyCol(); }
   function columns(): array { return $this->table->columns; } // [ {name}=> \Sql\Column]
+  
+  function spatialExtentBboxes(): array { // retourne une liste de BBox, chacune comme [lonmin, latmin, lonmax, latmax]
+    if (!$this->geomCol)
+      return [];
+    elseif (Sql::software()=='PgSql') { // calculable facilement uniquement en PgSql 
+      $sql = "select ST_Extent(".$this->geomCol->name.") as table_extent FROM ".$this->table->name;
+      $extent = Sql::getTuples($sql)[0]['table_extent'];
+      //echo "$extent\n";
+      if (!preg_match('!^BOX\(([-\d\.]+) ([-\d\.]+),([-\d\.]+) ([-\d\.]+)\)$!', $extent, $matches))
+        throw new Exception("no match on '$extent'");
+      return [[round($matches[1], 4), round($matches[2], 4), round($matches[3], 4), round($matches[4], 4)]];
+    }
+    else {
+      return []; 
+    }
+  }
 };
 
 /*PhpDoc: classes
@@ -114,8 +132,14 @@ class FeatureServerOnSql extends FeatureServer {
   const IDPKEY_NAME = '_idpkey'; // nom du champ ajouté pour s'assurer de disposer d'une clé primaire
   //protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données - déclaré dans la sur-classe
   protected string $path;
-  protected \Sql\Schema $sqlSchema; // Le schema Sql de la base Sql dans laquelle sont stockées les données
-  //protected ?CollOnSql $collection = null;
+  protected \Sql\Schema $sqlSchema; // Le schema de la base Sql dans laquelle sont stockées les données
+  
+  function landingPageUrl(): string { // Url de la landingPage sans / final
+    $url = ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
+          ."://$_SERVER[HTTP_HOST]$_SERVER[SCRIPT_NAME]".$this->path;
+    echo "landingPageUrl=$url\n";
+    return $url;
+  }
   
   function __construct(string $path, ?DatasetDoc $datasetDoc) {
     $this->path = $path;
@@ -541,26 +565,60 @@ links to support paging (link relation `next`).",
   }
 
   // structuration d'une collection pour les réponses à /collections et à /collection/{collId}
-  static function collection_structuration(string $collUrl, string $collId, string $f): array {
-    // Faut-il les 2 liens ? On pourrait avoir plus d'un lien uniquement pour self et alternate !
-    // vérifier ce qui est dit dans la norme
+  function collection_structuration(string $collUrl, string $collId, string $f): array {
+    $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
+    $spatialExtentBboxes = (new CollOnSql($this->sqlSchema, $collId))->spatialExtentBboxes();
+    $temporalExtent = null;
     return [
       'id'=> $collId,
-      'title'=> $collId,
+      'title'=> $collDoc ? $collDoc->title : $collId,
+    ]
+    + ($collDoc && $collDoc->description ? ['description'=> $collDoc->description] : [])
+    + ($spatialExtentBboxes || $temporalExtent ?
+      ['extent'=>
+        ($spatialExtentBboxes ? ['spatial'=> ['bbox'=> $spatialExtentBboxes]] : [])
+      + ($temporalExtent ? ['temporal'=> $temporalExtent] : [])
+      ]
+      : []
+    )
+      /*"id": "buildings",
+        "title": "Buildings",
+        "description": "Buildings in the city of Bonn.",
+        "extent": {
+          "spatial": {
+            "bbox": [ [ 7.01, 50.63, 7.22, 50.78 ] ]
+          },
+          "temporal": {
+            "interval": [ [ "2010-02-15T12:34:56Z", null ] ]
+          }
+        },*/
+    + [
       'itemType'=> 'feature', // indicator about the type of the items in the collection (the default value is 'feature').
       'crs'=> ['http://www.opengis.net/def/crs/OGC/1.3/CRS84'],
       'links'=> [
         [
-          'href'=> "$collUrl/describedBy".(($f<>'json') ? '?f=json' : ''),
-          'rel'=> 'items',
+          'href'=> $collUrl.(($f<>'json') ? '?f=json' : ''),
+          'rel'=> $f=='json' ? 'self' : 'alternate',
           'type'=> 'application/json',
-          'title'=> "The JSON schema of the FeatureCollection in JSON",
+          'title'=> "This document in JSON",
+        ],
+        [
+          'href'=> $collUrl.(($f<>'html') ? '?f=html' : ''),
+          'rel'=> $f=='html' ? 'self' : 'alternate',
+          'type'=> 'text/html',
+          'title'=> "This document in Html",
+        ],
+        [
+          'href'=> "$collUrl/describedBy".(($f<>'json') ? '?f=json' : ''),
+          'rel'=> 'describedBy',
+          'type'=> 'application/json',
+          'title'=> "The JSON schema of a Feature of the FeatureCollection in JSON",
         ],
         [
           'href'=> "$collUrl/describedBy".(($f<>'html') ? '?f=html' : ''),
-          'rel'=> 'items',
+          'rel'=> 'describedBy',
           'type'=> 'text/html',
-          'title'=> "The JSON schema of the FeatureCollection in Html",
+          'title'=> "The JSON schema of a Feature of the FeatureCollection in Html",
         ],
         [
           'href'=> "$collUrl/items".(($f<>'json') ? '?f=json' : ''),
@@ -719,10 +777,10 @@ links to support paging (link relation `next`).",
   }
   
   function collections(string $f): array { // retourne la description des collections
-    $selfurl = FeatureServer::selfUrl();
+    $selfurl = self::selfUrl();
     $colls = [];
     foreach (CollOnSql::collNames($this->sqlSchema) as $collName) {
-      $colls[] = self::collection_structuration("$selfurl/${collName}", $collName, $f);
+      $colls[] = $this->collection_structuration("$selfurl/$collName", $collName, $f);
     }
     return [
       'links'=> [
@@ -761,8 +819,7 @@ links to support paging (link relation `next`).",
   }
   
   function collection(string $f, string $collId): array { // retourne la description du FeatureType de la collection
-    $selfurl = FeatureServer::selfUrl();
-    return self::collection_structuration($selfurl, $collId, $f);
+    return $this->collection_structuration(self::selfUrl(), $collId, $f);
   }
   
   function collDescribedBy(string $collId): array { // retourne le schema d'un Feature de la collection
@@ -932,11 +989,11 @@ links to support paging (link relation `next`).",
         'geometry'=> $geom,
       ];
     }
-    $selfurl = FeatureServer::selfUrl()
+    $selfurl = self::selfUrl()
         ."?startindex=$startindex&limit=$limit"
         .($bbox ? "&bbox=".implode(',', $bbox) : '')
         .($pFilter ? "&$filter=".implodeKeyVal(',', $pFilter) : '');
-    $nexturl = FeatureServer::selfUrl()
+    $nexturl = self::selfUrl()
         ."?startindex=".($startindex+$limit)."&limit=$limit"
         .($bbox ? "&bbox=".implode(',', $bbox) : '')
         .($pFilter ? "&$filter=".implodeKeyVal(',', $pFilter) : '');
