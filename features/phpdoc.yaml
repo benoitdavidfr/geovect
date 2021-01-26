@@ -30,6 +30,6 @@ phpScripts:
   - /geovect/features/oas.php
 phpIncludes:
   - /geovect/features/ftrserver.inc.php
-  - /geovect/features/onwfs.inc.php
-  - /geovect/features/onfile.inc.php
-  - /geovect/features/onsql.inc.php
+  - /geovect/features/ftsonwfs.inc.php
+  - /geovect/features/ftsonfile.inc.php
+  - /geovect/features/ftsonsql.inc.php

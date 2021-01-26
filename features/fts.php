@@ -4,7 +4,7 @@ name: ftps.php
 title: fts.php - exposition de données au protocoles API Features
 doc: |
   Proxy exposant en API Features des données initialement stockées soit dans une BD MySql ou PgSql, soit dans un serveur WFS2,
-  soit dans un fichier GeoJSON.
+  soit dans répertoire de fichiers GeoJSON.
 
   Permet soit d'utiliser un serveur non enregistré en utilisant par exemple pour un serveur WFS l'url:
     https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
@@ -36,10 +36,6 @@ doc: |
     - distinguer un outil d'admin différent de l'outil fts.php de consultation
       - y transférer l'opération check de vérif. de clé primaire et de création éventuelle
       - ajouter une fonction de test de cohérence doc / service déjà écrite dans doc
-    - définir pour chaque raccourci un fichier pser stockant le schéma des collections et leur extension
-      afin d'éviter d'avoir à interroger la base à chque requête
-      - pb ca modifie beaucoup le code sans que je sois certain que cela apporte des améliorations significatives
-      - il faudrait mesurer l'impact
   Idées (plus long terme):
     - mettre en oeuvre le mécanisme i18n défini pour OGC API Features
     - remplacer l'appel sans paramètre par l'exposition d'un catalogue DCAT

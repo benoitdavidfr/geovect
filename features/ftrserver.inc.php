@@ -11,9 +11,9 @@ journal: |
   30/12/2020:
     - création
 includes:
-  - onwfs.inc.php
-  - onfile.inc.php
-  - onsql.inc.php
+  - ftsonwfs.inc.php
+  - ftsonfile.inc.php
+  - ftsonsql.inc.php
 */
 use Symfony\Component\Yaml\Yaml;
 
@@ -150,15 +150,15 @@ abstract class FeatureServer {
   
   abstract function collection(string $f, string $collId): array;
 
-  abstract function collDescribedBy(string $collId): array; // retourne la description du FeatureType de la collection
+  abstract function collDescribedBy(string $collId): array; // retourne le schéma d'un Feature de la collection
   
   // retourne les items de la collection comme array Php
   abstract function items(string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array;
   
-  // retourne l'item $id de la collection comme array Php
+  // retourne l'item $featureId de la collection comme array Php
   abstract function item(string $collId, string $featureId): array;
 };
 
-require_once __DIR__.'/onwfs.inc.php';
-require_once __DIR__.'/onfile.inc.php';
-require_once __DIR__.'/onsql.inc.php';
+require_once __DIR__.'/ftsonwfs.inc.php';
+require_once __DIR__.'/ftsonfile.inc.php';
+require_once __DIR__.'/ftsonsql.inc.php';
