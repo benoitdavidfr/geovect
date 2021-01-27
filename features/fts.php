@@ -20,7 +20,9 @@ doc: |
   Utilisation avec QGis:
     - les dernières versions de QGis (3.16) peuvent utiliser les serveurs OGC API Features
     - a priori elles n'exploitent pas ni n'affichent la doc, notamment les schemas
+    - QGis utilise titre et description fournis dans /collections
     - lors d'une requête QGis demande des données zippées ou deflate
+    - a priori QGis n'utilise pas les possibilités de filtre définies dans l'API
 
   Perf:
     - 3'05" pour troncon_hydro R500 sur FX depuis Alwaysdata
@@ -28,7 +30,6 @@ doc: |
 
   A faire (court-terme):
     - gérer correctement les types non string dans les données comme les nombres
-    - satisfaire au test CITE
   Réflexions (à mûrir):
     - distinguer un outil d'admin différent de l'outil fts.php de consultation
       - y transférer l'opération check de vérif. de clé primaire et de création éventuelle
@@ -41,6 +42,7 @@ doc: |
 journal: |
   27/1/2021:
     - détection des paramètres non prévus
+    - test CITE ok pour /ignf-route500
   20-23/1/2021:
     - intégration de la doc
   17/1/2021:
@@ -104,9 +106,10 @@ define('HTTP_ERROR_LABELS', [
   501 => 'Not Implemented', // Fonctionnalité réclamée non supportée par le serveur.
 ]);
 
+if (0)
 FeatureServer::log([
   'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
-  'Hedaders'=> getallheaders(),
+  'Headers'=> getallheaders(),
 ]
 ); // log de la requête pour deboggage, a supprimer en production
 
@@ -146,6 +149,16 @@ function output(string $f, array $array, int $levels=3) {
 // Génère une erreur Http avec le code $code si <>0 ou sinon 500 
 // et affiche le message d'erreur
 function error(string $message, int $code=0) {
+  // log les erreurs
+  FeatureServer::log([
+    'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
+    'Headers'=> getallheaders(),
+    'error'=> [
+      'message'=> $message,
+      'code'=> $code,
+    ],
+  ]
+  );
   if ($code == 0)
     $code = 500;
   header("HTTP/1.1 $code ".(HTTP_ERROR_LABELS[$code] ?? "Undefined httpCode $code"));

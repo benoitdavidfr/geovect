@@ -8,6 +8,7 @@ classes:
 journal: |
   27/1/2021:
     - ajout FeatureServer::checkParams() pour détecter les paramètres non prévus
+    - test CITE ok pour /ignf-route500
   17-20/12/2020:
     - évolutions
   30/12/2020:
@@ -168,21 +169,31 @@ abstract class FeatureServer {
   }
   
   function checkParams(string $path): void { // détecte les paramètres non prévus et lève alors une exception 
-    static $params = [ // liste des paramètres autorisés
-      '/'=> ['f'],
-      '/conformance'=> ['f'],
-      '/api'=> ['f'],
-      '/collections'=> ['f'],
-      '/collections/{collectionId}'=> ['f'],
-      '/collections/{collectionId}/describedBy'=> ['f'],
-      '/collections/{collectionId}/items/{featureId}'=> ['f'],
+    static $params = [ // liste des paramètres autorisés et des valeurs autorisées
+      '/'=> ['f'=> ['json','html','yaml']],
+      '/conformance'=> ['f'=> ['json','html','yaml']],
+      '/api'=> ['f'=> ['json','html','yaml']],
+      '/collections'=> ['f'=> ['json','html','yaml']],
+      '/collections/{collectionId}'=> ['f'=> ['json','html','yaml']],
+      '/collections/{collectionId}/describedBy'=> ['f'=> ['json','html','yaml']],
+      '/collections/{collectionId}/items/{featureId}'=> ['f'=> ['json','html','yaml']],
     ];
     if (isset($params[$path])) {
-      if ($adiff = array_diff(array_keys($_GET), $params[$path]))
+      if ($adiff = array_diff(array_keys($_GET), array_keys($params[$path])))
         error("Paramètre(s) ".implode(',', $adiff)." interdit(s) pour $path", 400);
+      foreach ($_GET as $k => $v) {
+        if (!in_array($v, $params[$path][$k]))
+          error("Valeur '$v' interdite pour le paramètre '$k'", 400);
+      }
     }
-    elseif (preg_match('!^/collections/[^/]+/items$!', $path, $matches)) {
+    elseif (preg_match('!^/collections/[^/]+/items$!', $path)) {
       $params = ['f','limit','startindex','bbox','datetime'];
+      if (isset($_GET['f']) && !in_array($_GET['f'], ['json','html','yaml']))
+        error("Valeur '$_GET[f]' interdite pour le paramètre 'f'", 400);
+      if (isset($_GET['limit']) && !ctype_digit($_GET['limit']))
+        error("Valeur '$_GET[limit]' non entière interdite pour le paramètre 'limit'", 400);
+      if (isset($_GET['startindex']) && !ctype_digit($_GET['startindex']))
+        error("Valeur '$_GET[startindex]' non entière interdite pour le paramètre 'startindex'", 400);
       $apidef = $this->api();
       $apidef = $apidef['paths'][$path]['get']['parameters'];
       foreach ($apidef as $parameterdef)

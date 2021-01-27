@@ -380,10 +380,10 @@ as well as key information about the collection. This information includes:
             'in'=> 'query',
             'description'=> "Only return items of '$collName' having a particular value for property '$cName'\n\n"
               ."Default = return all items.",
-            'required'=> 'false',
+            'required'=> false,
             'schema'=> $docFSchema['properties']['properties']['properties'][$column->name] ?? ['type'=> 'string'],
             'style'=> 'form',
-            'explode'=> 'false',
+            'explode'=> false,
           ];
           {/* Exemple d'un paramètre de filtre
              (source http://docs.opengeospatial.org/is/17-069r3/17-069r3.html#_parameters_for_filtering_on_feature_properties)
@@ -1061,7 +1061,7 @@ links to support paging (link relation `next`).",
         'geometry'=> $geom,
       ];
     }
-    $selfurl = self::selfUrl()."limit=$limit"
+    $selfurl = self::selfUrl()."?limit=$limit"
         .($bbox ? "&bbox=".implode(',', $bbox) : '')
         .($properties ? "&properties=".implode(',', $properties) : '');
     foreach ($filters as $key => $val)
@@ -1073,8 +1073,8 @@ links to support paging (link relation `next`).",
       [
         'href'=> $selfurl.($f<>'json' ? '&f=json' : ''),
         'rel'=> ($f=='json') ? 'self' : 'alternate',
-        'type'=> 'application/json',
-        'title'=> "this document in JSON",
+        'type'=> 'application/geo+json',
+        'title'=> "this document in GeoJSON",
       ],
       [
         'href'=> $selfurl.($f<>'html' ? '&f=html' : ''),
@@ -1082,25 +1082,38 @@ links to support paging (link relation `next`).",
         'type'=> 'text/html',
         'title'=> "this document in HTML",
       ],
+      [
+        'href'=> $selfurl.($f<>'yaml' ? '&f=yaml' : ''),
+        'rel'=> ($f=='yaml') ? 'self' : 'alternate',
+        'type'=> 'application/x-yaml',
+        'title'=> "this document in Yaml",
+      ],
     ];
     if (count($items) == $limit) {
       $links[] = [
         'href'=> $nexturl.($f<>'json' ? '&f=json' : ''),
         'rel'=> 'next',
-        'type'=> 'application/json',
-        'title'=> "next set of data",
+        'type'=> 'application/geo+json',
+        'title'=> "next set of data in GeoJSON",
       ];
       $links[] = [
         'href'=> $nexturl.($f<>'html' ? '&f=html' : ''),
         'rel'=> 'next',
         'type'=> 'text/html',
-        'title'=> "next set of data",
+        'title'=> "next set of data in Html",
+      ];
+      $links[] = [
+        'href'=> $nexturl.($f<>'yaml' ? '&f=yaml' : ''),
+        'rel'=> 'next',
+        'type'=> 'application/x-yaml',
+        'title'=> "next set of data in Yaml",
       ];
     }
     return [
       'type'=> 'FeatureCollection',
       'features'=> $items,
       'links'=> $links,
+      'timeStamp'=> date(DATE_ATOM),
       'numberReturned'=> count($items),
     ];
     {/* Schema
@@ -1178,6 +1191,33 @@ links to support paging (link relation `next`).",
       'id'=> $id,
       'properties'=> $tuple,
       'geometry'=> $geom,
+      'links'=> [
+        [
+          'href'=> self::selfUrl().($f<>'json' ? '&f=json' : ''),
+          'rel'=> ($f=='json') ? 'self' : 'alternate',
+          'type'=> 'application/geo+json',
+          'title'=> "this document in GeoJSON",
+        ],
+        [
+          'href'=> self::selfUrl().($f<>'html' ? '&f=html' : ''),
+          'rel'=> ($f=='html') ? 'self' : 'alternate',
+          'type'=> 'text/html',
+          'title'=> "this document in HTML",
+        ],
+        [
+          'href'=> self::selfUrl().($f<>'yaml' ? '&f=yaml' : ''),
+          'rel'=> ($f=='yaml') ? 'self' : 'alternate',
+          'type'=> 'application/x-yaml',
+          'title'=> "this document in Yaml",
+        ],
+        [
+          'href'=> dirname(self::selfUrl(), 2),
+          'rel'=> 'collection',
+          'type'=> 'application/json',
+          'title'=> "definition of the collection in JSON",
+        ],
+      ],
+      'timeStamp'=> date(DATE_ATOM),
     ];
   }
 };

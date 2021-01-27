@@ -24,6 +24,9 @@ doc: |
     https://features.geoapi.fr/file/{path}
     https://features.geoapi.fr/wfs/referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
     https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
+    
+  synchro:
+    http://localhost/synchro.php?remote=http://bdavid.alwaysdata.net/&dir=geovect/features
 phpScripts:
   - /geovect/features/fts.php
   - /geovect/features/doc.php

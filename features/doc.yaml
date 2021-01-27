@@ -63,7 +63,7 @@ datasets:
               "Limite de commune":
                 label: Limite entre deux communes.
       cote_frontiere:
-        title: cote_frontiere
+        title: Traits de côtes et frontières internationales
         description: |
           Éléments issus du graphe des limites communales. Le trait de côte représenté est la laisse des plus hautes eaux.
         geometryType: LineString2D
@@ -371,7 +371,7 @@ datasets:
                 label: Petit rond-point
                 description: Rond-point (giratoire) d'un diamètre compris entre 50 et 100 m.
       troncon_route:
-        title: troncon de route
+        title: Tronçon de route
         description: |
           Définition:
             Portion de voie de communication destinée aux automobiles, aux piétons, aux cycles ou aux animaux, homogène pour
