@@ -265,6 +265,7 @@ elseif ($action2 == '/createPrimaryKey') { // /collections/{collId}/createPrimar
 elseif (!$itemId) { // /collections/{collId}/items
   output(($f == 'json' ? 'geojson' : $f),
     $fServer->items(
+      f: $f,
       collId: $collId,
       bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
       limit: $_GET['limit'] ?? 10,
@@ -273,6 +274,6 @@ elseif (!$itemId) { // /collections/{collId}/items
   );
 }
 else { // /collections/{collId}/items/{itemId}
-  output(($f == 'json' ? 'geojson' : $f), $fServer->item($collId, $itemId), 6);
+  output(($f == 'json' ? 'geojson' : $f), $fServer->item($f, $collId, $itemId), 6);
 }
 

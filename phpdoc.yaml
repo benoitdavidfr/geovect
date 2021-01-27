@@ -16,6 +16,10 @@ doc: |
     
     Etendre DCAT à un catalogue de cartes, comme service ?
     
+  Modules nécessaires:
+    composer require symfony/yaml
+    composer require michelf/php-markdown
+    
   Version avant 2020-12-29:
   Ce module est constitué de 3 sous-modules principaux:
     - gegeom gère la géométrie vecteur GeoJSON

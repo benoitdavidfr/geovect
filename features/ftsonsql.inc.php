@@ -11,6 +11,9 @@ doc: |
   A faire:
     - mettre en oeuvre la possibilité d'effectuer des requêtes sur un champ particulier
 journal: |
+  27/1/2021:
+    - ajout traitement des filtres dans /api et dans /items
+    - ajout traitement du paramètre properties dans /items
   26/1/2021:
     - lors de la création d'une clé primaire, un nom spécifique, défini dans FeatureServerOnSql::IDPKEY_NAME,
       lui est donné et il est exclu à la fois du schéma et des champs fournis dans items et items/{id}
@@ -36,6 +39,7 @@ require_once __DIR__.'/../../phplib/sql.inc.php';
 require_once __DIR__.'/../../phplib/sqlschema.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\Yaml\Exception\ParseException;
 
 /*PhpDoc: classes
 name: CollOnSql
@@ -49,7 +53,7 @@ class CollOnSql {
   
   protected \Sql\Table $table; // Table correspondant à la collection
   protected ?\Sql\Column $geomCol=null; // colonne géométrique
-  protected array $columns; // [ \Sql\Column ]
+  //protected array $columns; // [ \Sql\Column ]
 
   static function collNames(\Sql\Schema $sqlSchema): array { // retourne la liste des noms de collection
     $collNames = [];
@@ -78,17 +82,20 @@ class CollOnSql {
         $this->geomCol = array_values($geomColumns)[0];
     }
     else { // cas où {collId} est la concaténation des noms de table et de la colonne géométrique
-      $geomCol = $schema->concatTableGeomNames($collId, self::SEP); 
-      $this->geomCol = $geomCol;
-      $this->table = $geomCol->table;
+      $this->geomCol = $schema->concatTableGeomNames($collId, self::SEP); 
+      $this->table = $this->geomCol->table;
     }
   }
   
-  function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
+  function table(): \Sql\Table { return $this->table; }
+  function geomCol(): \Sql\Column { return $this->geomCol; }
+  //function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
   function pkeyCol(): \Sql\Column { return $this->table->pkeyCol(); }
   function columns(): array { return $this->table->columns; } // [ {name}=> \Sql\Column]
   
   function spatialExtentBboxes(): array { // retourne une liste de BBox, chacune comme [lonmin, latmin, lonmax, latmax]
+    // pas très satisfaisant, pour la France il faudrait un bbox par DOM !
+    // les mettre dans la doc ?
     if (!$this->geomCol)
       return [];
     elseif (Sql::software()=='PgSql') { // calculable facilement uniquement en PgSql 
@@ -122,24 +129,18 @@ doc: |
   avec pour nom la concaténation du nom de la table, du séparateur CollOnSql::SEP et du nom du champ géométrique.
   En PgSql les champs de type JSON sont traduits en JSON.
 
-  Si les données sont documentées alors cette documentation est reprise:
-    1) dans le schema JSON associé à une collection
-    2) dans les schémas des réponses /items et /items/{id} exposés dans la définition de l'API
+  Si les données sont documentées alors cette documentation est utilisée:
+    1) dans le schema JSON associé à une collection (/collections/{collId}/describedBy)
+    2) dans les schémas des réponses /items et /items/{id} exposés dans la définition de l'API (/api)
 */
 class FeatureServerOnSql extends FeatureServer {
   // URI du schéma toolbox défini par l'OGC
   const OGC_SCHEMA_URI = 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml';
   const IDPKEY_NAME = '_idpkey'; // nom du champ ajouté pour s'assurer de disposer d'une clé primaire
+  
   //protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données - déclaré dans la sur-classe
   protected string $path;
   protected \Sql\Schema $sqlSchema; // Le schema de la base Sql dans laquelle sont stockées les données
-  
-  function landingPageUrl(): string { // Url de la landingPage sans / final
-    $url = ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
-          ."://$_SERVER[HTTP_HOST]$_SERVER[SCRIPT_NAME]".$this->path;
-    echo "landingPageUrl=$url\n";
-    return $url;
-  }
   
   function __construct(string $path, ?DatasetDoc $datasetDoc) {
     $this->path = $path;
@@ -262,7 +263,15 @@ class FeatureServerOnSql extends FeatureServer {
   function api(): array { // retourne la définition de l'API
     $urlLandingPage = ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
           ."://$_SERVER[HTTP_HOST]".dirname($_SERVER['REQUEST_URI']);
-    $apidef = Yaml::parse(@file_get_contents(__DIR__.'/apidef.yaml'));
+    if (!is_file(__DIR__.'/apidef.yaml'))
+      throw new Exception("Erreur fichier apidef.yaml absent");
+    if (($apideftxt = @file_get_contents(__DIR__.'/apidef.yaml')) === false)
+      throw new Exception("Erreur de lecture du fichier apidef.yaml");
+    try {
+      $apidef = Yaml::parse($apideftxt);
+    } catch (ParseException $exception) {
+      throw new Exception ("Unable to parse apidef.yaml :".$exception->getMessage());
+    }
     $title = $this->datasetDoc->title ?? $this->path;
     $apidef['servers'][0] = [
       'description'=> "Service d'accès aux données \"$title\"",
@@ -292,6 +301,7 @@ class FeatureServerOnSql extends FeatureServer {
     array_pop($apidef['tags']); // supprime le tag collectionId
     foreach (collOnSql::collNames($this->sqlSchema) as $collName) {
       $collDoc = $this->datasetDoc->collections[$collName] ?? null;
+      $docFSchema = $collDoc ? $collDoc->featureSchema() : []; // schema issu de la doc
       
       // paths: /collections/{collId}
       $collTitle = $collDoc->title ?? $collName;
@@ -357,6 +367,43 @@ as well as key information about the collection. This information includes:
       $apidef['paths']["/collections/$collName"] = ['get'=> $get];
 
       // paths: /collections/{collId}/items
+      // Ajoute des paramètres de filtre pour les champs ayant un index secondaire
+      $parameters = $itemsPath['get']['parameters'];
+      $collOnSql = new CollOnSql($this->sqlSchema, $collName);
+      foreach ($collOnSql->columns() as $cName => $column) {
+        // Si la colonne n'est pas géométrique et qu'elle est indexée (hors index primaire)
+        if (($column->dataType <> 'geometry') && in_array($column->indexed, ['unique','multiple'])) {
+          $parameters[] = [
+            'name'=> $cName,
+            'in'=> 'query',
+            'description'=> "Only return items of '$collName' having a particular value for property '$cName'\n\n"
+              ."Default = return all items.",
+            'required'=> 'false',
+            'schema'=> $docFSchema['properties']['properties']['properties'][$column->name] ?? ['type'=> 'string'],
+            'style'=> 'form',
+            'explode'=> 'false',
+          ];
+          {/* Exemple d'un paramètre de filtre
+             (source http://docs.opengeospatial.org/is/17-069r3/17-069r3.html#_parameters_for_filtering_on_feature_properties)
+          name: function
+          in: query
+          description: >-
+            Only return buildings of a particular function.\
+
+            Default = return all buildings.
+          required: false
+          schema:
+            type: string
+            enum:
+              - residential
+              - commercial
+              - public use
+          style: form
+          explode: false
+          example: 'function=public+use'
+          */}
+        }
+      }
       // modifie les réponses 
       $responses = $itemsPath['get']['responses'];
       {/* OGC_SCHEMA_URI.'#/components/responses/Features' 
@@ -462,7 +509,7 @@ links to support paging (link relation `next`).",
         'get'=> [
           'summary'=> "Get the items of the \"$collName\" Collection",
           'operationId' => "getItemsOf$collName",
-          'parameters'=> $itemsPath['get']['parameters'],
+          'parameters'=> $parameters,
           'responses'=> $responses,
           'tags'=> ["c_$collName"],
         ],
@@ -834,7 +881,7 @@ links to support paging (link relation `next`).",
         $propertiesSchema[$column->name] = $prop;
       }
     }
-    $geomSchema = !$collOnSql->geomColName ? [
+    $geomSchema = !$collOnSql->geomCol() ? [
         'description'=> "no geometry coded as a GeometryCollection with 0 geometries",
         '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/geometrycollectionGeoJSON',
       ]
@@ -929,32 +976,56 @@ links to support paging (link relation `next`).",
   
   // retourne les items de la collection comme FeatureCollection en array Php
   // L'usage de pFilter n'est pas implémenté
-  function items(string $collId, array $bbox=[], array $pFilter=[], int $limit=10, int $startindex=0): array {
+  function items(string $f, string $collId, array $bbox=[], array $pFilter=[], int $limit=10, int $startindex=0): array {
+    $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
     $jsonColNames = []; // liste des noms des colonnes de type JSON
     $columns = []; // liste des noms des colonnes pour la requête Sql
+    $filters = []; // filtres sous la forme [{columnName} => {value}]
     $collection = new CollOnSql($this->sqlSchema, $collId);
     foreach ($collection->columns() as $column) {
       if ($column->dataType == 'geometry') {
-        if ($column->name == $collection->geomColName)
+        if ($collection->geomCol() && ($column->name == $collection->geomCol()->name))
           $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }
-      elseif ($column->dataType == 'jsonb') {
+      elseif (!$properties || in_array($column->name, $properties)) {
         $columns[] = $column->name;
-        $jsonCols[] = $column->name;
+        if ($column->dataType == 'jsonb')
+          $jsonCols[] = $column->name;
       }
-      else
-        $columns[] = $column->name;
+      // prise en compte d'un éventuel filtre
+      if (isset($_GET[$column->name]))
+        $filters[$column->name] = $_GET[$column->name];
     }
-    
-    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table->name;
-    $where = null;
+    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table()->name;
+    $where = '';
     if ($bbox) {
       self::checkBbox($bbox);
-      $geomColName = $collection->geomColName;
+      $geomColName = $collection->geomCol()->name;
       //$where = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
       $polygonWkt = "POLYGON(($bbox[0] $bbox[1],$bbox[0] $bbox[3],$bbox[2] $bbox[3],$bbox[2] $bbox[1],$bbox[0] $bbox[1]))";
       $where = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt', 4326))\n";
     }
+    if ($filters) {
+      {/*Tests de mise en oeuvre de filtres:
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?insee_comm=2A163
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Préfecture
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Préfecture&bbox=1,42,2,43
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Préfecture+de+région
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Capitale+d'état
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_ferre/items?nature=Changement+d'attribut
+      */}
+      foreach ($filters as $colName => $value) {
+        $value = str_replace("'","''", $value);
+        if (substr($value, -1)=='*')
+          $expr = "$colName like '".substr($value,0, strlen($value)-1)."%'";
+        else
+          $expr = "$colName='$value'";
+        $where .= ($where ? ' and ' : '').$expr;
+      }
+    }
+    /*
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_ferre/items?properties=id_rte500,nature
+    */
     if ($where)
       $sql .= "\nwhere $where";
     if ($limit)
@@ -989,20 +1060,42 @@ links to support paging (link relation `next`).",
         'geometry'=> $geom,
       ];
     }
-    $selfurl = self::selfUrl()
-        ."?startindex=$startindex&limit=$limit"
+    $selfurl = self::selfUrl()."limit=$limit"
         .($bbox ? "&bbox=".implode(',', $bbox) : '')
-        .($pFilter ? "&$filter=".implodeKeyVal(',', $pFilter) : '');
-    $nexturl = self::selfUrl()
-        ."?startindex=".($startindex+$limit)."&limit=$limit"
-        .($bbox ? "&bbox=".implode(',', $bbox) : '')
-        .($pFilter ? "&$filter=".implodeKeyVal(',', $pFilter) : '');
+        .($properties ? "&properties=".implode(',', $properties) : '');
+    foreach ($filters as $key => $val)
+      $selfurl .= "&$key=".urlencode($val);
+    $nexturl = $selfurl."&startindex=".($startindex+$limit);
+    $selfurl .= "&startindex=$startindex";
+    
     $links = [
-      [ 'href'=> "$selfurl&f=json", 'rel'=> 'self', 'type'=> 'application/json', 'title'=> "this document in JSON" ],
-      [ 'href'=> "$selfurl&f=html", 'rel'=> 'self', 'type'=> 'text/html', 'title'=> "this document in HTML" ],
+      [
+        'href'=> $selfurl.($f<>'json' ? '&f=json' : ''),
+        'rel'=> ($f=='json') ? 'self' : 'alternate',
+        'type'=> 'application/json',
+        'title'=> "this document in JSON",
+      ],
+      [
+        'href'=> $selfurl.($f<>'html' ? '&f=html' : ''),
+        'rel'=> ($f=='html') ? 'self' : 'alternate',
+        'type'=> 'text/html',
+        'title'=> "this document in HTML",
+      ],
     ];
-    if (count($items) == $limit)
-      $links[] = [ 'href'=> "$nexturl&f=json", 'rel'=> 'next', 'type'=> 'application/json', 'title'=> "next set of data" ];
+    if (count($items) == $limit) {
+      $links[] = [
+        'href'=> $nexturl.($f<>'json' ? '&f=json' : ''),
+        'rel'=> 'next',
+        'type'=> 'application/json',
+        'title'=> "next set of data",
+      ];
+      $links[] = [
+        'href'=> $nexturl.($f<>'html' ? '&f=html' : ''),
+        'rel'=> 'next',
+        'type'=> 'text/html',
+        'title'=> "next set of data",
+      ];
+    }
     return [
       'type'=> 'FeatureCollection',
       'features'=> $items,
@@ -1038,13 +1131,13 @@ links to support paging (link relation `next`).",
   }
   
   // retourne l'item $id de la collection comme Feature en array Php
-  function item(string $collId, string $itemId): array {
+  function item(string $f, string $collId, string $itemId): array {
     $jsonCols = [];
     $columns = [];
     $collection = new CollOnSql($this->sqlSchema, $collId);
     foreach ($collection->columns() as $column) {
       if ($column->dataType == 'geometry') {
-        if ($column->name == $collection->geomColName)
+        if ($collection->geomCol() && ($column->name == $collection->geomCol()->name))
           $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }
       elseif ($column->dataType == 'jsonb') {
@@ -1055,7 +1148,7 @@ links to support paging (link relation `next`).",
         $columns[] = $column->name;
     }
     
-    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table->name
+    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table()->name
       ."\nwhere ".$collection->pkeyCol()->name."='$itemId'";
     //echo "sql=$sql\n";
     $tuples = Sql::getTuples($sql);

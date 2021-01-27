@@ -17,6 +17,7 @@ require_once __DIR__.'/../../schema/jsonschema.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Yaml\Exception\ParseException;
+use Michelf\MarkdownExtra;
 
 
 class PropertyDoc {
@@ -243,7 +244,8 @@ class CollectionDoc {
   function __construct(string $id, array $yaml) {
     $this->id = $id;
     $this->title = $yaml['title'];
-    $this->description = $yaml['description'] ?? null;
+    if (isset($yaml['description']))
+      $this->description = rtrim($yaml['description']); // Il y a souvent un \n à la fin de la chaine
     $this->geometryType = $yaml['geometryType'];
     foreach ($yaml['properties'] as $propid => $property) {
       $this->properties[$propid] = new PropertyDoc($propid, $property);
@@ -254,8 +256,10 @@ class CollectionDoc {
 
   function asArray(): array {
     $array = ['title'=> $this->title];
-    if ($this->description)
+    if ($this->description) {
+      //$array['description'] = MarkdownExtra::defaultTransform($this->description); // Test utilisation Markdown pas concluant
       $array['description'] = $this->description;
+    }
     $array['geometryType'] = $this->geometryType;
     foreach ($this->properties as $id => $prop) {
       $array['properties'][$id] = $prop->asArray();
@@ -631,7 +635,7 @@ if ($f == 'yaml') {
   if (php_sapi_name() <> 'cli')
     echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>doc</title></head><body><pre>\n";
   $doc = new Doc;
-  echo Yaml::dump($doc->asArray(), 9, 2);
+  echo Yaml::dump($doc->asArray(), 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
 }
 /*
 

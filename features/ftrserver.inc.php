@@ -181,10 +181,10 @@ abstract class FeatureServer {
   abstract function collDescribedBy(string $collId): array; // retourne le schéma d'un Feature de la collection
   
   // retourne les items de la collection comme array Php
-  abstract function items(string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array;
+  abstract function items(string $f, string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array;
   
   // retourne l'item $featureId de la collection comme array Php
-  abstract function item(string $collId, string $featureId): array;
+  abstract function item(string $f, string $collId, string $featureId): array;
 };
 
 require_once __DIR__.'/ftsonwfs.inc.php';

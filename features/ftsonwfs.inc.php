@@ -302,7 +302,7 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   }
   
   // retourne les items de la collection comme array Php
-  function items(string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array {
+  function items(string $f, string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array {
     $items = $this->wfsServer->getFeatureAsArray(
       typename: $collId,
       bbox: $bbox,
@@ -313,7 +313,7 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   }
   
   // retourne l'item $id de la collection comme array Php
-  function item(string $collId, string $featureId): array {
+  function item(string $f, string $collId, string $featureId): array {
     return [];
   }
 };

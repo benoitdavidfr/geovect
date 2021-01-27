@@ -76,8 +76,8 @@ datasets:
               "Frontière internationale":
                 label: Limite entre un département et un État étranger.
       troncon_hydrographique:
-        title: Cours d’eau
-        description: Tronçon hydrographique et cours d’eau.
+        title: Cours d'eau
+        description: Tronçon hydrographique et cours d'eau.
         geometryType: LineString2D
         properties:
           largeur:
@@ -87,7 +87,7 @@ datasets:
               - Entre 15 et 50 mètres
               - De 0 à 15 mètres
           toponyme:
-            title: Nom du cours d’eau.
+            title: Nom du cours d'eau.
             description: 5à caractères au plus en minuscules accentuées
             type: string
       zone_occupation_sol:
@@ -105,16 +105,20 @@ datasets:
         geometryType: Polygon2D
         properties:
           nature:
-            title: Nature de la zone d’occupation du sol.
+            title: Nature de la zone d'occupation du sol.
             enum:
               Bâti:
                 label: Zones bâties.
               Eau:
-                label: Zones couvertes d’eau (fleuves, rivières, lacs, étangs, mers, océan, ...).
+                label: Zones couvertes d'eau (fleuves, rivières, lacs, étangs, mers, océan, ...).
               Forêt:
                 label: Zones boisées (forêts, bois, ...).
       noeud_ferre:
         title: Noeud ferré
+        description: |
+          Un nœud ferré correspond à un embranchement, à un équipement (gare, etc.) ou à un changement de valeur d'attribut
+          sur un tronçon de voie ferrée.
+          C'est une extrémité d'un tronçon de voie ferrée.
         geometryType: Point2D
         properties:
           id_rte500:
@@ -124,14 +128,14 @@ datasets:
           nature:
             title: Nature du nœud
             enum:
-              "Changement d’attribut":
-                label: Changement d’attribut
+              "Changement d'attribut":
+                label: Changement d'attribut
               "Gare de fret":
                 label: Gare de fret
                 description: Gare de fret seulement.
               "Gare de voyageurs":
                 label: Gare de voyageurs
-                description: Gare ou point d’arrêt ouvert aux voyageurs seulement.
+                description: Gare ou point d'arrêt ouvert aux voyageurs seulement.
               "Gare de voyageurs et de fret":
                 label: Gare de voyageurs et de fret
                 description: Gare ouverte aux voyageurs et au fret.
@@ -142,7 +146,7 @@ datasets:
             title: Nom du noeud
             type: string
           id_troncon:
-            title: Identifiant du tronçon de route permettant d’accéder au nœud
+            title: Identifiant du tronçon de route permettant d'accéder au nœud
             description: |
               uniquement renseigné pour les nœuds de type gare.
               La valeur 0 est utilisée pour les nœuds qui ne sont pas de type gare.
@@ -157,7 +161,7 @@ datasets:
         title: Tronçon de voie ferrée
         description: |
           Portion connexe de voies ferrées dont les extrémités correspondent à une gare, à un embranchement ou à un changement
-          de valeur d’un des trois champs caractérisant les tronçons.
+          de valeur d'un des trois champs caractérisant les tronçons.
           Sont retenues toutes les voies ferrées SNCF normales ou à grande vitesse, exploitées ou en construction.
         geometryType: LineString2D
         properties:
@@ -175,7 +179,7 @@ datasets:
             title: Énergie de propulsion
             enum:
               Electrifiée:
-                label: Électrifiée ou en cours d’électrification
+                label: Électrifiée ou en cours d'électrification
               'Non électrifiée':
                 label: Non électrifiée
           classement:
@@ -190,7 +194,7 @@ datasets:
           Sélection: Aérodromes ouverts à la circulation aérienne publique desservis par au moins une ligne régulière de
           transport de voyageurs.
           Modélisation géométrique: Un aérodrome est localisé par un sommet géométrique situé au centre des bâtiments assurant
-          l’accueil des voyageurs, si une seule aérogare, sinon au centroïde de l’emprise de l’aérodrome.
+          l'accueil des voyageurs, si une seule aérogare, sinon au centroïde de l'emprise de l'aérodrome.
         geometryType: Point2D
         properties:
           id_rte500:
@@ -198,10 +202,10 @@ datasets:
             identifier: yes
             type: number
           id_troncon:
-            title: Identifiant du tronçon de route permettant d’accéder à l’aérodrome
+            title: Identifiant du tronçon de route permettant d'accéder à l'aérodrome
             type: number
           toponyme:
-            title: Nom de l’aérodrome
+            title: Nom de l'aérodrome
             type: string
       communication_restreinte:
         title: Communication restreinte
@@ -210,7 +214,7 @@ datasets:
           via un nœud routier commun est impossible ou soumise à certaines restrictions de poids et/ou de hauteur.
           Sélection: Les communications restreintes sont saisies pour les intersections situées sur des tronçons de type
           autoroutier et vert hors agglomération.
-          Modélisation géométrique: Une communication restreinte est localisée sur le nœud routier qu’elle concerne.
+          Modélisation géométrique: Une communication restreinte est localisée sur le nœud routier qu'elle concerne.
         geometryType: Point2D
         properties:
           id_rte500:
@@ -229,7 +233,7 @@ datasets:
           interdit:
             title: Restriction de circulation
             description: |
-              Attribut indiquant si la restriction de circulation s’applique à tout véhicule ou si elle ne concerne
+              Attribut indiquant si la restriction de circulation s'applique à tout véhicule ou si elle ne concerne
               que les véhicules dépassant un certain poids et/ou une certaine hauteur.
             enum:
               Partielle:
@@ -269,24 +273,24 @@ datasets:
           insee_comm:
             title: Numéro INSEE de la commune
             description: |
-              Une commune nouvelle résultant d’un regroupement de communes préexistantes se voit attribuer le code INSEE
-              de l’ancienne commune désignée comme chef-lieu par l’arrêté préfectoral qui l’institue. En conséquence
+              Une commune nouvelle résultant d'un regroupement de communes préexistantes se voit attribuer le code INSEE
+              de l'ancienne commune désignée comme chef-lieu par l'arrêté préfectoral qui l'institue. En conséquence
               une commune change de code INSEE si un arrêté préfectoral modifie son chef-lieu.
           population:
             title: Population de la commune en milliers d'habitants
             description: |
-              Population de la commune en milliers d’habitants avec un chiffre après la virgule (source INSEE).
+              Population de la commune en milliers d'habitants avec un chiffre après la virgule (source INSEE).
               Le concept de population municipale est défini par le décret n°2003-485 publié au Journal Officiel le 8 juin
               2003, relatif au recensement de la population. La population municipale comprend les personnes ayant leur
               résidence habituelle (au sens du décret) sur le territoire de la commune, dans un logement ou une communauté,
               les personnes détenues dans les établissements pénitentiaires de la commune, les personnes sans-abri recensées
               sur le territoire de la commune et les personnes résidant habituellement dans une habitation mobile recensée
               sur le territoire de la commune.
-              Actualité : La population au 1er janvier de l’année « n » correspond à la population légale millésimée de
-              l’année « n-3 ». Elles ont été calculées conformément aux concepts définis dans le décret n° 2003-485 signé
-              le 5 juin 2003. Leur date de référence statistique est le 1er janvier de l’année « n-3 ». Pour les communes
+              Actualité : La population au 1er janvier de l'année « n » correspond à la population légale millésimée de
+              l'année « n-3 ». Elles ont été calculées conformément aux concepts définis dans le décret n° 2003-485 signé
+              le 5 juin 2003. Leur date de référence statistique est le 1er janvier de l'année « n-3 ». Pour les communes
               ayant changé de statut (fusion, scission,...) depuis le 1er janvier, la population de la commune correspond
-              aux informations portées à la connaissance de l’IGN par les différents décrets et arrêtés publiés au Journal
+              aux informations portées à la connaissance de l'IGN par les différents décrets et arrêtés publiés au Journal
               Officiel.
             type: number
           superficie:
@@ -295,7 +299,7 @@ datasets:
           statut:
             title: Statut administratif de la commune
             enum:
-              - Capitale d’état
+              - Capitale d'état
               - Commune simple
               - Préfecture
               - Préfecture de région
@@ -347,7 +351,7 @@ datasets:
               "Echangeur partiel":
                 label: Echangeur partiel
                 description: |
-                  Intersection appartenant à un échangeur partiel. À la différence d’un échangeur complet, un échangeur
+                  Intersection appartenant à un échangeur partiel. À la différence d'un échangeur complet, un échangeur
                   partiel est un échangeur où la communication est impossible entre au moins deux des tronçons y aboutissant.
               Embarcadère:
                 label: Embarcadère de bac ou de liaison maritime.
@@ -358,11 +362,11 @@ datasets:
               "Noeud de communication restreinte":
                 label: Noeud de communication restreinte
                 description: Nœud où au moins 2 tronçons entrants/sortants ne peuvent communiquer.
-              "Noeud représentatif d’une commune":
-                label: Noeud représentatif d’une commune
+              "Noeud représentatif d'une commune":
+                label: Noeud représentatif d'une commune
                 description: |
                   Nœud artificiel de rattachement de commune, créé par projection du chef-lieu sur un tronçon de route,
-                  quand il n’existe pas de nœud routier dans un rayon de 500 m.
+                  quand il n'existe pas de nœud routier dans un rayon de 500 m.
               "Petit rond-point":
                 label: Petit rond-point
                 description: Rond-point (giratoire) d'un diamètre compris entre 50 et 100 m.
@@ -380,7 +384,7 @@ datasets:
             - tronçons permettant de desservir des infrastructures de transport (gare ou aérodrome)
               ou des chefs-lieux de commune.
           Modélisation géométrique:
-            À l’axe, au sol. Les routes à chaussées séparées sont représentées par un seul axe,
+            À l'axe, au sol. Les routes à chaussées séparées sont représentées par un seul axe,
             sauf si ces chaussées sont éloignées de plus de 100 mètres sur au moins un kilomètre.
         geometryType: LineString2D
         properties:
@@ -392,7 +396,7 @@ datasets:
             title: Vocation de la liaison
             description: |
               Cet attribut matérialise une hiérarchisation du réseau routier basée, non pas sur un critère administratif,
-              mais sur l’importance des tronçons de route pour le trafic routier. Ainsi, les valeurs ci-dessous
+              mais sur l'importance des tronçons de route pour le trafic routier. Ainsi, les valeurs ci-dessous
               permettent un maillage de plus en plus dense du territoire.
             enum:
               - Bretelle
@@ -431,7 +435,7 @@ datasets:
                 label: Plus de 4 voies
               "Sans objet":
                 label: Sans objet
-                description: Tronçons à deux chaussées et plus et bretelles d’échangeur.
+                description: Tronçons à deux chaussées et plus et bretelles d'échangeur.
           etat:
             title: État du tronçon
             enum:
@@ -452,13 +456,13 @@ datasets:
             enum:
               "Double sens":
                 label: Double sens
-                description: La circulation s’effectue dans les deux sens.
+                description: La circulation s'effectue dans les deux sens.
               "Sens direct":
                 label: Sens direct
-                description: La circulation s’effectue dans le sens des arcs qui composent le tronçon.
+                description: La circulation s'effectue dans le sens des arcs qui composent le tronçon.
               "Sens inverse":
                 label: Sens inverse
-                description: La circulation s’effectue dans le sens inverse des arcs qui composent le tronçon.
+                description: La circulation s'effectue dans le sens inverse des arcs qui composent le tronçon.
           res_europe:
             title: Appartenance au réseau européen
             description: |
@@ -470,7 +474,7 @@ datasets:
             title: Numéro de route
             description: |
               Numéro de la route à laquelle appartient le tronçon.
-              La valeur vide indique que le tronçon n’appartient pas au réseau classé (Autoroutier, National, Départemental).
+              La valeur vide indique que le tronçon n'appartient pas au réseau classé (Autoroutier, National, Départemental).
             type: string
           class_adm:
             title: Classement administratif
@@ -482,14 +486,14 @@ datasets:
                   Voie de communication routière à chaussées séparées, réservée à la circulation rapide des véhicules motorisés.
               Nationale:
                 label: Nationale
-                description: Route principale gérée par l’État.
+                description: Route principale gérée par l'État.
               Départementale:
                 label: Départementale
                 description: |
                   Route correspondant généralement à une liaison au niveau local ou régional gérée par les départements.
               "Sans objet":
                 label: Sans objet
-                description: Tronçons de route situés à l’étranger ou n’appartenant pas au réseau routier classé.
+                description: Tronçons de route situés à l'étranger ou n'appartenant pas au réseau routier classé.
           longueur:
             title: Longueur du tronçon
             description: Longueur du tronçon en kilomètres.

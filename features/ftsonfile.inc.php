@@ -51,7 +51,7 @@ class FeatureServerOnFile extends FeatureServer {
   }
   
   // retourne les items de la collection comme array Php
-  function items(string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array {
+  function items(string $f, string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array {
     $fc = json_decode(file_get_contents($this->path."/$collId.geojson"), true);
     $features = [];
     for ($i=0; $i < ($startindex+$count); $i++) {
@@ -62,7 +62,7 @@ class FeatureServerOnFile extends FeatureServer {
   }
   
   // retourne l'item $id de la collection comme array Php
-  function item(string $collId, string $featureId): array {
+  function item(string $f, string $collId, string $featureId): array {
     
   }
 };
