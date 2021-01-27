@@ -82,7 +82,9 @@ class CollOnSql {
         $this->geomCol = array_values($geomColumns)[0];
     }
     else { // cas où {collId} est la concaténation des noms de table et de la colonne géométrique
-      $this->geomCol = $schema->concatTableGeomNames($collId, self::SEP); 
+      $this->geomCol = $schema->concatTableGeomNames($collId, self::SEP);
+      if (!$this->geomCol)
+        throw new Exception("collection $collId inconnue", 404);
       $this->table = $this->geomCol->table;
     }
   }
@@ -975,7 +977,6 @@ links to support paging (link relation `next`).",
   }
   
   // retourne les items de la collection comme FeatureCollection en array Php
-  // L'usage de pFilter n'est pas implémenté
   function items(string $f, string $collId, array $bbox=[], array $pFilter=[], int $limit=10, int $startindex=0): array {
     $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
     $jsonColNames = []; // liste des noms des colonnes de type JSON

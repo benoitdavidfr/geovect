@@ -38,6 +38,7 @@ components:
         enum:
           - json
           - html
+          - yaml
         type: string
       style: form
     startindex:

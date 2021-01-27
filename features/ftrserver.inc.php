@@ -6,6 +6,8 @@ doc: |
   Gère aussi l'aguillage vers les différents types de serveur par la méthode new()
 classes:
 journal: |
+  27/1/2021:
+    - ajout FeatureServer::checkParams() pour détecter les paramètres non prévus
   17-20/12/2020:
     - évolutions
   30/12/2020:
@@ -163,6 +165,35 @@ abstract class FeatureServer {
     $apidef = Yaml::parse(@file_get_contents(__DIR__.'/apidef.yaml'));
     $apidef['servers'][0]['url'] = $urlLandingPage;
     return $apidef;
+  }
+  
+  function checkParams(string $path): void { // détecte les paramètres non prévus et lève alors une exception 
+    static $params = [ // liste des paramètres autorisés
+      '/'=> ['f'],
+      '/conformance'=> ['f'],
+      '/api'=> ['f'],
+      '/collections'=> ['f'],
+      '/collections/{collectionId}'=> ['f'],
+      '/collections/{collectionId}/describedBy'=> ['f'],
+      '/collections/{collectionId}/items/{featureId}'=> ['f'],
+    ];
+    if (isset($params[$path])) {
+      if ($adiff = array_diff(array_keys($_GET), $params[$path]))
+        error("Paramètre(s) ".implode(',', $adiff)." interdit(s) pour $path", 400);
+    }
+    elseif (preg_match('!^/collections/[^/]+/items$!', $path, $matches)) {
+      $params = ['f','limit','startindex','bbox','datetime'];
+      $apidef = $this->api();
+      $apidef = $apidef['paths'][$path]['get']['parameters'];
+      foreach ($apidef as $parameterdef)
+        if (isset($parameterdef['name']))
+          $params[] = $parameterdef['name'];
+      if ($adiff = array_diff(array_keys($_GET), $params))
+        error("Paramètre(s) ".implode(',', $adiff)." interdit(s) pour $path", 400);
+    }
+    else {
+      error("path $path non prévu dans ");
+    }
   }
   
   /*PhpDoc: methods

@@ -27,10 +27,7 @@ doc: |
     - 47' même données gzippées et !JSON_PRETTY_PRINT soit 1/4
 
   A faire (court-terme):
-    - ajouter les filtres, tester leur utilisation et leur efficacité avec QGis
-    - gérer correctement les erreurs
     - gérer correctement les types non string dans les données comme les nombres
-    - renvoyer une erreur lors de l'existence d'un paramètre non prévu
     - satisfaire au test CITE
   Réflexions (à mûrir):
     - distinguer un outil d'admin différent de l'outil fts.php de consultation
@@ -42,6 +39,8 @@ doc: |
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
 journal: |
+  27/1/2021:
+    - détection des paramètres non prévus
   20-23/1/2021:
     - intégration de la doc
   17/1/2021:
@@ -98,6 +97,13 @@ define('EXEMPLES_DAPPELS', [
 ]
 );
 
+define('HTTP_ERROR_LABELS', [
+  400 => 'Bad Request', // La syntaxe de la requête est erronée.
+  404 => 'Not Found', // Ressource non trouvée. 
+  500 => 'Internal Server Error', // Erreur interne du serveur. 
+  501 => 'Not Implemented', // Fonctionnalité réclamée non supportée par le serveur.
+]);
+
 FeatureServer::log([
   'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
   'Hedaders'=> getallheaders(),
@@ -137,6 +143,19 @@ function output(string $f, array $array, int $levels=3) {
   }
 }
 
+// Génère une erreur Http avec le code $code si <>0 ou sinon 500 
+// et affiche le message d'erreur
+function error(string $message, int $code=0) {
+  if ($code == 0)
+    $code = 500;
+  header("HTTP/1.1 $code ".(HTTP_ERROR_LABELS[$code] ?? "Undefined httpCode $code"));
+  header('Content-type: text/plain');
+  die (Yaml::dump(['Exception'=> [
+    'message'=> $message,
+    'code'=> $code,
+  ]]));
+}  
+  
 // si _GET[f] est défini alors il est utilisé, sinon si appel navigateur (header Accept) alors 'html' sinon 'json'
 // si ni 'yaml', ni 'json', ni 'geojson' alors 'html'
 switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')) ? 'html' : 'json')) {
@@ -180,7 +199,7 @@ if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) { // appel 
   die();
 }
 
-if (preg_match('!^((/[^/]+)+)/(conformance|api|check)!', $_SERVER['PATH_INFO'], $matches)) { // cmde 1er niveau sur fserver
+if (preg_match('!^((/[^/]+)+)/(conformance|api|check)$!', $_SERVER['PATH_INFO'], $matches)) { // cmde 1er niveau sur fserver
   $fserverId = $matches[1];
   $action = $matches[3];
   $action2 = null;
@@ -191,7 +210,7 @@ if (preg_match('!^((/[^/]+)+)/(conformance|api|check)!', $_SERVER['PATH_INFO'], 
 elseif (preg_match('!^((/[^/]+)+)/collections!', $_SERVER['PATH_INFO'], $matches)) {
   if (!preg_match('!^((/[^/]+)+)/collections(/([^/]+)(/items(/.*)?|/describedBy|/createPrimaryKey)?)?$!',
       $_SERVER['PATH_INFO'], $matches))
-    output($f, ['error'=> "no match1 for '$_SERVER[PATH_INFO]'"]);
+    error("Erreur, chemin '$_SERVER[PATH_INFO]' non interprété", 400);
   //echo 'matches1='; print_r($matches);
   $fserverId = $matches[1];
   $action = 'collections'; // liste des collections demandée
@@ -210,70 +229,82 @@ if (preg_match('!^/([^/]+)/?$!', $fserverId, $matches)) {
   //echo 'matches2='; print_r($matches);
   $datasetId = $matches[1];
   //echo "raccourci $raccourci<br>\n";
-  if (!($datasetDoc = $doc->datasets[$datasetId]))
-    output($f, ['error'=> "$datasetId n'est pas l'identifiant d'un serveur bien connu"]);
+  if (!isset($doc->datasets[$datasetId]))
+    error("Erreur, $datasetId n'est pas l'identifiant d'un serveur prédéfini", 400);
+  $datasetDoc = $doc->datasets[$datasetId];
   $fserverId = $datasetDoc->path;
   //echo "fserverId=$fserverId<br>\n";
 }
 
 // identification du type de serveur et de son path
 if (!preg_match('!^/(wfs|pgsql|mysql|file)(/.*)$!', $fserverId, $matches)) {
-  output($f, ['error'=> "no match3 for '$_SERVER[PATH_INFO]'"]);
+  error("Erreur, type de serveur non détecté dans '$_SERVER[PATH_INFO]'", 400);
 }
 //echo 'matches3='; print_r($matches);
 $type = $matches[1];
 $path = $matches[2];
 $fServer = FeatureServer::new($type, $path, $datasetDoc);
-  
-if (!$action) { // /
-  output($f, $fServer->landingPage($f));
-}
-elseif ($action == 'conformance') { // /conformance
-  output($f, $fServer->conformance());
-}
-elseif ($action == 'api') { // /api
-  output($f, $fServer->api(), 999);
-}
-elseif ($action == 'check') { // /check
-  //output($f, $fServer->checkTables());
-  foreach ($fServer->checkTables() as $tableName => $tableProp) {
-    //echo Yaml::dump([$tableName => $tableProp]);
-    echo "$tableName:\n";
-    if ($tableProp['geomColumnNames'])
-      echo "  geom ",implode(', ', $tableProp['geomColumnNames'])," ok\n";
-    else
-      echo "  geom KO\n";
-    if ($tableProp['pkColumnName'])
-      echo "  pk ok\n";
-    else
-      echo "  <a href='$_SERVER[SCRIPT_NAME]$fserverId/collections/$tableName/createPrimaryKey'>Créer une clé primaire</a>\n";
-  }
-  die();
-}
-elseif (!$collId) { // /collections
-  output($f, $fServer->collections($f), 4);
-}
-elseif (!$action2) { // /collections/{collId}
-  output($f, $fServer->collection($f, $collId), 4);
-}
-elseif ($action2 == '/describedBy') { // /collections/{collId}/describedBy
-  output($f, $fServer->collDescribedBy($collId), 6);
-}
-elseif ($action2 == '/createPrimaryKey') { // /collections/{collId}/createPrimaryKey
-  $fServer->repairTable('createPrimaryKey', $collId);
-}
-elseif (!$itemId) { // /collections/{collId}/items
-  output(($f == 'json' ? 'geojson' : $f),
-    $fServer->items(
-      f: $f,
-      collId: $collId,
-      bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
-      limit: $_GET['limit'] ?? 10,
-      startindex: $_GET['startindex'] ?? 0
-    ), 6
-  );
-}
-else { // /collections/{collId}/items/{itemId}
-  output(($f == 'json' ? 'geojson' : $f), $fServer->item($f, $collId, $itemId), 6);
-}
 
+try {
+  if (!$action) { // /
+    $fServer->checkParams('/');
+    output($f, $fServer->landingPage($f));
+  }
+  elseif ($action == 'conformance') { // /conformance
+    $fServer->checkParams("/$action");
+    output($f, $fServer->conformance());
+  }
+  elseif ($action == 'api') { // /api
+    $fServer->checkParams("/$action");
+    output($f, $fServer->api(), 999);
+  }
+  elseif ($action == 'check') { // /check
+    //output($f, $fServer->checkTables());
+    foreach ($fServer->checkTables() as $tableName => $tableProp) {
+      //echo Yaml::dump([$tableName => $tableProp]);
+      echo "$tableName:\n";
+      if ($tableProp['geomColumnNames'])
+        echo "  geom ",implode(', ', $tableProp['geomColumnNames'])," ok\n";
+      else
+        echo "  geom KO\n";
+      if ($tableProp['pkColumnName'])
+        echo "  pk ok\n";
+      else
+        echo "  <a href='$_SERVER[SCRIPT_NAME]$fserverId/collections/$tableName/createPrimaryKey'>Créer une clé primaire</a>\n";
+    }
+    die();
+  }
+  elseif (!$collId) { // /collections
+    $fServer->checkParams("/$action");
+    output($f, $fServer->collections($f), 4);
+  }
+  elseif (!$action2) { // /collections/{collectionId}
+    $fServer->checkParams("/$action/{collectionId}");
+    output($f, $fServer->collection($f, $collId), 4);
+  }
+  elseif ($action2 == '/describedBy') { // /collections/{collectionId}/describedBy
+    $fServer->checkParams("/$action/{collectionId}/describedBy");
+    output($f, $fServer->collDescribedBy($collId), 6);
+  }
+  elseif ($action2 == '/createPrimaryKey') { // /collections/{collectionId}/createPrimaryKey
+    $fServer->repairTable('createPrimaryKey', $collId);
+  }
+  elseif (!$itemId) { // /collections/{collectionId}/items
+    $fServer->checkParams("/$action/$collId/items");
+    output(($f == 'json' ? 'geojson' : $f),
+      $fServer->items(
+        f: $f,
+        collId: $collId,
+        bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
+        limit: $_GET['limit'] ?? 10,
+        startindex: $_GET['startindex'] ?? 0
+      ), 6
+    );
+  }
+  else { // /collections/{collectionId}/items/{featureId}
+    $fServer->checkParams("/$action/{collectionId}/items/{featureId}");
+    output(($f == 'json' ? 'geojson' : $f), $fServer->item($f, $collId, $itemId), 6);
+  }
+} catch (Exception|TypeError $e) {
+  error($e->getMessage(), $e->getCode());
+}
