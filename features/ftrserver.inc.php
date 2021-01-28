@@ -168,6 +168,25 @@ abstract class FeatureServer {
     return $apidef;
   }
   
+  static function checkBbox(array $bbox): void { // vérifie que la bbox est correcte, sinon lève une exception 
+    if (count($bbox) <> 4)
+      throw new Exception("Erreur sur bbox qui ne correspond pas à 4 coordonnées", 400);
+    if (!is_numeric($bbox[0]) || !is_numeric($bbox[1]) || !is_numeric($bbox[2]) || !is_numeric($bbox[3]))
+      throw new Exception("Erreur sur bbox qui ne correspond pas à 4 coordonnées", 400);
+    if ($bbox[0] >= $bbox[2])
+      throw new Exception("Erreur sur bbox bbox[0] >= bbox[2]");
+    if ($bbox[1] >= $bbox[3])
+      throw new Exception("Erreur sur bbox bbox[1] >= bbox[3]");
+    if (($bbox[0] > 180) || ($bbox[0] < -180))
+      throw new Exception("Erreur sur bbox[0] > 180 ou < -180");
+    if (($bbox[2] > 180) || ($bbox[2] < -180))
+      throw new Exception("Erreur sur bbox[2] > 180 ou < -180");
+    if (($bbox[1] > 90) || ($bbox[1] < -90))
+      throw new Exception("Erreur sur bbox[1] > 90 ou < -90");
+    if (($bbox[3] > 90) || ($bbox[3] < -90))
+      throw new Exception("Erreur sur bbox[3] > 90 ou < -90");
+  }
+  
   function checkParams(string $path): void { // détecte les paramètres non prévus et lève alors une exception 
     static $params = [ // liste des paramètres autorisés et des valeurs autorisées
       '/'=> ['f'=> ['json','html','yaml']],
@@ -223,7 +242,7 @@ abstract class FeatureServer {
   abstract function collDescribedBy(string $collId): array; // retourne le schéma d'un Feature de la collection
   
   // retourne les items de la collection comme array Php
-  abstract function items(string $f, string $collId, array $bbox=[], array $pFilter=[], int $count=10, int $startindex=0): array;
+  abstract function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array;
   
   // retourne l'item $featureId de la collection comme array Php
   abstract function item(string $f, string $collId, string $featureId): array;

@@ -8,9 +8,14 @@ doc: |
   dans un serveur Sql (MySql ou PgSql),
   et de la classe complémentaire CollOnSql qui gère le mapping entre une table Sql et une collection du FeatureServer.
 
-  A faire:
-    - mettre en oeuvre la possibilité d'effectuer des requêtes sur un champ particulier
+  Utilise notamment:
+    - la classe Sql utilisée pour exécuter des requêtes Sql sur MySql ou PgSql
+    - la classe \Sql\Schema contenant les infos d'un schéma Sql (base MySql ou schéma PgSql).
+
 journal: |
+  28/1/2021:
+    - ajout du calcul de l'extension spatial pour les collections stockées dans MySql
+    - ajout numberMatched à /items (demande OGC CITE)
   27/1/2021:
     - ajout traitement des filtres dans /api et dans /items
     - ajout traitement du paramètre properties dans /items
@@ -43,7 +48,7 @@ use Symfony\Component\Yaml\Exception\ParseException;
 
 /*PhpDoc: classes
 name: CollOnSql
-title: class CollOnSql - gestion du mapping entre une collection et la table de stockage correspondante
+title: class CollOnSql - gestion du mapping entre une collection du FeatureServer et la table de stockage correspondante
 doc: |
   Un objet CollOnSql est initialisé par un \Sql\Schema et un collId.
   Ne gère pas le cas de collision entre le nom généré et un nom existant de table
@@ -52,7 +57,7 @@ class CollOnSql {
   const SEP = '__'; // séparateur entre nom de table et nom de colonne pour créer le nom de collection
   
   protected \Sql\Table $table; // Table correspondant à la collection
-  protected ?\Sql\Column $geomCol=null; // colonne géométrique
+  protected ?\Sql\Column $geomCol=null; // colonne géométrique, null ssi collection non géométrique
   //protected array $columns; // [ \Sql\Column ]
 
   static function collNames(\Sql\Schema $sqlSchema): array { // retourne la liste des noms de collection
@@ -60,7 +65,7 @@ class CollOnSql {
     foreach ($sqlSchema->tables as $table_name => $sqlTable) {
       if (!$sqlTable->pkeyCol()) // on ne prend pas les tables qi ne comportent pas de clé primaire
         continue;
-      $geomColumns = $sqlTable->listOfColumnOfType('geometry');
+      $geomColumns = $sqlTable->listOfGeometryColumns();
       if (count($geomColumns) <= 1) { // la table comporte au plus un champ géométrique
         $collNames[] = $table_name;
       }
@@ -77,11 +82,11 @@ class CollOnSql {
     //echo "listOfColumnsOfTable="; print_r(SqlSchema::listOfColumnsOfTable($schema, $collId));
     if ($table = $schema->tables[$collId] ?? null) { // cas normal 
       $this->table = $table;
-      $geomColumns = $this->table->listOfColumnOfType('geometry');
+      $geomColumns = $this->table->listOfGeometryColumns();
       if (count($geomColumns) == 1)
         $this->geomCol = array_values($geomColumns)[0];
     }
-    else { // cas où {collId} est la concaténation des noms de table et de la colonne géométrique
+    else { // cas où {collId} est la concaténation des noms de la table et de la colonne géométrique
       $this->geomCol = $schema->concatTableGeomNames($collId, self::SEP);
       if (!$this->geomCol)
         throw new Exception("collection $collId inconnue", 404);
@@ -90,7 +95,7 @@ class CollOnSql {
   }
   
   function table(): \Sql\Table { return $this->table; }
-  function geomCol(): \Sql\Column { return $this->geomCol; }
+  function geomCol(): ?\Sql\Column { return $this->geomCol; }
   //function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
   function pkeyCol(): \Sql\Column { return $this->table->pkeyCol(); }
   function columns(): array { return $this->table->columns; } // [ {name}=> \Sql\Column]
@@ -100,7 +105,7 @@ class CollOnSql {
     // les mettre dans la doc ?
     if (!$this->geomCol)
       return [];
-    elseif (Sql::software()=='PgSql') { // calculable facilement uniquement en PgSql 
+    elseif (Sql::software()=='PgSql') { // calcul en PgSql 
       $sql = "select ST_Extent(".$this->geomCol->name.") as table_extent FROM ".$this->table->name;
       $extent = Sql::getTuples($sql)[0]['table_extent'];
       //echo "$extent\n";
@@ -108,8 +113,8 @@ class CollOnSql {
         throw new Exception("no match on '$extent'");
       return [[round($matches[1], 4), round($matches[2], 4), round($matches[3], 4), round($matches[4], 4)]];
     }
-    else {
-      return []; 
+    elseif (Sql::software()=='MySql') { // en MySql, appel de la méthode adhoc 
+      return [MySql::spatialExtent($this->table->name, $this->geomCol->name)];
     }
   }
 };
@@ -121,8 +126,8 @@ doc: |
   Un FeatureServerOnSql expose les données soit d'une base MySql, soit d'un schema d'une base PgSql.
   Chaque table ayant une clé primaire définit une collection ou plusieurs si la table comporte plusieurs colonnes géométriques.
   Les vues ne sont pas prises en compte car elles n'ont pas de clé primaire.
-  La table doit avoir une clé primaire qui peut être créée si nécessaire ; sinon une erreur sera générée.
-  Si ce champ a pour nom FeatureServerOnSql::IDPKEY_NAME alors il n'apparait ni dans le schema, dans items ni dans items{id}
+  Une clé primaire adhoc peut être créée si nécessaire avec pour nom FeatureServerOnSql::IDPKEY_NAME
+  et dans ce cas il n'apparait ni dans le schema, dans items ni dans items{id}.
   Si un champ existe déjà avec ce nom alors cela génère une erreur.
   Les champs géométriques doivent être en CRS CRS:84.
   Si la table n'a pas de champ géométrique alors les features seront générés avec une géométrie nulle
@@ -131,9 +136,10 @@ doc: |
   avec pour nom la concaténation du nom de la table, du séparateur CollOnSql::SEP et du nom du champ géométrique.
   En PgSql les champs de type JSON sont traduits en JSON.
 
-  Si les données sont documentées alors cette documentation est utilisée:
-    1) dans le schema JSON associé à une collection (/collections/{collId}/describedBy)
-    2) dans les schémas des réponses /items et /items/{id} exposés dans la définition de l'API (/api)
+  Si les données sont documentées dans doc.yaml alors cette documentation est utilisée:
+    1) dans la liste des collections (/collections/{collId}) et les métadonnés d'une collection (/collections/{collId}),
+    2) dans le schema JSON associé à une collection (/collections/{collId}/describedBy)
+    3) dans les schémas des réponses /items et /items/{id} exposés pour chaque collection dans la définition de l'API (/api)
 */
 class FeatureServerOnSql extends FeatureServer {
   // URI du schéma toolbox défini par l'OGC
@@ -593,7 +599,7 @@ links to support paging (link relation `next`).",
     foreach ($this->sqlSchema->tables as $tname => $table) {
       $pkeyCol = $table->pkeyCol();
       $tables[$tname] = [
-        'geomColumnNames'=> array_keys($table->listOfColumnOfType('geometry')),
+        'geomColumnNames'=> array_keys($table->listOfGeometryColumns()),
         'pkColumnName'=> $pkeyCol ? $pkeyCol->name : null,
       ];
     }
@@ -609,12 +615,12 @@ links to support paging (link relation `next`).",
           'PgSql'=> "alter table $tableName add $idpkeyName serial primary key",
         ]
       ];
-      Sql::query($sql); // génère une exception encas d'erreur
+      Sql::query($sql); // génère une exception en cas d'erreur
     }
   }
 
-  // structuration d'une collection pour les réponses à /collections et à /collection/{collId}
-  function collection_structuration(string $collUrl, string $collId, string $f): array {
+  // structuration d'une collection utilisée pour les réponses à /collections et à /collections/{collId}
+  private function collection_structuration(string $collUrl, string $collId, string $f): array {
     $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
     $spatialExtentBboxes = (new CollOnSql($this->sqlSchema, $collId))->spatialExtentBboxes();
     $temporalExtent = null;
@@ -630,17 +636,6 @@ links to support paging (link relation `next`).",
       ]
       : []
     )
-      /*"id": "buildings",
-        "title": "Buildings",
-        "description": "Buildings in the city of Bonn.",
-        "extent": {
-          "spatial": {
-            "bbox": [ [ 7.01, 50.63, 7.22, 50.78 ] ]
-          },
-          "temporal": {
-            "interval": [ [ "2010-02-15T12:34:56Z", null ] ]
-          }
-        },*/
     + [
       'itemType'=> 'feature', // indicator about the type of the items in the collection (the default value is 'feature').
       'crs'=> ['http://www.opengis.net/def/crs/OGC/1.3/CRS84'],
@@ -957,35 +952,16 @@ links to support paging (link relation `next`).",
     */}
   }
   
-  static function checkBbox(array $bbox): void { // vérifie que la bbox est correcte, sinon lève une exception 
-    if (count($bbox) <> 4)
-      throw new Exception("Erreur sur bbox qui ne correspond pas à 4 coordonnées");
-    if (!is_numeric($bbox[0]) || !is_numeric($bbox[1]) || !is_numeric($bbox[2]) || !is_numeric($bbox[3]))
-      throw new Exception("Erreur sur bbox qui ne correspond pas à 4 coordonnées");
-    if ($bbox[0] >= $bbox[2])
-      throw new Exception("Erreur sur bbox bbox[0] >= bbox[2]");
-    if ($bbox[1] >= $bbox[3])
-      throw new Exception("Erreur sur bbox bbox[1] >= bbox[3]");
-    if (($bbox[0] > 180) || ($bbox[0] < -180))
-      throw new Exception("Erreur sur bbox[0] > 180 ou < -180");
-    if (($bbox[2] > 180) || ($bbox[2] < -180))
-      throw new Exception("Erreur sur bbox[2] > 180 ou < -180");
-    if (($bbox[1] > 90) || ($bbox[1] < -90))
-      throw new Exception("Erreur sur bbox[1] > 90 ou < -90");
-    if (($bbox[3] > 90) || ($bbox[3] < -90))
-      throw new Exception("Erreur sur bbox[3] > 90 ou < -90");
-  }
-  
   // retourne les items de la collection comme FeatureCollection en array Php
-  function items(string $f, string $collId, array $bbox=[], array $pFilter=[], int $limit=10, int $startindex=0): array {
+  function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
     $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
     $jsonColNames = []; // liste des noms des colonnes de type JSON
     $columns = []; // liste des noms des colonnes pour la requête Sql
     $filters = []; // filtres sous la forme [{columnName} => {value}]
     $collection = new CollOnSql($this->sqlSchema, $collId);
     foreach ($collection->columns() as $column) {
-      if ($column->dataType == 'geometry') {
-        if ($collection->geomCol() && ($column->name == $collection->geomCol()->name))
+      if ($column->hasGeometryType()) {
+        if ($collection->geomCol() && ($column->name == $collection->geomCol()->name)) 
           $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }
       elseif (!$properties || in_array($column->name, $properties)) {
@@ -997,7 +973,7 @@ links to support paging (link relation `next`).",
       if (isset($_GET[$column->name]))
         $filters[$column->name] = $_GET[$column->name];
     }
-    $sql = "select ".implode(',', $columns)."\nfrom ".$collection->table()->name;
+    $selectFrom = "select ".implode(',', $columns)."\nfrom ".$collection->table()->name;
     $where = '';
     if ($bbox) {
       self::checkBbox($bbox);
@@ -1024,15 +1000,12 @@ links to support paging (link relation `next`).",
         $where .= ($where ? ' and ' : '').$expr;
       }
     }
-    /*
-      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_ferre/items?properties=id_rte500,nature
-    */
-    if ($where)
-      $sql .= "\nwhere $where";
-    if ($limit)
-      $sql .= "\nlimit $limit";
-    if ($startindex)
-      $sql .= " offset $startindex";
+    $sql = "select count(*) count from ".$collection->table()->name.($where ? "\nwhere $where" : '');
+    $numberMatched = (int) Sql::getTuples($sql)[0]['count'];
+    $sql = $selectFrom
+      .($where ? "\nwhere $where" : '')
+      .($limit ? "\nlimit $limit": '')
+      .($startindex ? " offset $startindex" : '');
     //echo "sql=$sql\n";
     $items = [];
     foreach (Sql::query($sql) as $tuple) {
@@ -1114,6 +1087,7 @@ links to support paging (link relation `next`).",
       'features'=> $items,
       'links'=> $links,
       'timeStamp'=> date(DATE_ATOM),
+      'numberMatched'=> $numberMatched,
       'numberReturned'=> count($items),
     ];
     {/* Schema
@@ -1150,7 +1124,7 @@ links to support paging (link relation `next`).",
     $columns = [];
     $collection = new CollOnSql($this->sqlSchema, $collId);
     foreach ($collection->columns() as $column) {
-      if ($column->dataType == 'geometry') {
+      if ($column->hasGeometryType()) {
         if ($collection->geomCol() && ($column->name == $collection->geomCol()->name))
           $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }

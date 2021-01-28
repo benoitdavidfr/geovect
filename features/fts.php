@@ -106,7 +106,7 @@ define('HTTP_ERROR_LABELS', [
   501 => 'Not Implemented', // Fonctionnalité réclamée non supportée par le serveur.
 ]);
 
-if (0)
+//if (0)
 FeatureServer::log([
   'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
   'Headers'=> getallheaders(),
