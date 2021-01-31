@@ -9,3 +9,6 @@ Le code de ce module implémente un serveur respectant le standard OGC API Featu
   
 Seul le le premier type a été affiné et passe
 les [tests CITE](https://cite.opengeospatial.org/teamengine/about/ogcapi-features-1.0/1.0/site/).
+
+Un serveur de test est disponible à l'adresse:
+https://features.geoapi.fr/ignf-route500
