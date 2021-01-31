@@ -184,9 +184,9 @@ class CollectionDoc {
   
   protected string $id;
   protected string $title;
-  protected ?string $description;
+  protected ?string $description=null;
   protected string|array $geometryType;
-  protected array $properties;
+  protected array $properties=[];
   
   function schema() { /* Schema JSON 
     collection:
@@ -252,7 +252,7 @@ class CollectionDoc {
     if (isset($yaml['description']))
       $this->description = rtrim($yaml['description']); // Il y a souvent un \n à la fin de la chaine
     $this->geometryType = $yaml['geometryType'];
-    foreach ($yaml['properties'] as $propid => $property) {
+    foreach ($yaml['properties'] ?? [] as $propid => $property) {
       $this->properties[$propid] = new PropertyDoc($propid, $property);
     }
   }

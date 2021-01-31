@@ -503,6 +503,126 @@ specifications:
     identifier: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/DC_ROUTE500_2-1.pdf
     metadata: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/IGNF_ROUTE500r_2-1.xml
 
+  ne_110m_cultural:
+    title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
+    abstract: |
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales. Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing, well-crafted maps with cartography or GIS software.  
+      Small scale data, 1:110m  
+      Suitable for schematic maps of the world on a postcard or as a small locator globe.
+      Cultural Vector Data Themes  
+    source: https://www.naturalearthdata.com/features/
+    collections:
+      admin_0_countries:
+        title: Countries
+        description: |
+          Countries – matched boundary lines and polygons with names attributes for countries and sovereign states.
+          Includes dependencies (French Polynesia), map units (U.S. Pacific Island Territories) and sub-national
+          map subunits (Corsica versus mainland Metropolitan France).
+          
+          Countries distinguish between metropolitan (homeland) and independent and semi-independent portions
+          of sovereign states. To see the dependent overseas regions broken out (like in ISO codes, see France for example),
+          use map units instead.
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_boundary_lines_land:
+        title: Land boundaries
+        geometryType: LineString2D
+      admin_0_pacific_groupings:
+        title: Pacific grouping boxes
+        description: Pacific nation groupings – boxes for keeping these far-flung islands tidy.
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_countries_lakes:
+        title: Countries without boundary lakes
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_sovereignty:
+        title: Sovereignty
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_map_units:
+        title: Map units
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_scale_rank:
+        title: admin_0_scale_rank
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_tiny_countries:
+        title: Tiny country points
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces:
+        title: States and provinces
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces_lakes:
+        title: States and provinces without large lakes
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces_lines:
+        title: State and province boundaries
+        geometryType: LineString2D
+      admin_1_states_provinces_scale_rank:
+        title: States and provinces whith scale rank
+        geometryType: [Polygon2D, MultiPolygon2D]
+      populated_places:
+        title: City and town points
+        description: |
+          Populated places – point symbols with name attributes. Includes capitals, major cities and towns,
+          plus significant smaller towns in sparsely inhabited regions.
+          We favor regional significance over population census in determining rankings.
+        geometryType: Point2D
+      populated_places_simple:
+        title: City and town points (with less fields)
+        geometryType: Point2D
+  ne_110m_physical:
+    title: Natural Earth, 1:110m scale, Physical Vector Data Themes
+    abstract: |
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales. Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing, well-crafted maps with cartography or GIS software.  
+      Small scale data, 1:110m  
+      Suitable for schematic maps of the world on a postcard or as a small locator globe.
+      Physical Vector Data Themes  
+    source: https://www.naturalearthdata.com/features/
+    collections: 
+      coastline:
+        title: Coastline
+        description: Ocean coastline, including major islands. Coastline is matched to land and water polygons.
+        geometryType: LineString2D
+      land:
+        title: Land
+        description: Land polygons including major islands
+        geometryType: [Polygon2D, MultiPolygon2D]
+      ocean:
+        title: Ocean
+        description: Ocean polygon split into contiguous pieces.
+        geometryType: [Polygon2D, MultiPolygon2D]
+      rivers_lake_centerlines:
+        title: Rivers and Lake Centerlines
+        description: |
+          Ranked by relative importance. Includes name and line width attributes.
+          Don’t want minor lakes? Turn on their centerlines to avoid unseemly data gaps.
+        geometryType: LineString2D
+      lakes:
+        title: Lakes
+        description: Ranked by relative importance, coordinating with river ranking. Includes name attributes.
+        geometryType: [Polygon2D, MultiPolygon2D]
+      glaciated_areas:
+        title: Glaciated areas
+        description: |
+           Polygons derived from DCW, except for Antarctica derived from MOA. Includes name attributes for major polar glaciers.
+        geometryType: [Polygon2D, MultiPolygon2D]
+      geographic_lines:
+        title: Geographic lines
+        description: Polar circles, tropical circles, equator, and International Date Line.
+        geometryType: LineString2D
+      geography_marine_polys:
+        title: geography_marine_polys
+        geometryType: [Polygon2D, MultiPolygon2D]
+      geography_regions_elevation_points:
+        title: geography_regions_elevation_points
+        geometryType: Point2D
+      geography_regions_points:
+        title: geography_regions_points
+        geometryType: Point2D
+      geography_regions_polys:
+        title: geography_regions_polys
+        geometryType: [Polygon2D, MultiPolygon2D]
+      wgs84_bounding_box:
+        title: wgs84_bounding_box
+        geometryType: [Polygon2D, MultiPolygon2D]
+
 datasets:
   ignf-route500: # version courante de ROUTE 500
     title: ROUTE 500 2020
@@ -529,6 +649,28 @@ datasets:
       href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
       title: licence ouverte Etalab.
 
+  ne_110m_cultural:
+    title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
+    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_cultural
+    #path: /mysql/root@172.17.0.3/ne_110m_cultural
+    identifier: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/
+    conformsTo: ne_110m_cultural
+    licence:
+      href: http://www.naturalearthdata.com/about/terms-of-use/
+      title: Public domain
+  ne_110m_physical:
+    title: Natural Earth, 1:110m scale, Physical Vector Data Themes
+    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_physical
+    #path: /mysql/root@172.17.0.3/ne_110m_physical
+    identifier: https://www.naturalearthdata.com/downloads/110m-physical-vectors/
+    conformsTo: ne_110m_physical
+    licence:
+      href: http://www.naturalearthdata.com/about/terms-of-use/
+      title: Public domain
+  ne_10m:
+    title: Natural Earth, 1:10m scale, xxx Vector Data Themes
+    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m
+
   local-route500_2020:
     title: ROUTE 500 2020 sur le serveur Docker
     path: /mysql/root@172.17.0.3/route500_2020
@@ -544,12 +686,6 @@ datasets:
   test@mysql:
     title: base MySql de test
     path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect
-  ne_110m:
-    title: Natural Earth à l'échelle 1:110m sur MySql
-    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m
-  ne_10m:
-    title: Natural Earth à l'échelle 1:10m sur MySql
-    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m
   localgis:
     title: Serveur PgSql sur Docker, base gis, schema public
     path: /pgsql/docker@172.17.0.4/gis/public

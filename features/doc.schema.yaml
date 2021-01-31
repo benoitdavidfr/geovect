@@ -220,6 +220,9 @@ definitions:
       identifier:
         description: URI de référence de la spécification
         type: string
+      source:
+        description: Document source de la spécification, au cas où identfier n'est pas adapté
+        type: string
       metadata:
         description: lien vers des MD génériques par ex. ISO 19139
         type: string
