@@ -10,6 +10,7 @@ info:
       - paths/collections/{collectionId}
       - paths/collections/{collectionId}/items
       - paths/collections/{collectionId}/items/{featureId}
+    Limitation du nbre d'objets retournés à 1000 (paramètre limit) alors que le défaut du standard est 10000
   version: '0.1'
   contact:
     email: contact@geoapi.fr
@@ -28,10 +29,10 @@ servers:
 components:
   parameters:
     f:
+      name: f
       description: 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is JSON.'
       explode: false
       in: query
-      name: f
       required: false
       schema:
         default: json
@@ -42,16 +43,27 @@ components:
         type: string
       style: form
     startindex:
+      name: startindex
       description: 'The optional startindex parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).'
       explode: false
       in: query
-      name: startindex
       required: false
       schema:
         default: 0
         minimum: 0
         type: integer
       style: form
+    limit: # le nbre maximum de features est limité à 1000 alors que le défaut du std est 10000
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 10
+      style: form
+      explode: false
 paths:
   /:
     get:
@@ -143,7 +155,8 @@ paths:
       parameters:
         - $ref:  'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/collectionId'
         - $ref: '#/components/parameters/f'
-        - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit'
+        - $ref: '#/components/parameters/limit'
+        #- $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit'
         - $ref: '#/components/parameters/startindex'
         - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/bbox'
         - $ref: 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/datetime'

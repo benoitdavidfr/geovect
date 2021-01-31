@@ -61,7 +61,7 @@ use Symfony\Component\Yaml\Yaml;
 
 //echo "<pre>"; print_r($_SERVER); die();
 
-ini_set('memory_limit', '1G');
+ini_set('memory_limit', '10G');
 
 define('EXEMPLES_DAPPELS', [
   'wfs/services.data.shom.fr/INSPIRE/wfs' => [

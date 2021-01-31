@@ -28,6 +28,7 @@ doc: |
 */
 abstract class FeatureServer {
   const LOG_FILENAME = __DIR__.'/fts.log.yml'; // chemin du fichier Yaml de log, si vide alors pas de log
+  const LIMIT_MAX = 1000; // doit être identique au paramètre défini dans /api
   protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données
   
   static function log(string|array $message): void { // écrit un message dans le fichier Yaml des logs
@@ -211,10 +212,18 @@ abstract class FeatureServer {
       $params = ['f','limit','startindex','bbox','datetime'];
       if (isset($_GET['f']) && !in_array($_GET['f'], ['json','html','yaml']))
         error("Valeur '$_GET[f]' interdite pour le paramètre 'f'", 400);
-      if (isset($_GET['limit']) && !ctype_digit($_GET['limit']))
-        error("Valeur '$_GET[limit]' non entière interdite pour le paramètre 'limit'", 400);
-      if (isset($_GET['startindex']) && !ctype_digit($_GET['startindex']))
-        error("Valeur '$_GET[startindex]' non entière interdite pour le paramètre 'startindex'", 400);
+      if (isset($_GET['limit'])) {
+        if (!ctype_digit($_GET['limit']))
+          error("Valeur '$_GET[limit]' non entière interdite pour le paramètre 'limit'", 400);
+        if (((int)$_GET['limit'] > self::LIMIT_MAX) || ((int)$_GET['limit'] < 1))
+          error("Valeur '$_GET[limit]' hors intervalle [1, ".self::LIMIT_MAX."] pour le paramètre 'limit'", 400);
+      }
+      if (isset($_GET['startindex'])) {
+        if (!ctype_digit($_GET['startindex']))
+          error("Valeur '$_GET[startindex]' non entière interdite pour le paramètre 'startindex'", 400);
+        if ((int)$_GET['startindex'] < 0)
+          error("Valeur '$_GET[startindex]' < 0 pour le paramètre 'startindex'", 400);
+      }
       $apidef = $this->api();
       $apidef = $apidef['paths'][$path]['get']['parameters'];
       foreach ($apidef as $parameterdef)

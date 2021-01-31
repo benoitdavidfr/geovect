@@ -11,13 +11,16 @@ doc: |
   Utilise notamment:
     - la classe Sql utilisée pour exécuter des requêtes Sql sur MySql ou PgSql
     - la classe \Sql\Schema contenant les infos d'un schéma Sql (base MySql ou schéma PgSql).
+    - les classes *Doc contenant la documentation du jeu de données exposé
 
-  **
-  Pb le fichier doc.yaml devrait documenter des specs et pas des datasets
-  Ex. title avec le millésime du jeu de données
-  **
+  A faire:
+    - réduire l'empreinte mémoire dans items
 
 journal: |
+  31/1/2021:
+    - restructuration de doc.yaml pour distinguer les jeux de données de leur spécification
+    - Limitation du nbre d'objets retournés à 1000 (paramètre limit) alors que le défaut du standard est 10000
+      - pour pouvoir augmenter cette limite il faudrait ne pas stocker en mémoire ces objets
   28/1/2021:
     - ajout du calcul de l'extension spatial pour les collections stockées dans MySql
     - ajout numberMatched à /items (demande OGC CITE)
