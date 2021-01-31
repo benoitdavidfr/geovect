@@ -116,6 +116,48 @@ class PropertyDoc {
 
 class CollectionDoc {
   const COORDS_TYPE = [
+    'pos'=> [
+      'type'=> 'array',
+      'minItems'=> 2,
+      'maxItems'=> 3,
+      'items'=> ['type'=> 'number'],
+    ],
+    'lpos'=> [
+      'type'=> 'array',
+      'items'=> [
+        'type'=> 'array',
+        'minItems'=> 2,
+        'maxItems'=> 3,
+        'items'=> ['type'=> 'number'],
+      ],
+    ],
+    'llpos'=> [
+      'type'=> 'array',
+      'items'=> [
+        'type'=> 'array',
+        'items'=> [
+          'type'=> 'array',
+          'minItems'=> 2,
+          'maxItems'=> 3,
+          'items'=> ['type'=> 'number'],
+        ],
+      ],
+    ],
+    'l3pos'=> [
+      'type'=> 'array',
+      'items'=> [
+        'type'=> 'array',
+        'items'=> [
+          'type'=> 'array',
+          'items'=> [
+            'type'=> 'array',
+            'minItems'=> 2,
+            'maxItems'=> 3,
+            'items'=> ['type'=> 'number'],
+          ],
+        ],
+      ],
+    ],
     'pos2'=> [
       'type'=> 'array',
       'minItems'=> 2,
@@ -137,6 +179,8 @@ class CollectionDoc {
         'type'=> 'array',
         'items'=> [
           'type'=> 'array',
+          'minItems'=> 2,
+          'maxItems'=> 2,
           'items'=> ['type'=> 'number'],
         ],
       ],
@@ -149,6 +193,8 @@ class CollectionDoc {
           'type'=> 'array',
           'items'=> [
             'type'=> 'array',
+            'minItems'=> 2,
+            'maxItems'=> 2,
             'items'=> ['type'=> 'number'],
           ],
         ],
@@ -156,6 +202,10 @@ class CollectionDoc {
     ],
   ];
   const GEOM_TYPE_PROP = [
+    'Point'=> [
+      'type' => ['type'=> 'string', 'enum'=> ['Point']],
+      'coordinates'=> self::COORDS_TYPE['pos'],
+    ],
     'Point2D'=> [
       'type' => ['type'=> 'string', 'enum'=> ['Point']],
       'coordinates'=> self::COORDS_TYPE['pos2'],
@@ -164,17 +214,37 @@ class CollectionDoc {
       'type' => ['type'=> 'string', 'enum'=> ['MultiPoint']],
       'coordinates'=> self::COORDS_TYPE['lpos2'],
     ],
+    'MultiPoint'=> [
+      'type' => ['type'=> 'string', 'enum'=> ['MultiPoint']],
+      'coordinates'=> self::COORDS_TYPE['lpos'],
+    ],
+    'LineString'=> [
+      'type' => ['type'=> 'string', 'enum'=> ['LineString']],
+      'coordinates'=> self::COORDS_TYPE['lpos'],
+    ],
     'LineString2D'=> [
       'type' => ['type'=> 'string', 'enum'=> ['LineString']],
       'coordinates'=> self::COORDS_TYPE['lpos2'],
     ],
+    'MultiLineString'=> [
+      'type' => ['type'=> 'string', 'enum'=> ['MultiLineString']],
+      'coordinates'=> self::COORDS_TYPE['llpos'],
+    ],
     'MultiLineString2D'=> [
-      'type' => ['type'=> 'string', 'enum'=> ['Polygon']],
+      'type' => ['type'=> 'string', 'enum'=> ['MultiLineString']],
       'coordinates'=> self::COORDS_TYPE['llpos2'],
+    ],
+    'Polygon'=> [
+      'type' => ['type'=> 'string', 'enum'=> ['Polygon']],
+      'coordinates'=> self::COORDS_TYPE['llpos'],
     ],
     'Polygon2D'=> [
       'type' => ['type'=> 'string', 'enum'=> ['Polygon']],
       'coordinates'=> self::COORDS_TYPE['llpos2'],
+    ],
+    'MultiPolygon'=> [
+      'type' => ['type'=> 'string', 'enum'=> ['MultiPolygon']],
+      'coordinates'=> self::COORDS_TYPE['l3pos'],
     ],
     'MultiPolygon2D'=> [
       'type' => ['type'=> 'string', 'enum'=> ['MultiPolygon']],
@@ -302,7 +372,7 @@ class CollectionDoc {
            'id'=> ['type'=> 'string'],
            'properties'=> [
              'type'=> 'object',
-             'additionalProperties'=> false,
+             //'additionalProperties'=> false, // dans la doc on ne décrit pas forcément toutes les properties
              'properties'=> $propSchema,
            ],
            'geometry'=> $this->geometrySchema(),
@@ -602,17 +672,17 @@ if ($a == 'checkYaml') { // charge le fichier yaml
 if ($a == 'schema') {
   $doc = new Doc;
   if (!($ds = $_GET['ds'] ?? null)) {
-    foreach ($doc->datasets() as $id => $dataset) {
+    foreach ($doc->datasets as $id => $dataset) {
       echo "<a href='?a=schema&amp;ds=$id'>$id</a><br>\n"; 
     }
   }
   elseif (!($coll = $_GET['coll'] ?? null)) {
-    foreach ($doc->dataset($_GET['ds'])->collections() as $id => $coll) {
+    foreach ($doc->datasets[$_GET['ds']]->collections as $id => $coll) {
       echo "<a href='?a=schema&amp;ds=$_GET[ds]&amp;coll=$id'>$id</a><br>\n"; 
     }
   }
   else {
-    $schema = $doc->dataset($_GET['ds'])->collection($_GET['coll'])->featureSchema();
+    $schema = $doc->datasets[$_GET['ds']]->collections[$_GET['coll']]->featureSchema();
     echo '<pre>',Yaml::dump($schema, 7, 2);
     $check = JsonSchema::autoCheck($schema);
     if (!($ok = $check->ok()))
@@ -626,7 +696,7 @@ if ($a == 'schema') {
 
 if ($a == 'checkData') {
   $doc = new Doc;
-  $collSchema = $doc->dataset($_GET['ds'])->collection($_GET['coll'])->featureSchema();
+  $collSchema = $doc->datasets[$_GET['ds']]->collections[$_GET['coll']]->featureSchema();
   echo '<pre>',Yaml::dump($collSchema, 7, 2);
   $schema = new JsonSchema($collSchema, false);
   $url = "http://localhost/geovect/features/fts.php/$_GET[ds]/collections/$_GET[coll]/items?limit=10&f=json";
@@ -665,10 +735,10 @@ if ($a == 'checkDataset') {
   $dsid = $argv[2];
   foreach ($doc->datasets[$dsid]->collections as $collid => $coll) {
     echo "\ncollection **$collid**\n";
-    if (!in_array($collid, ['troncon_route'])) {
+    /*if (!in_array($collid, ['troncon_route'])) {
       echo "  skipped\n";
       continue;
-    }
+    }*/
     $collSchema = $coll->featureSchema();
     //echo Yaml::dump($collSchema, 7, 2);
     $check = JsonSchema::autoCheck($collSchema);

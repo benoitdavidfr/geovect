@@ -10,5 +10,10 @@ Le code de ce module implémente un serveur respectant le standard OGC API Featu
 Seul le le premier type a été affiné et passe
 les [tests CITE](https://cite.opengeospatial.org/teamengine/about/ogcapi-features-1.0/1.0/site/).
 
-Un serveur de test est disponible à l'adresse:
-https://features.geoapi.fr/ignf-route500
+Des serveurs de test sont disponibles aux adresses :
+
+  - https://features.geoapi.fr/ignf-route500 - Base de données Route 500 de l'IGN
+  - https://features.geoapi.fr/ne_110m_cultural - Natural Earth - 1:110m scale - Cultural data themes
+  - https://features.geoapi.fr/ne_110m_physical - Natural Earth - 1:110m scale - Physical data themes
+
+Ils peuvent notamment être utilisés avec QGis (version >= 3.16).

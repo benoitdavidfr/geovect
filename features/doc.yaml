@@ -506,10 +506,12 @@ specifications:
   ne_110m_cultural:
     title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
     abstract: |
-      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales. Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing, well-crafted maps with cartography or GIS software.  
-      Small scale data, 1:110m  
-      Suitable for schematic maps of the world on a postcard or as a small locator globe.
-      Cultural Vector Data Themes  
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales.
+      Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing,
+      well-crafted maps with cartography or GIS software.  
+      This dataset corresponds to the small scale data, 1:110m. Suitable for schematic maps of the world on a postcard
+      or as a small locator globe.
+      This dataset includes Cultural Vector Data Themes.  
     source: https://www.naturalearthdata.com/features/
     collections:
       admin_0_countries:
@@ -523,39 +525,86 @@ specifications:
           of sovereign states. To see the dependent overseas regions broken out (like in ISO codes, see France for example),
           use map units instead.
         geometryType: [Polygon2D, MultiPolygon2D]
-      admin_0_boundary_lines_land:
-        title: Land boundaries
-        geometryType: LineString2D
-      admin_0_pacific_groupings:
-        title: Pacific grouping boxes
-        description: Pacific nation groupings – boxes for keeping these far-flung islands tidy.
-        geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: ['Admin-0 country']
+          type:
+            title: type
+            enum: ['Sovereign country',Country,Dependency,Disputed,Indeterminate]
+          adm0_a3:
+            title: identification code adm0 alpha 3
+            type: string
+          iso_a2:
+            title: code ISO alpha 2
+            type: string
+          iso_a3:
+            title: code ISO alpha 3
+            type: string
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+          name_long:
+            title: long name
+            type: string
+          formal_en:
+            title: formal name in English
+            type: string
+          pop_est:
+            title: population estimation in number of inhabitants
+            type: string
+          pop_year:
+            title: year of validity of population estimation
+            type: string
       admin_0_countries_lakes:
         title: Countries without boundary lakes
         geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_boundary_lines_land:
+        title: Land boundaries
+        geometryType: LineString2D
       admin_0_sovereignty:
         title: Sovereignty
         geometryType: [Polygon2D, MultiPolygon2D]
       admin_0_map_units:
         title: Map units
         geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: ['Admin-0 map unit']
+          type:
+            title: type
+            enum: ['Sovereign country',Country,Dependency,Indeterminate,'Geo unit']
+          su_a3:
+            title: identification code 3 alpha
+            type: string
+      admin_0_pacific_groupings:
+        title: Pacific grouping boxes
+        description: Pacific nation groupings – boxes for keeping these far-flung islands tidy.
+        geometryType: LineString2D
       admin_0_scale_rank:
         title: admin_0_scale_rank
         geometryType: [Polygon2D, MultiPolygon2D]
       admin_0_tiny_countries:
         title: Tiny country points
-        geometryType: [Polygon2D, MultiPolygon2D]
+        geometryType: Point2D
       admin_1_states_provinces:
-        title: States and provinces
+        title: States and provinces (only USA)
         geometryType: [Polygon2D, MultiPolygon2D]
       admin_1_states_provinces_lakes:
-        title: States and provinces without large lakes
+        title: States and provinces without large lakes (only USA)
         geometryType: [Polygon2D, MultiPolygon2D]
       admin_1_states_provinces_lines:
-        title: State and province boundaries
+        title: State and province boundaries (only USA)
         geometryType: LineString2D
       admin_1_states_provinces_scale_rank:
-        title: States and provinces whith scale rank
+        title: States and provinces whith scale rank (only USA)
         geometryType: [Polygon2D, MultiPolygon2D]
       populated_places:
         title: City and town points
@@ -570,10 +619,12 @@ specifications:
   ne_110m_physical:
     title: Natural Earth, 1:110m scale, Physical Vector Data Themes
     abstract: |
-      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales. Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing, well-crafted maps with cartography or GIS software.  
-      Small scale data, 1:110m  
-      Suitable for schematic maps of the world on a postcard or as a small locator globe.
-      Physical Vector Data Themes  
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales.
+      Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing,
+      well-crafted maps with cartography or GIS software.  
+      This dataset corresponds to the small scale data, 1:110m. Suitable for schematic maps of the world on a postcard
+      or as a small locator globe.
+      This dataset includes Physical Vector Data Themes.  
     source: https://www.naturalearthdata.com/features/
     collections: 
       coastline:
@@ -591,38 +642,152 @@ specifications:
       rivers_lake_centerlines:
         title: Rivers and Lake Centerlines
         description: |
+          Single-line drainages including optional lake centerlines.
           Ranked by relative importance. Includes name and line width attributes.
           Don’t want minor lakes? Turn on their centerlines to avoid unseemly data gaps.
         geometryType: LineString2D
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [River]
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
       lakes:
-        title: Lakes
-        description: Ranked by relative importance, coordinating with river ranking. Includes name attributes.
+        title: Lakes and Reservoirs
+        description: |
+          Natural and artificial lakes. Ranked by relative importance, coordinating with river ranking.
+          Includes name attributes.
         geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [Lake, 'Alkaline Lake']
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
       glaciated_areas:
         title: Glaciated areas
         description: |
-           Polygons derived from DCW, except for Antarctica derived from MOA. Includes name attributes for major polar glaciers.
-        geometryType: [Polygon2D, MultiPolygon2D]
+           Includes glaciers and recently de-glaciated areas.
+           Polygons derived from DCW, except for Antarctica derived from MOA.
+           Includes name attributes for major polar glaciers. (?)
+        geometryType: Polygon2D
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [Glacier]
       geographic_lines:
         title: Geographic lines
         description: Polar circles, tropical circles, equator, and International Date Line.
-        geometryType: LineString2D
+        geometryType: [LineString2D,MultiLineString2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: ['Circle of latitude','Date line']
+          abbrev:
+            title: Abbreviated name
+            type: string
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
       geography_marine_polys:
-        title: geography_marine_polys
+        title: Labels for marine areas
         geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [ocean, sea, bay, gulf]
+          label:
+            title: label
+            type: string
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
       geography_regions_elevation_points:
-        title: geography_regions_elevation_points
+        title: Labels for elevation points
         geometryType: Point2D
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [mountain, depression, pass]
+          elevation:
+            title: elevation
+            type: string
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
       geography_regions_points:
-        title: geography_regions_points
+        title: Labels of major physical points
         geometryType: Point2D
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [waterfall]
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
       geography_regions_polys:
-        title: geography_regions_polys
+        title: Labels of major physical areas
         geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [Continent, Island, 'Island group', Tundra, 'Range/mtn', Plain, Basin, 'Pen/cape', Desert, Plateau,
+              Isthmus, Peninsula, Geoarea]
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
       wgs84_bounding_box:
-        title: wgs84_bounding_box
+        title: WGS84 bounding box
         geometryType: [Polygon2D, MultiPolygon2D]
-
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: ['WGS84 bounding box']
+        
 datasets:
   ignf-route500: # version courante de ROUTE 500
     title: ROUTE 500 2020

@@ -911,6 +911,7 @@ links to support paging (link relation `next`).",
           'properties'=> [
             'type'=> 'object',
             'required'=> array_keys($propertiesSchema),
+            'additionalProperties'=> false,
             'properties'=> $propertiesSchema,
           ],
           'geometry'=> $geomSchema,
