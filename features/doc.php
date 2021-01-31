@@ -1,16 +1,21 @@
 <?php
 /*PhpDoc:
 name: doc.php
-title: utilisation de la doc
+title: doc.php - utilisation de la doc
 doc: |
+
+
   Nbses erreurs sur troncon_route
     - 'Erreur .properties.sens="Sens unique" not in enum=["Double sens","Sens direct","Sens inverse"]'
     - 'Erreur .properties.acces="Inconnu" not in enum=["A péage","Libre"]'
     - 'Erreur .properties.acces="Saisonnier" not in enum=["A péage","Libre"]'
 
 journal: |
+  31/1/2021:
+    restructuration de doc.yaml pour distinguer les jeux de données de leur spécification
   19/1/2021:
     création
+includes: [../../schema/jsonschema.inc.php]
 */
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/../../schema/jsonschema.inc.php';
@@ -307,39 +312,31 @@ class CollectionDoc {
   }
 };
 
-class DatasetDoc { // Doc d'un Dataset 
+class SpecDoc { // Spec d'un dataset
   protected string $id;
   protected string $title;
   protected ?string $abstract;
-  protected array $licence;
-  protected string $path;
   protected array $collections = [];
   
   function schema() { /* Schema JSON: 
-    dataset:
+    specification:
+      description: |
+        Spécification d'un jeu de données.
+        C'est un standard (http://purl.org/dc/terms/Standard) pour un jeu de données.
+        La définition DublinCore du standard est: A reference point against which other things can be evaluated or compared.
       type: object
       additionalProperties: false
-      required: [title, path]
+      required: [title]
       properties:
         title:
-          description: titre du jeu de données
+          description: titre de la spécification
           type: string
         abstract:
           description: résumé du jeu de données
           type: string
-        source:
-          description: URL de référence du jeu de données
+        identifier:
+          description: URI de référence de la spécification
           type: string
-        licence:
-          description: définition de la licence d'utilisation des données
-          $ref: '#/definitions/link'
-        path:
-          description: chemin du jeu de données pour https://features.geoapi.fr/
-          type: string
-        doc_url:
-          description: lien vers une documentation plus complète
-          type: string
-          format: uri
         metadata:
           description: lien vers des MD par ex. ISO 19139
           type: string
@@ -348,6 +345,7 @@ class DatasetDoc { // Doc d'un Dataset
           description: |
             nbre de chiffres signficatifs dans les coordonnées géographiques
             ex: 4 => résolution de de 1e-4 degrés soit 1e-4° * 40 km / 360° = 11 m
+          type: integer
         collections:
           description: dictionnaire des collections indexées sur l'id de la collection
           type: object
@@ -361,20 +359,90 @@ class DatasetDoc { // Doc d'un Dataset
     $this->id = $id;
     $this->title = $yaml['title'];
     $this->abstract = $yaml['abstract'] ?? null;
-    $this->licence = $yaml['licence'] ?? [];
-    $this->path = $yaml['path'];
     foreach ($yaml['collections'] ?? [] as $collid => $collection) {
       $this->collections[$collid] = new CollectionDoc($collid, $collection);
     }
   }
   
-  function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
+  function __toString(): string { return $this->title; }
+  
+  function __get(string $name) {
+    //echo "SpecDoc::__get($name)\n";
+    return isset($this->$name) ? $this->$name : null;
+  }
   
   function asArray(): array {
-    $array = [];
+    $array = ['title'=> $this->title];
     foreach ($this->collections as $id => $coll) {
       $array['collections'][$id] = $coll->asArray();
     }
+    return $array;
+  }
+};
+
+class DatasetDoc { // Doc d'un Dataset 
+  protected string $id;
+  protected string $title;
+  protected array $licence;
+  protected string $path;
+  protected ?SpecDoc $conformsTo;
+  
+  function schema() { /* Schema JSON: 
+    dataset:
+      description: |
+        Description d'un jeu de données.
+        Le concept de jeu de données est identique à http://www.w3.org/ns/dcat#Dataset
+        dont la définition est:
+          A collection of data, published or curated by a single agent, and available for access or download in one or more
+          representations.
+      type: object
+      additionalProperties: false
+      required: [title, path]
+      properties:
+        title:
+          description: titre du jeu de données
+          type: string
+        identifier:
+          description: URI de référence du jeu de données
+          type: string
+        licence:
+          description: définition de la licence d'utilisation des données
+          $ref: '#/definitions/link'
+        path:
+          description: chemin du jeu de données pour https://features.geoapi.fr/
+          type: string
+        metadata:
+          description: lien vers des MD par ex. ISO 19139
+          type: string
+          format: uri
+        conformsTo:
+          description: identifiant de la spécification du jeu de données défini dans le dictionnaire specifications
+          type: string
+    */
+  }
+  
+  function __construct(string $id, array $yaml) {
+    $this->id = $id;
+    $this->title = $yaml['title'];
+    $this->licence = $yaml['licence'] ?? [];
+    $this->path = $yaml['path'];
+    $this->conformsTo = $yaml['conformsTo'] ?? null;
+  }
+  
+  function __get(string $name) {
+    //echo "DatasetDoc::__get($name)\n";
+    if (!in_array($name, ['collections','abstract']))
+      return isset($this->$name) ? $this->$name : null;
+    else
+      return $this->conformsTo ? $this->conformsTo->$name : null;
+  }
+    
+  function asArray(): array {
+    $array = ['title'=> $this->title, 'path'=> $this->path];
+    if ($this->licence)
+      $array['licence'] = $this->licence;
+    if ($this->conformsTo)
+      $array['conformsTo'] = $this->conformsTo->asArray();
     return $array;
   }
 };
@@ -386,6 +454,7 @@ class Doc { // Doc globale
   const SCHEMA_PATH_YAML = __DIR__.'/doc.schema.yaml'; // chemin du fichier stockant le schema en Yaml
 
   protected array $datasets; // [DatasetDoc]
+  protected array $specifications; // [SpecDoc]
   
   // vérifie la conformité du document Yaml notamment à son schéma. En cas d'erreurs les retourne, sinon retourne []
   static function checkYamlConformity(array $yaml=[]): array {
@@ -417,8 +486,16 @@ class Doc { // Doc globale
     $yaml = Yaml::parseFile(self::PATH_YAML);
     if (self::checkYamlConformity($yaml))
       throw new Exception("Erreur document Yaml non conforme");
+    foreach ($yaml['specifications'] as $id => $spec) {
+      $this->specifications[$id] = new SpecDoc($id, $spec);
+    }
     foreach ($yaml['datasets'] as $dsid => $dataset) {
+      //echo "dataset=$dsid\n";
+      if ($specid = ($dataset['conformsTo'] ?? null))
+        $dataset['conformsTo'] = $this->specifications[$specid] ?? null;
+      //echo "  conformsTo=",$dataset['conformsTo'] ?? null,"\n";
       $this->datasets[$dsid] = new DatasetDoc($dsid, $dataset);
+      //print_r($this->datasets[$dsid]);
     }
   }
   
@@ -637,117 +714,3 @@ if ($f == 'yaml') {
   $doc = new Doc;
   echo Yaml::dump($doc->asArray(), 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
 }
-/*
-
-if ($a == 'rewriteYaml') { // réécrit le Yaml à partir du pser, et récérit le pser pour que le Yaml ne soit plus plus récent
-  MapCat::storeAsYaml(['force'=> true]);
-  MapCat::storeAsPser();
-  echo "rewriteYaml ok<br>\n";
-}
-
-
-
-
-if ($f == 'html') { // affichage html
-  if (php_sapi_name() <> 'cli')
-    echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>mapcat</title></head><body>\n";
-  if ($id) { // une carte
-    if ($map = MapCat::mapById($id)) {
-      echo "<table><tr>";
-      $request_scheme = $_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http';
-      $shomgturl = "$request_scheme://$_SERVER[HTTP_HOST]".dirname(dirname($_SERVER['SCRIPT_NAME']));
-      $num = substr($id, 2);
-      $imgurl = "$shomgturl/ws/dl.php/$num.png";
-      echo "<td><img src='$imgurl'></td>\n";
-      echo "<td valign='top'><pre>id: $id\n";
-      echo Yaml::dump($map->asArray(), 4, 2);
-      echo "</tr></table>\n";
-    }
-    else
-      echo "'$id' ne correspond pas à l'id d'une carte de MapCat\n";
-  }
-  else { // tout le catalogue
-    try {
-      $maps = MapCat::maps();
-      echo "<h2>Catalogue des cartes</h2>\n";
-      echo "En <a href='?f=yaml'>Yaml</a>, en <a href='?f=geojson'>GeoJSON</a>, comme <a href='?f=map'>carte LL</a>, ",
-        "<a href='?a=menu'>autres actions</a>.<br>\n";
-      echo "<table border=1><th>",implode('</th><th>', ['id/yml','title/map','scaleDen','edition','mapsFrance']),"</th>\n";
-      foreach ($maps as $mapid => $map) {
-        $mapa = $map->asArray();
-        $llp = llmapParams($map);
-        $llmapurl = sprintf('llmap.php?lat=%.2f&amp;lon=%.2f&amp;zoom=%d&amp;mapid=%s', $llp['lat'], $llp['lon'], $llp['zoom'], $mapid);
-        $br = (strlen($mapa['groupTitle'] ?? '') + strlen($mapa['title']) > 90) ? '<br>' : ' - ';
-        //echo "<tr><td colspan=5><pre>"; print_r($mapa); echo "</td></tr>\n";
-        echo "<tr><td><a href='$_SERVER[SCRIPT_NAME]/$mapid'>$mapid</a></td>",
-          "<td>",isset($mapa['groupTitle']) ? "$mapa[groupTitle]$br" : '',"<a href='$llmapurl'>$mapa[title]</a></td>",
-          //"<td>",strlen($mapa['groupTitle'] ?? '')+strlen($mapa['title']),"</td>",
-          "<td align='right'>",$mapa['scaleDenominator'] ?? '<i>'.$mapa['insetMaps'][0]['scaleDenominator'].'</i>',"</td>",
-          "<td>",$mapa['edition'] ?? 'non définie',"</td>",
-          "<td>",implode(', ', $mapa['mapsFrance']),"</td>",
-          "</tr>\n";
-      }
-      echo "</table>\n";
-    } catch (Exception $e) {
-      echo $e->getMessage(),"<br>\n";
-      echo "Soit <a href='?a=loadYaml'>charger le fichier Yaml pour écraser le pser</a>, ",
-           "soit l'<a href='rewriteYaml'>écraser à partir du fichier pser</a> !<br>\n";
-    }
-  }
-  die();
-}
-
-if ($f == 'yaml') { // affichage en yaml 
-  if (php_sapi_name() <> 'cli')
-    echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>mapcat</title></head><body>",
-      "<a href='?a=menu'>retour</a><pre>\n";
-  if ($id) { // une carte particulière
-    echo "id: $id\n";
-    echo Yaml::dump(MapCat::mapById($id)->asArray(), 4, 2);
-  }
-  else // tout le catalogue
-    echo Yaml::dump(MapCat::allAsArray(), 5, 2);
-  die();
-}
-
-if ($f == 'geojson') { // affichage en GeoJSON 
-  header('Access-Control-Allow-Origin: *');
-  header('Content-type: application/json; charset="utf8"');
-  //header('Content-type: text/plain; charset="utf8"');
-  $nbre = 0;
-  echo '{"type":"FeatureCollection","features":[',"\n";
-
-  if ($id) {
-    echo json_encode(MapCat::maps()[$id]->geojson(), JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE); 
-  }
-  else {
-    $sdmin = $_GET['sdmin'] ?? (((php_sapi_name()=='cli') && ($argc > 1)) ? $argv[1] : null);
-    $sdmax = $_GET['sdmax'] ?? (((php_sapi_name()=='cli') && ($argc > 2)) ? $argv[2] : null);
-    
-    foreach (MapCat::maps() as $id => $map) {
-      $scaleD = $map->scaleDenAsInt();
-      if ($sdmax && ($scaleD > $sdmax))
-        continue;
-      if ($sdmin && ($scaleD <= $sdmin))
-        continue;
-    
-      echo $nbre++ ? ",\n" : '',
-          json_encode($map->geojson(), JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE); 
-    }
-  }
-
-  echo "\n]}\n";
-  die();
-}
-
-if ($f == 'map') { // affichage de la carte LL 
-  if ($id) { // pour une carte
-    $llp = llmapParams(MapCat::mapById($id));
-    $_GET = ['lat'=> $llp['lat'], 'lon'=> $llp['lon'], 'zoom'=> $llp['zoom'], 'mapid'=> $id];
-  }
-  require __DIR__.'/llmap.php';
-  die();
-}
-
-die("Action non prévue\n");
-*/

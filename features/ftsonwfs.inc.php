@@ -11,6 +11,7 @@ doc: |
 journal: |
   30/12/2020:
     - reprise de shomgt
+includes: [ftrserver.inc.php]
 */
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/ftrserver.inc.php';

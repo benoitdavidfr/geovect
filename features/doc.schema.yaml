@@ -2,11 +2,22 @@ title: schéma JSON de la documentation
 abstract: |
   L'objectif est de définir une doc des jeux de données exposés en s'inspirant des schema JSON
   et permettant de générer facilement un schéma JSON.
-  Cette doc définit:
-    - la structuration des données
-    - la définition des jeux de données, de leurs collections, de leurs propriétés, des valeurs en cas de type énuméré.
+  
+  Cette doc distingue les concepts de:
+    - jeu de données (dataset) (réf. dcat:Dataset ), ex: Route 500 éd. 2020, Route 500, éd. 2019
+    - spécification d'un jeu de données (réf. dct:Standard), ex: Route 500 v3, 2020
+  
+  Un service de Features correspond à un jeu de données.
+  La liste des jeux de données du fichier doc.yaml correspond aux serveurs bien connus de fts.php/ftsonsql.php.
+  Un jeu de données peut référencer une spécification.
+  
+  Une spécification décrit la structuration des données, notamment:
+    - la définition des collections, de leurs propriétés, des valeurs en cas de type énuméré.
     - la définition du type de géométrie de chaque collection
   La documentation d'un jeu de données peut être partielle.
+  
+  Ajouter la possibilité d'indiquer qu'un attribut définit un géoréférencement indirect.
+  Par exemple, le code Insee d'une commune ou une adresse, définit un tel géoréférencement
 $id: http://feature.geoapi.fr/schema/doc
 $schema: http://json-schema.org/draft-06/schema#
 definitions:
@@ -67,10 +78,13 @@ definitions:
         description: titre de la propriété destiné à un humain
         type: string
       description:
-        description: descriptions plus détaillée de la propriété
+        description: description plus détaillée de la propriété
+        type: string
+      comment:
+        description: commentaire éditorial non diffusé avec le jeu de données
         type: string
       mandatory:
-        description: Une valeur est-elle obligatoire pour cette propriété ?
+        description: Une valeur est-elle obligatoire pour cette propriété ? Par défaut yes
         type: string
         enum: [yes, no]
       identifier:
@@ -103,8 +117,10 @@ definitions:
                 type: string
           - description: cas particulier où les valeurs sont les premiers entiers positifs ou nuls
             type: array
-  elementaryGeometryTypeType:
-    description: type géométrique élémentaire
+  geometryType:
+    description: |
+      liste des types géométriques élémentaires construite à partir du type GeoJSON de géométrie en y ajoutant
+      éventuellement 2D/3D ainsi que le type none indiquant qu'un objet n'a pas de géométrie.
     type: string
     enum:
       - Point
@@ -128,7 +144,9 @@ definitions:
       - GeometryCollection
       - none
   collection:
-    description: description d'une collection d'un jeu de données
+    description: |
+      description d'une collection d'un jeu de données.
+      Le concept de collection est défini par le standard OGC API Features.
     type: object
     additionalProperties: false
     required: [title, geometryType]
@@ -148,10 +166,10 @@ definitions:
           indiquant que les objets n'ont pas de géométrie.
           Peut être soit un type ou une liste de types possibles.
         oneOf:
-          - $ref: '#/definitions/elementaryGeometryTypeType'
+          - $ref: '#/definitions/geometryType'
           - type: array
             items:
-              $ref: '#/definitions/elementaryGeometryTypeType'
+              $ref: '#/definitions/geometryType'
         enum:
           - Point
           - Point2D
@@ -181,7 +199,49 @@ definitions:
         patternProperties:
           ^[-a-zA-Z0-9_]*$:
             $ref: '#/definitions/property'
+  specification:
+    description: |
+      Spécification d'un jeu de données.
+      C'est un standard (http://purl.org/dc/terms/Standard) pour un jeu de données.
+      La définition DublinCore du standard est: A reference point against which other things can be evaluated or compared.
+    type: object
+    additionalProperties: false
+    required: [title]
+    properties:
+      title:
+        description: titre de la spécification
+        type: string
+      issued:
+        description: date de publication de la spécification
+        type: string
+      abstract:
+        description: résumé du jeu de données
+        type: string
+      identifier:
+        description: URI de référence de la spécification
+        type: string
+      metadata:
+        description: lien vers des MD génériques par ex. ISO 19139
+        type: string
+        format: uri
+      precision:
+        description: |
+          nbre de chiffres signficatifs dans les coordonnées géographiques
+          ex: 4 => résolution de de 1e-4 degrés soit 1e-4° * 40 km / 360° = 11 m
+        type: integer
+      collections:
+        description: dictionnaire des collections indexées sur l'id de la collection
+        type: object
+        patternProperties:
+          ^[-a-zA-Z0-9_]*$:
+            $ref: '#/definitions/collection'
   dataset:
+    description: |
+      Description d'un jeu de données.
+      Le concept de jeu de données est identique à http://www.w3.org/ns/dcat#Dataset
+      dont la définition est:
+        A collection of data, published or curated by a single agent, and available for access or download in one or more
+        representations.
     type: object
     additionalProperties: false
     required: [title, path]
@@ -189,11 +249,8 @@ definitions:
       title:
         description: titre du jeu de données
         type: string
-      abstract:
-        description: résumé du jeu de données
-        type: string
-      source:
-        description: URL de référence du jeu de données
+      identifier:
+        description: URI de référence du jeu de données
         type: string
       licence:
         description: définition de la licence d'utilisation des données
@@ -201,27 +258,16 @@ definitions:
       path:
         description: chemin du jeu de données pour https://features.geoapi.fr/
         type: string
-      doc_url:
-        description: lien vers une documentation plus complète
-        type: string
-        format: uri
       metadata:
         description: lien vers des MD par ex. ISO 19139
         type: string
         format: uri
-      precision:
-        description: |
-          nbre de chiffres signficatifs dans les coordonnées géographiques
-          ex: 4 => résolution de de 1e-4 degrés soit 1e-4° * 40 km / 360° = 11 m
-      collections:
-        description: dictionnaire des collections indexées sur l'id de la collection
-        type: object
-        patternProperties:
-          ^[-a-zA-Z0-9_]*$:
-            $ref: '#/definitions/collection'
+      conformsTo:
+        description: identifiant de la spécification du jeu de données défini dans le dictionnaire specifications
+        type: string
 type: object
 additionalProperties: false
-required: [title, abstract, $schema, datasets]
+required: [title, abstract, $schema, specifications, datasets]
 properties:
   title:
     description: titre du document
@@ -234,11 +280,19 @@ properties:
     oneOf:
       - type: string
       - $ref: http://json-schema.org/schema#
+  specifications:
+    description: dictionnaire des spécifications des jeux de données indexés par leur id
+    type: object
+    additionalProperties: false
+    patternProperties:
+      ^[-a-zA-Z0-9_@\.]*$:
+        $ref: '#/definitions/specification'
   datasets:
     description: dictionnaire des jeux de données documentés indexés par leur id
     type: object
+    additionalProperties: false
     patternProperties:
-      ^[-a-zA-Z0-9_]*$:
+      ^[-a-zA-Z0-9_@\.]*$:
         $ref: '#/definitions/dataset'
   eof:
     description: marque de fin de fichier

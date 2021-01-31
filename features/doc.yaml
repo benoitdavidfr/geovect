@@ -1,4 +1,4 @@
-title: doc complétant les méta-données
+title: doc.yaml - doc complétant les méta-données
 abstract: |
   Tester une doc des données indexée par nom de raccourci, ex ignf-route500
   L'objectif est de définir une doc des jeux de données exposés en s'inspirant des schema JSON
@@ -9,18 +9,15 @@ abstract: |
     - la définition du type de géométrie de chaque collection
   La documentation peut être partielle.
 $schema: /var/www/html/geovect/features/doc
-datasets:
-  ignf-route500:
-    title: ROUTE 500 (v. 3 - 2019)
+specifications:
+  ignf-route500v3:
+    title: ROUTE 500, Descritif de contenu, version 3.0, avril 2020 (ROUTE500_3-0)
+    issued: '2020-04'
     abstract: |
       La base de données ROUTE 500® contient l'intégralité du réseau routier classé caractérisé par un certain nombre de
       propriétés et complété par les éléments du réseau routier secondaire permettant la desserte des chefs-lieux
       de communes et des principales infrastructures de transport.
-    licence:
-      href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
-      title: licence ouverte Etalab.
-    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500
-    doc_url: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/DC_ROUTE500_3-0.pdf
+    identifier: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/DC_ROUTE500_3-0.pdf
     metadata: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/IGNF_ROUTE500r_3-0.xml
     # Je considère que la résolution de Route 500 est de 40 m soit 3.6e-4° (40 m * 360° / 40 000 km)
     # Les coordonnées sont arrondies à 4 décimales au chargement
@@ -417,12 +414,14 @@ datasets:
                 label: Deux chaussées et plus.
           nb_voies:
             title: Nombre de voies
+            comment: |
+              La spécification définit les valeurs possibles '1 voie' et '2 voies étroites'.
+              Un certain JD utilise la valeur '1 voie ou 2 voies étroites'
             enum:
-              #"1 voie":
-                #label: 1 voie
-              #"2 voies étroites":
-                #label: 2 voies étroites
-              # LE JD n'est pas conforme à sa spec
+              "1 voie":
+                label: 1 voie
+              "2 voies étroites":
+                label: 2 voies étroites
               "1 voie ou 2 voies étroites":
                 label: 1 voie ou 2 voies étroites
               "2 voies larges":
@@ -498,7 +497,44 @@ datasets:
             title: Longueur du tronçon
             description: Longueur du tronçon en kilomètres.
             type: number
+  ignf-route500v2.1:
+    title: ROUTE 500, Descritif de contenu, version 2.1, juillet 2001 (ROUTE500_2-1)
+    issued: '2001-07'
+    identifier: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/DC_ROUTE500_2-1.pdf
+    metadata: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/IGNF_ROUTE500r_2-1.xml
 
+datasets:
+  ignf-route500: # version courante de ROUTE 500
+    title: ROUTE 500 2020
+    identifier: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2020-08-04.7z.001
+    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2020
+    conformsTo: ignf-route500v3
+    licence:
+      href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
+      title: licence ouverte Etalab.
+  ignf-route500_2020:
+    title: ROUTE 500 2020
+    identifier: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2020-08-04.7z.001
+    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2020
+    conformsTo: ignf-route500v3
+    licence:
+      href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
+      title: licence ouverte Etalab.
+  ignf-route500_2019:
+    title: ROUTE 500 2019
+    identifier: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2019-10-30.7z.001
+    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2019
+    conformsTo: ignf-route500v3
+    licence:
+      href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
+      title: licence ouverte Etalab.
+
+  local-route500_2020:
+    title: ROUTE 500 2020 sur le serveur Docker
+    path: /mysql/root@172.17.0.3/route500_2020
+  local-route500_2019:
+    title: ROUTE 500 2019 sur le serveur Docker
+    path: /mysql/root@172.17.0.3/route500_2019
   shomwfs:
     title: Serveur WFS du Shom
     path: /wfs/services.data.shom.fr/INSPIRE/wfs

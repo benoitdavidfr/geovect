@@ -64,7 +64,9 @@ abstract class FeatureServer {
     $selfurl = self::selfUrl();
     $dataId = substr($_SERVER['REQUEST_URI'], strlen($_SERVER['SCRIPT_NAME']));
     $title = $this->datasetDoc->title ?? null;
+    //echo "title=$title\n";
     $abstract = $this->datasetDoc->abstract ?? null;
+    //echo "abstract=$abstract\n";
     return [
       'title'=> $title ?? "Access to $dataId data using OGC API Features specification",
       'description'=>

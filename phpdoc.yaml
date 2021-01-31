@@ -35,10 +35,14 @@ doc: |
   
   Réflexions:
     - les services UGeoJSON peuvent remplacer l'accès aux BD
+      - -> remplacement par OGC API Features, voir utilisation de UGeoJSON
     - ils peuvent aussi être utilisés comme proxy pour l'accès aux WFS
+      - -> utilisation de OGC API Features
     - il reste à traiter les fichiers locaux
     - la notion d'UGeoJSON a besoin d'être étendue à un catalogue de points d'accès
+      -> DCAT
     - cela pourrait être une notion de GeoCat, similaire à celle de FCTree
+      -> DCAT
     - un GeoCat pourrait contenir:
       - l'URI d'un service UGeoJson, ex: http://id.geocat.fr/bdtopo - ugeojson de la BD Topo
       - l'URI d'un sous-catalogue

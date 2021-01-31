@@ -1,13 +1,13 @@
-title: API Features
+title: geovect/features - Mise en oeuvre du protocole API Features pour accéder à différentes sources de données
 path: /geovect/features
 doc: |
   Mise en oeuvre du protocole API Features pour accéder à différentes sources de données.
   Peuvent être vus comme des serveurs API Features:
     - un répertoire local ou distant contenant des fichiers GeoJSON ou GeoJSON adapté
     - un schéma PostGis contenant des tables défini par l'URI pgsql://{user}:{passwd}@{host}/{database}/{schema}
-      exemple: pgsql://benoit@db207552-001.dbaas.ovh.net/comhisto/public
+      exemple: pgsql://benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public
     - une base MySql contenant des tables défini par l'URI mysql://{user}:{passwd}@{host}/{database}
-      exemple: mysql://bdavid@mysql-bdavid.alwaysdata.net/{database}
+      exemple: mysql://bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500
     - un service WFS
       exemple: https://services.data.shom.fr/INSPIRE/wfs
   Un système de filtre/proxy permet de:
@@ -19,10 +19,10 @@ doc: |
     - définir un raccourci pour l'accès à un serveur API Features
   Les URI pourraient être:
     https://features.geoapi.fr/{raccourci}
-    https://features.geoapi.fr/pgsql/benoit@db207552-001.dbaas.ovh.net/comhisto/public
+    https://features.geoapi.fr/pgsql/benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public
     https://features.geoapi.fr/mysql/{user}@{host}/{database}
     https://features.geoapi.fr/file/{path}
-    https://features.geoapi.fr/wfs/referer=gexplor.fr/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
+    https://features.geoapi.fr/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr
     https://features.geoapi.fr/wfs/services.data.shom.fr/INSPIRE/wfs
     
   synchro:
@@ -36,3 +36,5 @@ phpIncludes:
   - /geovect/features/ftsonwfs.inc.php
   - /geovect/features/ftsonfile.inc.php
   - /geovect/features/ftsonsql.inc.php
+htmlFiles:
+  - /geovect/features/doc.yaml

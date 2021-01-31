@@ -19,6 +19,7 @@ doc: |
 journal: |
   30/12/2020:
     - création
+includes: [ftrserver.inc.php]
 */
 require_once __DIR__.'/ftrserver.inc.php';
 

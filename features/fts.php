@@ -1,6 +1,6 @@
 <?php
 /*PhpDoc:
-name: ftps.php
+name: fts.php
 title: fts.php - exposition de données au protocoles API Features
 doc: |
   Proxy exposant en API Features des données initialement stockées soit dans une BD MySql ou PgSql, soit dans un serveur WFS2,

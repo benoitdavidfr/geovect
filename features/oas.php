@@ -1,5 +1,14 @@
 <?php
-// gestion des définitions OAS
+/*PhpDoc:
+name: oas.php
+title: oas.php - gestion des définitions OpenApi
+doc: |
+journal: |
+  27/1/2021:
+    - création
+includes:
+  - ../../schema/jsonschema.inc.php
+*/
 
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/../../schema/jsonschema.inc.php';

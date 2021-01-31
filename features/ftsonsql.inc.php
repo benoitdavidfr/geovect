@@ -12,6 +12,11 @@ doc: |
     - la classe Sql utilisée pour exécuter des requêtes Sql sur MySql ou PgSql
     - la classe \Sql\Schema contenant les infos d'un schéma Sql (base MySql ou schéma PgSql).
 
+  **
+  Pb le fichier doc.yaml devrait documenter des specs et pas des datasets
+  Ex. title avec le millésime du jeu de données
+  **
+
 journal: |
   28/1/2021:
     - ajout du calcul de l'extension spatial pour les collections stockées dans MySql
@@ -114,7 +119,8 @@ class CollOnSql {
       return [[round($matches[1], 4), round($matches[2], 4), round($matches[3], 4), round($matches[4], 4)]];
     }
     elseif (Sql::software()=='MySql') { // en MySql, appel de la méthode adhoc 
-      return [MySql::spatialExtent($this->table->name, $this->geomCol->name)];
+      $spatialExtent = MySql::spatialExtent($this->table->name, $this->geomCol->name);
+      return $spatialExtent ? [$spatialExtent] : [];
     }
   }
 };
@@ -980,7 +986,9 @@ links to support paging (link relation `next`).",
       $geomColName = $collection->geomCol()->name;
       //$where = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
       $polygonWkt = "POLYGON(($bbox[0] $bbox[1],$bbox[0] $bbox[3],$bbox[2] $bbox[3],$bbox[2] $bbox[1],$bbox[0] $bbox[1]))";
-      $where = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt', 4326))\n";
+      $where = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt'))\n";
+      // MySql exige que les SRID soient identiques
+      // j'ai choisi en MySql de charger les géométries en SRID 0 pour éviter l'impossibilité d'utiliser certaines fonctions
     }
     if ($filters) {
       {/*Tests de mise en oeuvre de filtres:
