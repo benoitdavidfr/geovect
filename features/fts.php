@@ -29,6 +29,14 @@ doc: |
     - 47' même données gzippées et !JSON_PRETTY_PRINT soit 1/4
 
   A faire (court-terme):
+    - rajouter dans les liens au niveau de chaque collection,
+      un lien {type: text/html, rel: canonical, title: information, href= ...}
+      vers la doc quand il y a au moins soit une description, soit la définition de propriétés
+    - rajouter dans les liens au niveau de chaque collection, un lien de téléchargement simple quand j'en dispose d'un,
+      ex: {
+          "href": "http://download.example.org/buildings.gpkg",
+          "rel": "enclosure", "type": "application/geopackage+sqlite3",
+          "title": "Bulk download (GeoPackage)", "length": 472546 }
     - gérer correctement les types non string dans les données comme les nombres
   Réflexions (à mûrir):
     - distinguer un outil d'admin différent de l'outil fts.php de consultation
@@ -63,7 +71,7 @@ use Symfony\Component\Yaml\Yaml;
 
 ini_set('memory_limit', '10G');
 
-define('EXEMPLES_DAPPELS', [
+/*define('EXEMPLES_DAPPELS', [
   'wfs/services.data.shom.fr/INSPIRE/wfs' => [
     'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary',
   ],
@@ -97,16 +105,20 @@ define('EXEMPLES_DAPPELS', [
     'comhistog3',
   ],
 ]
-);
+);*/
 
 define('HTTP_ERROR_LABELS', [
   400 => 'Bad Request', // La syntaxe de la requête est erronée.
   404 => 'Not Found', // Ressource non trouvée. 
   500 => 'Internal Server Error', // Erreur interne du serveur. 
   501 => 'Not Implemented', // Fonctionnalité réclamée non supportée par le serveur.
-]);
+]
+);
 
-//if (0)
+// Définit le fuseau horaire par défaut à utiliser
+date_default_timezone_set('UTC');
+
+if (0)
 FeatureServer::log([
   'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
   'Headers'=> getallheaders(),
@@ -119,24 +131,27 @@ FeatureServer::log([
 function output(string $f, array $array, int $levels=3) {
   switch ($f) {
     case 'json': {
+      header('Access-Control-Allow-Origin: *');
       header('Content-type: application/json; charset="utf8"');
       //header('Content-type: text/plain; charset="utf8"');
       die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
     }
     case 'geojson': {
+      header('Access-Control-Allow-Origin: *');
+      header('Content-type: application/geo+json; charset="utf8"');
       if (in_array('gzip', explode(',', getallheaders()['Accept-Encoding'] ?? ''))) {
-        header('Content-type: application/geo+json; charset="utf8"');
         header('Content-Encoding: gzip');
         die(gzencode(json_encode($array, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)));
       }
       else {
-        header('Content-type: application/geo+json; charset="utf8"');
-        //header('Content-type: text/plain; charset="utf8"');
         //die(json_encode($array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
         die(json_encode($array, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));
       }
     }
-    case 'yaml': die(Yaml::dump($array, $levels, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+    case 'yaml': {
+      header('Content-type: text/plain; charset="utf8"');
+      die(Yaml::dump($array, $levels, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+    }
     case 'html': {
       $yaml = Yaml::dump($array, $levels, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
       // remplace les URL par des liens HTML
@@ -146,8 +161,8 @@ function output(string $f, array $array, int $levels=3) {
   }
 }
 
-// Génère une erreur Http avec le code $code si <>0 ou sinon 500 
-// et affiche le message d'erreur
+// Génère une erreur Http avec le code $code si <>0 ou sinon 500 et affiche le message d'erreur
+// effectue aussi un log des erreurs
 function error(string $message, int $code=0) {
   // log les erreurs
   FeatureServer::log([
@@ -168,12 +183,23 @@ function error(string $message, int $code=0) {
     'code'=> $code,
   ]]));
 }  
-  
+
+{/* Test pour attraper une erreur fatale d'explosion mémoire, ne fonctionne pas (1/2/2021)
+function shutDownFunction() {
+    $error = error_get_last();
+     // Fatal error, E_ERROR === 1
+    if ($error['type'] === E_ERROR) {
+      error("Fatal error", 500);
+    }
+}
+register_shutdown_function('shutDownFunction');*/
+}
+
 // si _GET[f] est défini alors il est utilisé, sinon si appel navigateur (header Accept) alors 'html' sinon 'json'
 // si ni 'yaml', ni 'json', ni 'geojson' alors 'html'
 switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')) ? 'html' : 'json')) {
   case 'html': echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n"; break;
-  case 'yaml': header('Content-type: text/plain; charset="utf8"'); break;
+  case 'yaml': break;
   case 'json':
   // si $f vaut geojson alors  transformation en 'json'. A l'affichage si geo alors geojson
   case 'geojson': $f = 'json'; break;
@@ -190,11 +216,27 @@ switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['
 $doc = new Doc; // documentation des serveurs biens connus 
 
 if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) { // appel sans paramètre 
-  echo "Serveurs biens connus:\n";
+  echo "</pre><h2>Bouquet de serveurs OGC API Features</h2>
+Ce site expose un bouquet de serveurs conformes
+à la <a href='http://docs.opengeospatial.org/is/17-069r3/17-069r3.html' target='_blank'>norme OGC API Features</a>.<br>
+Il est en développement et uniquement certains types de serveurs sont conformes à cette norme.<br>
+Les 3 types de sources de données exposées sont:<ul>
+<li>des données d'une base MySql ou PgSql/PostGis (en béta),</li>
+<li>des données exposées par un serveur WFS (en cours),</li>
+<li>des données stockées dans des fichiers GeoJSON (en cours).</li>
+</ul>
+
+Les sources exposées sont les suivantes :<ul>\n";
   foreach ($doc->datasets as $dsid => $dsDoc) {
-    echo "  - <a href='$_SERVER[SCRIPT_NAME]/$dsid'>$dsDoc->title</a> => $dsDoc->path\n";
+    if (($_SERVER['HTTP_HOST']=='localhost') || !preg_match('!@172\.17\.0\.!', $dsDoc->path))
+    echo "<li><a href='$_SERVER[SCRIPT_NAME]/$dsid'>$dsDoc->title</a></li>\n";
   }
-  echo "Exemples:\n";
+
+  echo "</ul>
+Ces serveurs peuvent notamment être utilisés avec les dernières versions
+de <a href='https://www.qgis.org/fr/site/' target='_blank'>QGis (3.16)</a>
+ou être consultés en Html.<br>\n";
+  /*echo "Exemples:\n";
   foreach (EXEMPLES_DAPPELS as $ex => $colls) {
     echo "  - <a href='fts.php/$ex'>$ex</a>\n";
     echo "    - <a href='fts.php/$ex/collections'>collections</a>,";
@@ -208,7 +250,7 @@ if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) { // appel 
       $url = "collections/$collid/items".($params ? "?$params" : '');
       echo "      - <a href='fts.php/$ex/$url'>$url</a>\n";
     }
-  }
+  }*/
   die();
 }
 

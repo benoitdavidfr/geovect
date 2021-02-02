@@ -24,6 +24,8 @@ use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Michelf\MarkdownExtra;
 
+ini_set('memory_limit', '10G');
+
 
 class PropertyDoc {
   protected string $id;

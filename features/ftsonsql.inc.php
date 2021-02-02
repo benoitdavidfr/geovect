@@ -15,6 +15,8 @@ doc: |
 
   A faire:
     - réduire l'empreinte mémoire dans items
+    - gérer correctement une explosion mémoire (?)
+    - implémenter HEAD ? OPTIONS ? (-> standard paragraphe 7.5)
 
 journal: |
   31/1/2021:

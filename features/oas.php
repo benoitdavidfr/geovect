@@ -45,8 +45,8 @@ $schema = new JsonSchema($schema);
   
 try {
   //$yaml = Yaml::parseFile(Oas::DOC_PATH_YAML);
-  //$path = 'http://localhost/geovect/features/fts.php/ignf-route500/api?f=yaml'; // ignf-route500 
-  $path = 'http://localhost/geovect/features/fts.php/comhisto/api?f=yaml'; // comhisto
+  $path = 'http://localhost/geovect/features/fts.php/ignf-route500/api?f=yaml'; // ignf-route500 
+  //$path = 'http://localhost/geovect/features/fts.php/comhisto/api?f=yaml'; // comhisto
   $text = file_get_contents($path);
   $yaml = Yaml::parse($text);
 }
@@ -58,5 +58,5 @@ $check = $schema->check($yaml);
 if (!$check->ok())
   echo Yaml::dump(['checkErrors'=> $check->errors()]);
 else
-  echo "Doc conforme $path au schéma OAS\n";
+  echo "Doc '$path' conforme au schéma OAS\n";
 

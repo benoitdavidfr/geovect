@@ -34,13 +34,15 @@ abstract class FeatureServer {
   static function log(string|array $message): void { // écrit un message dans le fichier Yaml des logs
     if (!self::LOG_FILENAME)
       return;
-    $dt = "'".date('Y-m-d').'T'.date('H:i:s')."'";
-    file_put_contents(
+    if (file_put_contents(
       self::LOG_FILENAME,
-      Yaml::dump([$dt => $message]),
+      Yaml::dump([date('Y-m-d\TH:i:s\Z') => $message]),
       FILE_APPEND
-    )
-    or die("Erreur d'ecriture dans le fichier de logs dans FeatureServer");
+    ) === false) {
+      header('HTTP/1.1 500 Internal Server Error');
+      header('Content-type: text/plain');
+      die("Erreur d'ecriture dans le fichier de logs dans FeatureServer");
+    }
   }
   
   static function selfUrl(): string { // Url d'appel sans les paramètres GET
@@ -50,7 +52,7 @@ abstract class FeatureServer {
     return $url;
   }
   
-  // création des différents types de FeatureServer
+  // création d'un des différents types de FeatureServer
   static function new(string $type, string $path, ?DatasetDoc $datasetDoc): self {
     switch($type) {
       case 'wfs': return new FeatureServerOnWfs("https:/$path", $datasetDoc);
@@ -216,7 +218,7 @@ abstract class FeatureServer {
         if (!ctype_digit($_GET['limit']))
           error("Valeur '$_GET[limit]' non entière interdite pour le paramètre 'limit'", 400);
         if (((int)$_GET['limit'] > self::LIMIT_MAX) || ((int)$_GET['limit'] < 1))
-          error("Valeur '$_GET[limit]' hors intervalle [1, ".self::LIMIT_MAX."] pour le paramètre 'limit'", 400);
+          error("Valeur du paramètre 'limit'='$_GET[limit]' hors intervalle [1, ".self::LIMIT_MAX."]", 400);
       }
       if (isset($_GET['startindex'])) {
         if (!ctype_digit($_GET['startindex']))
@@ -225,7 +227,7 @@ abstract class FeatureServer {
           error("Valeur '$_GET[startindex]' < 0 pour le paramètre 'startindex'", 400);
       }
       $apidef = $this->api();
-      $apidef = $apidef['paths'][$path]['get']['parameters'];
+      $apidef = $apidef['paths'][$path]['get']['parameters'] ?? [];
       foreach ($apidef as $parameterdef)
         if (isset($parameterdef['name']))
           $params[] = $parameterdef['name'];

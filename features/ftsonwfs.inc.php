@@ -4,271 +4,19 @@ name: ftsonwfs.inc.php
 title: ftsonwfs.inc.php - simule un service API Features au dessus d'un serveur WFS
 functions:
 doc: |
-  Définition de 3 classes:
-    - WfsServer - classe abstraite des fonctionnalités communes Gml et GeoJSON
-    - WfsGeoJson - serveur WFS retournant du GeoJSON comme ceux du Shom ou de l'IGN
-    - FeatureServerOnWfs - interface Feature API d'un serveur WfsGeoJson
+  Définition de la classe FeatureServerOnWfs - interface Feature API d'un serveur WfsGeoJson
 journal: |
+  2/2/2021:
+    - première version lisible dans QGis
   30/12/2020:
     - reprise de shomgt
 includes: [ftrserver.inc.php]
 */
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/ftrserver.inc.php';
-//require_once __DIR__.'/../config.inc.php';
+require_once __DIR__.'/wfsserver.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
-
-abstract class WfsServer {
-  const LOG = __DIR__.'/wfsserver.log.yaml'; // nom du fichier de log ou false pour pas de log
-  const CAP_CACHE = __DIR__.'/wfscapcache'; // nom du répertoire dans lequel sont stockés les fichiers XML
-                                            // de capacités ainsi que les DescribeFeatureType en json
-  protected string $serverUrl; // URL du serveur
-  protected array $options; // sous la forme ['option'=> valeur] avec option valant referer et/ou proxy
-  
-  function __construct(string $serverUrl, array $options=[]) {
-    $this->serverUrl = $serverUrl;
-    $this->options = $options;
-  }
-  
-  // construit l'URL de la requête à partir des paramètres
-  function url(array $params): string {
-    if (self::LOG) { // log
-      file_put_contents(
-          self::LOG,
-          Yaml::dump([
-            'date'=> date(DateTime::ATOM),
-            'appel'=> 'WfsServer::url',
-            'params'=> $params,
-          ]),
-          FILE_APPEND
-      );
-    }
-    $url = $this->serverUrl;
-    $url .= ((strpos($url, '?') === false) ? '?' : '&').'SERVICE=WFS';
-    foreach($params as $key => $value)
-      $url .= "&$key=$value";
-    if (self::LOG) { // log
-      file_put_contents(self::LOG, Yaml::dump(['url'=> $url]), FILE_APPEND);
-    }
-    return $url;
-  }
-  
-  // envoi une requête et récupère la réponse sous la forme d'un texte
-  function query(array $params): string {
-    $url = $this->url($params);
-    $context = null;
-    if ($this->options) {
-      $httpOptions = [];
-      if ($referer = ($this->options['referer'] ?? null)) {
-        $httpOptions['header'] = "referer: $referer\r\n";
-      }
-      if ($proxy = ($this->options['proxy'] ?? null)) {
-        $httpOptions['proxy'] = $proxy;
-      }
-      if ($httpOptions) {
-        if (self::LOG) { // log
-          file_put_contents(
-              self::LOG,
-              Yaml::dump([
-                'appel'=> 'WfsServer::query',
-                'httpOptions'=> $httpOptions,
-              ]),
-              FILE_APPEND
-          );
-        }
-        $httpOptions['method'] = 'GET';
-        $context = stream_context_create(['http'=> $httpOptions]);
-      }
-    }
-    if (($result = @file_get_contents($url, false, $context)) === false) {
-      if (isset($http_response_header)) {
-        echo "http_response_header="; var_dump($http_response_header);
-      }
-      throw new Exception("Erreur dans WfsServer::query() : sur url=$url");
-    }
-    //die($result);
-    //if (substr($result, 0, 17) == '<ExceptionReport>') {
-    if (preg_match('!ExceptionReport!', $result)) {
-      if (preg_match('!<ExceptionReport><[^>]*>([^<]*)!', $result, $matches)) {
-        throw new Exception ("Erreur dans WfsServer::query() : $matches[1]");
-      }
-      if (preg_match('!<ows:ExceptionText>([^<]*)!', $result, $matches)) {
-        throw new Exception ("Erreur dans WfsServer::query() : $matches[1]");
-      }
-      echo $result;
-      throw new Exception("Erreur dans WfsServer::query() : message d'erreur non détecté");
-    }
-    return $result;
-  }
-  
-  // effectue un GetCapabities et retourne le XML. Utilise le cache sauf si force=true
-  function getCapabilities(bool $force=false): string {
-    if (!is_dir(self::CAP_CACHE) && !mkdir(self::CAP_CACHE))
-      throw new Exception("Erreur de création du répertoire ".self::CAP_CACHE);
-    $wfsVersion = $this->options['version'] ?? '2.0.0';
-    $filepath = self::CAP_CACHE.'/wfs'.md5($this->serverUrl.$wfsVersion).'-cap.xml';
-    if (!$force && file_exists($filepath))
-      return file_get_contents($filepath);
-    else {
-      $cap = $this->query(['request'=> 'GetCapabilities','VERSION'=> $wfsVersion]);
-      file_put_contents($filepath, $cap);
-      return $cap;
-    }
-  }
-
-  // liste les couches exposées evt filtré par l'URL des MD
-  function featureTypeList(string $metadataUrl=null) {
-    //echo "WfsServerJson::featureTypeList()<br>\n";
-    $cap = $this->getCapabilities();
-    $cap = str_replace(['xlink:href'], ['xlink_href'], $cap);
-    $featureTypeList = [];
-    $cap = new SimpleXMLElement($cap);
-    foreach ($cap->FeatureTypeList->FeatureType as $featureType) {
-      $name = (string)$featureType->Name;
-      if (!$metadataUrl || ($featureTypeRec['MetadataURL'] == $metadataUrl))
-        $featureTypeList[$name] = [
-          'Title'=> (string)$featureType->Title,
-          'MetadataURL'=> (string)$featureType->MetadataURL['xlink_href'],
-        ];
-    }
-    //echo '<pre>$featureTypeList = '; print_r($featureTypeList);
-    return $featureTypeList;
-  }
-  
-  abstract function describeFeatureType(string $typeName): array;
-  
-  abstract function geomPropertyName(string $typeName): ?string;
-  
-  abstract function getNumberMatched(string $typename, array $bbox=[], string $where=''): int;
-  
-  abstract function getFeature(string $typename, array $bbox=[], int $zoom=-1, string $where='', int $count=100, int $startindex=0): string;
-
-  abstract function printAllFeatures(string $typename, array $bbox=[], int $zoom=-1, string $where=''): void;
-};
-
-class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur WFS retournant du GeoJSON
-
-  function describeFeatureType(string $typeName): array {
-    $filepath = self::CAP_CACHE.'/wfs'.md5($this->serverUrl."/$typeName").'-ft.json';
-    if (is_file($filepath)) {
-      $featureType = file_get_contents($filepath);
-    }
-    else {
-      $featureType = $this->query([
-        'VERSION'=> '2.0.0',
-        'REQUEST'=> 'DescribeFeatureType',
-        'OUTPUTFORMAT'=> 'application/json',
-        'TYPENAME'=> $typeName,
-      ]);
-      if (!is_dir(self::CAP_CACHE) && !mkdir(self::CAP_CACHE))
-        throw new Exception("Erreur de création du répertoire ".self::CAP_CACHE);
-      file_put_contents($filepath, $featureType);
-    }
-    $featureType = json_decode($featureType, true);
-    return $featureType;
-  }
-  
-  
-  // nom de la propriété géométrique du featureType
-  function geomPropertyName(string $typeName): ?string {
-    $featureType = $this->describeFeatureType($typeName);
-    //var_dump($featureType);
-    foreach($featureType['featureTypes'] as $featureType) {
-      foreach ($featureType['properties'] as $property) {
-        if (preg_match('!^gml:!', $property['type']))
-          return $property['name'];
-      }
-    }
-    return null;
-  }
-    
-  // retourne le nbre d'objets correspondant au résultat de la requête
-  function getNumberMatched(string $typename, array $bbox=[], string $where=''): int {
-    $geomPropertyName = $this->geomPropertyName($typename);
-    $request = [
-      'VERSION'=> '2.0.0',
-      'REQUEST'=> 'GetFeature',
-      'TYPENAMES'=> $typename,
-      'SRSNAME'=> 'CRS:84', // système de coordonnées nécessaire pour du GeoJSON
-      'RESULTTYPE'=> 'hits',
-    ];
-    $cql_filter = '';
-    if ($bbox) {
-      $bboxwkt = self::bboxWktCrs($bbox, $this->defaultCrs($typename));
-      $cql_filter = "Intersects($geomPropertyName,$bboxwkt)";
-    }
-    if ($where) {
-      $where = utf8_decode($where); // expérimentalement les requêtes doivent être encodées en ISO-8859-1
-      $cql_filter .= ($cql_filter ? ' AND ':'').$where;
-    }
-    if ($cql_filter)
-      $request['CQL_FILTER'] = urlencode($cql_filter);
-    $result = $this->query($request);
-    if (!preg_match('! numberMatched="(\d+)" !', $result, $matches)) {
-      //echo "result=",$result,"\n";
-      throw new Exception("Erreur dans WfsServerJson::getNumberMatched() : no match on result $result");
-    }
-    return (int)$matches[1];
-  }
-  
-  // retourne le résultat de la requête en GeoJSON
-  function getFeature(string $typename, array $bbox=[], int $zoom=-1, string $where='', int $count=100, int $startindex=0): string {
-    $geomPropertyName = $this->geomPropertyName($typename);
-    $request = [
-      'VERSION'=> '2.0.0',
-      'REQUEST'=> 'GetFeature',
-      'TYPENAMES'=> $typename,
-      'OUTPUTFORMAT'=> 'application/json',
-      'SRSNAME'=> 'CRS:84', // système de coordonnées nécessaire pour du GeoJSON
-      'COUNT'=> $count,
-      'STARTINDEX'=> $startindex,
-    ];
-    $cql_filter = '';
-    if ($bbox) {
-      $bboxwkt = self::bboxWktCrs($bbox, $this->defaultCrs($typename));
-      $cql_filter = "Intersects($geomPropertyName,$bboxwkt)";
-    }
-    if ($where) {
-      $where = utf8_decode($where); // expérimentalement les requêtes doivent être encodées en ISO-8859-1
-      $cql_filter .= ($cql_filter ? ' AND ':'').$where;
-    }
-    if ($cql_filter)
-      $request['CQL_FILTER'] = urlencode($cql_filter);
-    return $this->query($request);
-  }
-  
-  // retourne le résultat de la requête en GeoJSON encodé en array Php
-  function getFeatureAsArray(string $typename, array $bbox=[], int $zoom=-1, string $where='', int $count=100, int $startindex=0): array {
-    $result = $this->getFeature($typename, $bbox, $zoom, $where, $count, $startindex);
-    return json_decode($result, true);
-  }
-  
-  // affiche le résultat de la requête en GeoJSON
-  function printAllFeatures(string $typename, array $bbox=[], int $zoom=-1, string $where=''): void {
-    //echo "WfsServerJson::printAllFeatures()<br>\n";
-    $numberMatched = $this->getNumberMatched($typename, $bbox, $where);
-    if ($numberMatched <= 100) {
-      echo $this->getFeature($typename, $bbox, $zoom, $where);
-      return;
-    }
-    //$numberMatched = 12; POUR TESTS
-    echo '{"type":"FeatureCollection","numberMatched":'.$numberMatched.',"features":[',"\n";
-    $startindex = 0;
-    $count = 100;
-    while ($startindex < $numberMatched) {
-      $fc = $this->getFeature($typename, $bbox, $zoom, $where, $count, $startindex);
-      $fc = json_decode($fc, true);
-      foreach ($fc['features'] as $nof => $feature) {
-        if (($startindex <> 0) || ($nof <> 0))
-          echo ",\n";
-        echo json_encode($feature, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
-      }
-      $startindex += $count;
-    }
-    echo "\n]}\n";
-  }
-};
 
 class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Features d'un serveur WFS
   protected WfsGeoJson $wfsServer;
@@ -283,19 +31,252 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
     $this->datasetDoc = $datasetDoc;
   }
   
-  function collections(string $f): array { // retourne la liste des collections
-    $collections = [];
-    foreach ($this->wfsServer->featureTypeList() as $typeId => $type) {
-      $collections[] = [
-        'id'=> $typeId,
-        'title'=> $type['Title'],
-      ];
+  // structuration d'une collection utilisée pour les réponses à /collections et à /collections/{collId}
+  private function collection_structuration(string $collUrl, string $collId, string $f): array {
+    $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
+    //$spatialExtentBboxes = (new CollOnSql($this->sqlSchema, $collId))->spatialExtentBboxes();
+    $spatialExtentBboxes = $this->wfsServer->featureTypeList()[$collId]['LonLatBoundingBox'];
+    $temporalExtent = null;
+    return [
+      'id'=> $collId,
+      'title'=> $collDoc ? $collDoc->title : $collId,
+    ]
+    + ($collDoc && $collDoc->description ? ['description'=> $collDoc->description] : [])
+    + ($spatialExtentBboxes || $temporalExtent ?
+      ['extent'=>
+        ($spatialExtentBboxes ? ['spatial'=> ['bbox'=> $spatialExtentBboxes]] : [])
+      + ($temporalExtent ? ['temporal'=> $temporalExtent] : [])
+      ]
+      : []
+    )
+    + [
+      'itemType'=> 'feature', // indicator about the type of the items in the collection (the default value is 'feature').
+      'crs'=> ['http://www.opengis.net/def/crs/OGC/1.3/CRS84'],
+      'links'=> [
+        [
+          'href'=> $collUrl.(($f<>'json') ? '?f=json' : ''),
+          'rel'=> $f=='json' ? 'self' : 'alternate',
+          'type'=> 'application/json',
+          'title'=> "This document in JSON",
+        ],
+        [
+          'href'=> $collUrl.(($f<>'html') ? '?f=html' : ''),
+          'rel'=> $f=='html' ? 'self' : 'alternate',
+          'type'=> 'text/html',
+          'title'=> "This document in Html",
+        ],
+        [
+          'href'=> "$collUrl/describedBy".(($f<>'json') ? '?f=json' : ''),
+          'rel'=> 'describedBy',
+          'type'=> 'application/json',
+          'title'=> "The JSON schema of a Feature of the FeatureCollection in JSON",
+        ],
+        [
+          'href'=> "$collUrl/describedBy".(($f<>'html') ? '?f=html' : ''),
+          'rel'=> 'describedBy',
+          'type'=> 'text/html',
+          'title'=> "The JSON schema of a Feature of the FeatureCollection in Html",
+        ],
+        [
+          'href'=> "$collUrl/items".(($f<>'json') ? '?f=json' : ''),
+          'rel'=> 'items',
+          'type'=> 'application/geo+json',
+          'title'=> "The items in GeoJSON",
+        ],
+        [
+          'href'=> "$collUrl/items".(($f<>'html') ? '?f=html' : ''),
+          'rel'=> 'items',
+          'type'=> 'text/html',
+          'title'=> "The items in HTML",
+        ],
+      ],
+    ];
+    {/*schemas:/collection.yaml:
+      type: object
+      required:
+        - id
+        - links
+      properties:
+        id:
+          description: identifier of the collection used, for example, in URIs
+          type: string
+        title:
+          description: human readable title of the collection
+          type: string
+        description:
+          description: a description of the features in the collection
+          type: string
+        links:
+          type: array
+          items:
+            $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml
+        extent:
+          description: >-
+            The extent of the features in the collection. In the Core only spatial and temporal
+            extents are specified. Extensions may add additional members to represent other
+            extents, for example, thermal or pressure ranges.
+          type: object
+          properties:
+            spatial:
+              description: >-
+                The spatial extent of the features in the collection.
+              type: object
+              properties:
+                bbox:
+                  description: >-
+                    One or more bounding boxes that describe the spatial extent of the dataset.
+                    In the Core only a single bounding box is supported. Extensions may support
+                    additional areas. If multiple areas are provided, the union of the bounding
+                    boxes describes the spatial extent.
+                  type: array
+                  minItems: 1
+                  items:
+                    description: >-
+                      Each bounding box is provided as four or six numbers, depending on
+                      whether the coordinate reference system includes a vertical axis
+                      (height or depth):
+
+                      * Lower left corner, coordinate axis 1
+                      * Lower left corner, coordinate axis 2
+                      * Minimum value, coordinate axis 3 (optional)
+                      * Upper right corner, coordinate axis 1
+                      * Upper right corner, coordinate axis 2
+                      * Maximum value, coordinate axis 3 (optional)
+
+                      The coordinate reference system of the values is WGS 84 longitude/latitude
+                      (http://www.opengis.net/def/crs/OGC/1.3/CRS84) unless a different coordinate
+                      reference system is specified in `crs`.
+
+                      For WGS 84 longitude/latitude the values are in most cases the sequence of
+                      minimum longitude, minimum latitude, maximum longitude and maximum latitude.
+                      However, in cases where the box spans the antimeridian the first value
+                      (west-most box edge) is larger than the third value (east-most box edge).
+
+                      If the vertical axis is included, the third and the sixth number are
+                      the bottom and the top of the 3-dimensional bounding box.
+
+                      If a feature has multiple spatial geometry properties, it is the decision of the
+                      server whether only a single spatial geometry property is used to determine
+                      the extent or all relevant geometries.
+                    type: array
+                    minItems: 4
+                    maxItems: 6
+                    items:
+                      type: number
+                    example:
+                      - -180
+                      - -90
+                      - 180
+                      - 90
+                crs:
+                  description: >-
+                    Coordinate reference system of the coordinates in the spatial extent
+                    (property `bbox`). The default reference system is WGS 84 longitude/latitude.
+                    In the Core this is the only supported coordinate reference system.
+                    Extensions may support additional coordinate reference systems and add
+                    additional enum values.
+                  type: string
+                  enum:
+                    - 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                  default: 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+            temporal:
+              description: >-
+                The temporal extent of the features in the collection.
+              type: object
+              properties:
+                interval:
+                  description: >-
+                    One or more time intervals that describe the temporal extent of the dataset.
+                    The value `null` is supported and indicates an open time intervall.
+                    In the Core only a single time interval is supported. Extensions may support
+                    multiple intervals. If multiple intervals are provided, the union of the
+                    intervals describes the temporal extent.
+                  type: array
+                  minItems: 1
+                  items:
+                    description: >-
+                      Begin and end times of the time interval. The timestamps
+                      are in the coordinate reference system specified in `trs`. By default
+                      this is the Gregorian calendar.
+                    type: array
+                    minItems: 2
+                    maxItems: 2
+                    items:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    example:
+                      - '2011-11-11T12:22:11Z'
+                      - null
+                trs:
+                  description: >-
+                    Coordinate reference system of the coordinates in the temporal extent
+                    (property `interval`). The default reference system is the Gregorian calendar.
+                    In the Core this is the only supported temporal reference system.
+                    Extensions may support additional temporal reference systems and add
+                    additional enum values.
+                  type: string
+                  enum:
+                    - 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+                  default: 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+        itemType:
+          description: indicator about the type of the items in the collection (the default value is 'feature').
+          type: string
+          default: feature
+        crs:
+          description: the list of coordinate reference systems supported by the service
+          type: array
+          items:
+            type: string
+          default:
+            - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+    */}
+  }
+  
+  function collections(string $f): array { // retourne la description des collections
+    $selfurl = self::selfUrl();
+    $colls = [];
+    foreach ($this->wfsServer->featureTypeList() as $fTypeId => $fType) {
+      $colls[] = $this->collection_structuration("$selfurl/$fTypeId", $fTypeId, $f);
     }
-    return $collections;
+    return [
+      'links'=> [
+        [
+          'f'=> $f,
+          'href'=> $selfurl.(($f <> 'json') ? '?f=json' : ''),
+          'rel'=> ($f=='json') ? 'self' : 'alternate',
+          'type'=> 'application/json',
+          'title'=> "this document in JSON",
+        ],
+        [
+          'href'=> $selfurl.(($f <> 'html') ? '?f=html' : ''),
+          'rel'=> ($f=='html') ? 'self' : 'alternate',
+          'type'=> 'text/html',
+          'title'=> "this document in HTML"
+        ],
+      ],
+      'collections'=> $colls,
+    ];
+    {/*schemas:
+      /collections.yaml:
+        type: object
+        required:
+          - links
+          - collections
+        properties:
+          links:
+            type: array
+            items:
+              $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml
+          collections:
+            type: array
+            items:
+              $ref: http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/collection.yaml
+    */}
   }
   
   function collection(string $f, string $id): array { // retourne la description de la collection
-    return ['id'=> $id, 'title'=> $id];
+    return $this->collection_structuration(self::selfUrl(), $id, $f);
   }
   
   function collDescribedBy(string $collId): array { // retourne la description du FeatureType de la collection
@@ -304,71 +285,110 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   
   // retourne les items de la collection comme array Php
   function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
+    $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
+    $filters = []; // filtres sous la forme [{columnName} => {value}]
     $items = $this->wfsServer->getFeatureAsArray(
       typename: $collId,
       bbox: $bbox,
-      count: $count,
+      count: $limit,
       startindex: $startindex
     );
-    return $items['features'];
+    $selfurl = self::selfUrl()."?limit=$limit"
+        .($bbox ? "&bbox=".implode(',', $bbox) : '')
+        .($properties ? "&properties=".implode(',', $properties) : '');
+    foreach ($filters as $key => $val)
+      $selfurl .= "&$key=".urlencode($val);
+    $nexturl = $selfurl."&startindex=".($startindex+$limit);
+    $selfurl .= "&startindex=$startindex";
+    $links = [
+      [
+        'href'=> $selfurl.($f<>'json' ? '&f=json' : ''),
+        'rel'=> ($f=='json') ? 'self' : 'alternate',
+        'type'=> 'application/geo+json',
+        'title'=> "this document in GeoJSON",
+      ],
+      [
+        'href'=> $selfurl.($f<>'html' ? '&f=html' : ''),
+        'rel'=> ($f=='html') ? 'self' : 'alternate',
+        'type'=> 'text/html',
+        'title'=> "this document in HTML",
+      ],
+      [
+        'href'=> $selfurl.($f<>'yaml' ? '&f=yaml' : ''),
+        'rel'=> ($f=='yaml') ? 'self' : 'alternate',
+        'type'=> 'application/x-yaml',
+        'title'=> "this document in Yaml",
+      ],
+    ];
+    if (count($items['features']) == $limit) {
+      $links[] = [
+        'href'=> $nexturl.($f<>'json' ? '&f=json' : ''),
+        'rel'=> 'next',
+        'type'=> 'application/geo+json',
+        'title'=> "next set of data in GeoJSON",
+      ];
+      $links[] = [
+        'href'=> $nexturl.($f<>'html' ? '&f=html' : ''),
+        'rel'=> 'next',
+        'type'=> 'text/html',
+        'title'=> "next set of data in Html",
+      ];
+      $links[] = [
+        'href'=> $nexturl.($f<>'yaml' ? '&f=yaml' : ''),
+        'rel'=> 'next',
+        'type'=> 'application/x-yaml',
+        'title'=> "next set of data in Yaml",
+      ];
+    }
+    
+    return [
+      'type'=> 'FeatureCollection',
+      'features'=> $items['features'],
+      'links'=> $links,
+      'timeStamp'=> date(DATE_ATOM),
+      'numberMatched'=> $items['numberMatched'],
+      'numberReturned'=> count($items['features']),
+    ];
   }
   
   // retourne l'item $id de la collection comme array Php
   function item(string $f, string $collId, string $featureId): array {
-    return [];
+    $item = $this->wfsServer->getFeatureById($collId, $featureId);
+    $item = json_decode($item, true);
+    $item = $item['features'][0];
+    return [
+      'type'=> 'Feature',
+      'id'=> $featureId,
+      'properties'=> $item['properties'],
+      'geometry'=> $item['geometry'],
+      'links'=> [
+        [
+          'href'=> self::selfUrl().($f<>'json' ? '?f=json' : ''),
+          'rel'=> ($f=='json') ? 'self' : 'alternate',
+          'type'=> 'application/geo+json',
+          'title'=> "this document in GeoJSON",
+        ],
+        [
+          'href'=> self::selfUrl().($f<>'html' ? '?f=html' : ''),
+          'rel'=> ($f=='html') ? 'self' : 'alternate',
+          'type'=> 'text/html',
+          'title'=> "this document in HTML",
+        ],
+        [
+          'href'=> self::selfUrl().($f<>'yaml' ? '?f=yaml' : ''),
+          'rel'=> ($f=='yaml') ? 'self' : 'alternate',
+          'type'=> 'application/x-yaml',
+          'title'=> "this document in Yaml",
+        ],
+        [
+          'href'=> dirname(self::selfUrl(), 2),
+          'rel'=> 'collection',
+          'type'=> 'application/json',
+          'title'=> "definition of the collection in JSON",
+        ],
+      ],
+      'timeStamp'=> date(DATE_ATOM),
+    ];
   }
 };
-
-
-if ((__FILE__ <> $_SERVER['DOCUMENT_ROOT'].$_SERVER['SCRIPT_NAME']) && (($argv[0] ?? '') <> basename(__FILE__))) return;
-
-
-switch ($f = $_GET['f'] ?? 'yaml') {
-  case 'yaml': {
-    echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>shomwfs</title></head><body><pre>\n";
-    break;
-  }
-  case 'json':
-  case 'geojson': {
-    header('Content-type: application/json; charset="utf8"');
-    //header('Content-type: text/plain; charset="utf8"');
-    $f = 'json';
-    break;
-  }
-  default: {
-    $f = 'yaml';
-  }
-}
-
-if (!isset($_SERVER['PATH_INFO'])) {
-  FeatureServerFromWfs::output($f, ['home'=> 'home']);
-}
-
-if (!preg_match('!^/collections(/([^/]+))?(/items)?$!', $_SERVER['PATH_INFO'], $matches)) {
-  FeaturesApi::output($f, ['error'=> 'no match']);
-}
-
-//echo 'matches='; print_r($matches);
-$collId = $matches[2] ?? null;
-$items = $matches[3] ?? null;
-
-$wfsOptions = ($proxy = config('proxy')) ? ['proxy'=> str_replace('http://', 'tcp://', $proxy)] : [];
-$shomWfs = new FeaturesApi('https://services.data.shom.fr/INSPIRE/wfs', $wfsOptions);
-
-if (!$collId) { // /collections
-  FeaturesApi::output($f, $shomWfs->collections(), 4);
-}
-elseif (!$items) { // /collections/{collId}
-  FeaturesApi::output($f, $shomWfs->collection($collId), 6);
-}
-else { // /collections/{collId}/items
-  FeaturesApi::output($f,
-    $shomWfs->items(
-      collId: $collId,
-      bbox: $_GET['bbox'] ?? [],
-      count: $_GET['count'] ?? 100,
-      startindex: $_GET['startindex'] ?? 0
-    ), 6
-  );
-}
 

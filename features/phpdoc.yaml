@@ -1,4 +1,4 @@
-title: geovect/features - Mise en oeuvre du protocole API Features pour accéder à différentes sources de données
+title: geovect/features - Accès à différentes sources de données en utilisant le protocole API Features
 path: /geovect/features
 doc: |
   Mise en oeuvre du protocole API Features pour accéder à différentes sources de données.
@@ -6,8 +6,8 @@ doc: |
     - un répertoire local ou distant contenant des fichiers GeoJSON ou GeoJSON adapté
     - un schéma PostGis contenant des tables défini par l'URI pgsql://{user}:{passwd}@{host}/{database}/{schema}
       exemple: pgsql://benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public
-    - une base MySql contenant des tables défini par l'URI mysql://{user}:{passwd}@{host}/{database}
-      exemple: mysql://bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500
+    - une base MySql contenant des tables définie par l'URI mysql://{user}:{passwd}@{host}/{database}
+      exemple: mysql://bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2020
     - un service WFS
       exemple: https://services.data.shom.fr/INSPIRE/wfs
   Un système de filtre/proxy permet de:
