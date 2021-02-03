@@ -20,13 +20,18 @@ use Symfony\Component\Yaml\Yaml;
 
 class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Features d'un serveur WFS
   protected WfsGeoJson $wfsServer;
+  protected string $prefix; // chaine filtrant $fTypeId
   
-  function __construct(string $serverUrl, ?DatasetDoc $datasetDoc, array $options=[]) {
-    // avec dans $options, evt un proxy
-    if ($pos = strpos($serverUrl, '?referer=')) {
-      $options['referer'] = substr($serverUrl, $pos+9);
-      $serverUrl = substr($serverUrl, 0, $pos);
+  function __construct(string $serverUrl, ?DatasetDoc $datasetDoc) {
+    $options = [];
+    while (preg_match('![?&](referer|proxy|prefix)=([^&]+)!', $serverUrl, $matches)) {
+      $options[$matches[1]] = $matches[2];
+      $serverUrl = preg_replace('![?&](referer|proxy|prefix)=([^&]+)!', '', $serverUrl, 1);
     }
+    //print_r($options);
+    //echo "url=$serverUrl\n";
+    $this->prefix = $options['prefix'] ?? '';
+    unset($options['prefix']);
     $this->wfsServer = new WfsGeoJson($serverUrl, $options);
     $this->datasetDoc = $datasetDoc;
   }
@@ -35,7 +40,7 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   private function collection_structuration(string $collUrl, string $collId, string $f): array {
     $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
     //$spatialExtentBboxes = (new CollOnSql($this->sqlSchema, $collId))->spatialExtentBboxes();
-    $spatialExtentBboxes = $this->wfsServer->featureTypeList()[$collId]['LonLatBoundingBox'];
+    $spatialExtentBboxes = $this->wfsServer->featureTypeList()[$this->prefix.$collId]['LonLatBoundingBox'];
     $temporalExtent = null;
     return [
       'id'=> $collId,
@@ -237,7 +242,11 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
     $selfurl = self::selfUrl();
     $colls = [];
     foreach ($this->wfsServer->featureTypeList() as $fTypeId => $fType) {
-      $colls[] = $this->collection_structuration("$selfurl/$fTypeId", $fTypeId, $f);
+      if (!$this->prefix || (substr($fTypeId, 0, strlen($this->prefix)) == $this->prefix)) {
+        if ($this->prefix)
+          $fTypeId = substr($fTypeId, strlen($this->prefix));
+        $colls[] = $this->collection_structuration("$selfurl/$fTypeId", $fTypeId, $f);
+      }
     }
     return [
       'links'=> [
@@ -280,7 +289,7 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   }
   
   function collDescribedBy(string $collId): array { // retourne la description du FeatureType de la collection
-    return $this->wfsServer->describeFeatureType($collId);
+    return $this->wfsServer->describeFeatureType($this->prefix.$collId);
   }
   
   // retourne les items de la collection comme array Php
@@ -288,7 +297,7 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
     $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
     $filters = []; // filtres sous la forme [{columnName} => {value}]
     $items = $this->wfsServer->getFeatureAsArray(
-      typename: $collId,
+      typename: $this->prefix.$collId,
       bbox: $bbox,
       count: $limit,
       startindex: $startindex
@@ -353,7 +362,7 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   
   // retourne l'item $id de la collection comme array Php
   function item(string $f, string $collId, string $featureId): array {
-    $item = $this->wfsServer->getFeatureById($collId, $featureId);
+    $item = $this->wfsServer->getFeatureById($this->prefix.$collId, $featureId);
     $item = json_decode($item, true);
     $item = $item['features'][0];
     return [

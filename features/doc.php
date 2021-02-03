@@ -11,6 +11,8 @@ doc: |
     - 'Erreur .properties.acces="Saisonnier" not in enum=["A péage","Libre"]'
 
 journal: |
+  3/2/2021:
+    - modif lien dataset -> specification par un pointeur JSON
   31/1/2021:
     restructuration de doc.yaml pour distinguer les jeux de données de leur spécification
   19/1/2021:
@@ -25,6 +27,18 @@ use Symfony\Component\Yaml\Exception\ParseException;
 use Michelf\MarkdownExtra;
 
 ini_set('memory_limit', '10G');
+
+
+class JsonPointer {
+  protected $ref; // lien
+  protected $cdir; // répertoire courant
+  
+  function __construct(string $ref, string $cdir) { $this->ref = $ref; $this->cdir = $cdir; }
+  
+  function __get(string $name) {
+    return isset($this->$name) ? $this->$name : null;
+  }
+};
 
 
 class PropertyDoc {
@@ -457,7 +471,7 @@ class DatasetDoc { // Doc d'un Dataset
   protected string $title;
   protected array $licence;
   protected string $path;
-  protected ?SpecDoc $conformsTo;
+  protected SpecDoc|JsonPointer|null $conformsTo;
   
   function schema() { /* Schema JSON: 
     dataset:
@@ -493,6 +507,18 @@ class DatasetDoc { // Doc d'un Dataset
     */
   }
   
+  static function deref(JsonPointer $jp): SpecDoc { // Déréférence le pointeur vers la spécification
+    if (!preg_match('!^([^#]+)#/specifications/([^/]+)$!', $jp->ref, $matches))
+      throw new Exception("Pointeur Json ".$jp->ref." incorrect");
+    $filepath = $matches[1];
+    $specid = $matches[2];
+    $subdoc = new Doc($filepath, $jp->cdir);
+    return $subdoc->specifications[$specid];
+  }
+  
+  /*function deref(): SpecDoc {
+  }*/
+    
   function __construct(string $id, array $yaml) {
     $this->id = $id;
     $this->title = $yaml['title'];
@@ -505,16 +531,30 @@ class DatasetDoc { // Doc d'un Dataset
     //echo "DatasetDoc::__get($name)\n";
     if (!in_array($name, ['collections','abstract']))
       return isset($this->$name) ? $this->$name : null;
-    else
-      return $this->conformsTo ? $this->conformsTo->$name : null;
+    elseif (!$this->conformsTo)
+      return null;
+    elseif (get_class($this->conformsTo)=='SpecDoc')
+      return $this->conformsTo->$name;
+    else { // JsonPointer
+      $this->conformsTo = self::deref($this->conformsTo);
+      return $this->conformsTo->$name;
+    }
   }
     
   function asArray(): array {
     $array = ['title'=> $this->title, 'path'=> $this->path];
     if ($this->licence)
       $array['licence'] = $this->licence;
-    if ($this->conformsTo)
-      $array['conformsTo'] = $this->conformsTo->asArray();
+    if ($this->conformsTo) {
+      if (get_class($this->conformsTo)=='SpecDoc') {
+        //echo '$this->conformsTo='; print_r($this->conformsTo);
+        $array['conformsTo'] = $this->conformsTo->asArray();
+      }
+      else {
+        $this->conformsTo = self::deref($this->conformsTo);
+        $array['conformsTo'] = $this->conformsTo->asArray();
+      }
+    }
     return $array;
   }
 };
@@ -554,17 +594,25 @@ class Doc { // Doc globale
       return [];
   }
   
-  function __construct() {
-    $yaml = Yaml::parseFile(self::PATH_YAML);
+  function __construct(string $path=self::PATH_YAML) {
+    $yaml = Yaml::parseFile($path);
     if (self::checkYamlConformity($yaml))
       throw new Exception("Erreur document Yaml non conforme");
-    foreach ($yaml['specifications'] as $id => $spec) {
+    foreach ($yaml['specifications'] ?? [] as $id => $spec) {
       $this->specifications[$id] = new SpecDoc($id, $spec);
     }
-    foreach ($yaml['datasets'] as $dsid => $dataset) {
+    foreach ($yaml['datasets'] ?? [] as $dsid => $dataset) {
       //echo "dataset=$dsid\n";
-      if ($specid = ($dataset['conformsTo'] ?? null))
-        $dataset['conformsTo'] = $this->specifications[$specid] ?? null;
+      if ($specPointer = ($dataset['conformsTo'] ?? null)) {
+        if (substr($specPointer['$ref'], 0, 1)=='#') {
+          $specid = substr($specPointer['$ref'], strlen('#/specifications/'));
+          //echo "specid=$specid\n";
+          $dataset['conformsTo'] = $this->specifications[$specid] ?? null;
+        }
+        else {
+          $dataset['conformsTo'] = new JsonPointer($specPointer['$ref'], dirname($path));
+        }
+      }
       //echo "  conformsTo=",$dataset['conformsTo'] ?? null,"\n";
       $this->datasets[$dsid] = new DatasetDoc($dsid, $dataset);
       //print_r($this->datasets[$dsid]);

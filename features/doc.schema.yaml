@@ -18,6 +18,10 @@ abstract: |
   
   Ajouter la possibilité d'indiquer qu'un attribut définit un géoréférencement indirect.
   Par exemple, le code Insee d'une commune ou une adresse, définit un tel géoréférencement
+
+  journal:
+    3/2/2021:
+      - modif lien dataset -> specification pour un pointeur JSON pour permettre d'éclater le fichier doc.yaml en plusieurs
 $id: http://feature.geoapi.fr/schema/doc
 $schema: http://json-schema.org/draft-06/schema#
 definitions:
@@ -266,11 +270,18 @@ definitions:
         type: string
         format: uri
       conformsTo:
-        description: identifiant de la spécification du jeu de données défini dans le dictionnaire specifications
-        type: string
+        description: |
+          pointeur JSON vers la spécification du jeu de données défini dans le dictionnaire specifications
+          soit du même document soit d'un autre document
+        type: object
+        additionalProperties: false
+        required: [$ref]
+        properties:
+          $ref:
+            type: string
 type: object
 additionalProperties: false
-required: [title, abstract, $schema, specifications, datasets]
+required: [title, abstract, $schema]
 properties:
   title:
     description: titre du document
