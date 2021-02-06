@@ -4,6 +4,7 @@ info:
     Accès à des données conformément à la norme [OGC API Features](http://docs.opengeospatial.org/is/17-069r3/17-069r3.html).
     Ce document est générique, il doit être configuré a minima avec les propriétés suivantes:
       servers/url: l'URL de la landingPage {landingPageUrl}
+      components/parameters/limit/schema/maximum
       info/licence: la licence si ce n'est pas la bonne
       info/title et info/description
     Il est aussi préférable de remplacer les propriétés suivantes par un path pour chaque collection:
@@ -53,14 +54,15 @@ components:
         minimum: 0
         type: integer
       style: form
-    limit: # le nbre maximum de features est limité à 1000 alors que le défaut du std est 10000
+    limit:
       name: limit
+      description: 'The optional limit parameter indicates the maximum number of items in the result set.'
       in: query
       required: false
       schema:
         type: integer
         minimum: 1
-        maximum: 1000
+        maximum: MAX_LIMIT # A remplacer par la valeur dépendant du driver
         default: 10
       style: form
       explode: false

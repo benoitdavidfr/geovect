@@ -38,10 +38,10 @@ journal: |
 require_once __DIR__.'/../vendor/autoload.php';
 use Symfony\Component\Yaml\Yaml;
 
-function display_json(array $enveloppe, array $tokens, array $iterable, string $fout='', ?callable $filter=null, int $flags=0): void {
+function display_json(array $enveloppe, array $tokens, Object $iterable, string $fout='', ?callable $filter=null, int $flags=0): void {
   if ($fout) {
     // utilisation d'un fichier temporaire dans lequel la sortie gzippée sera enregistrée
-    $tmpfname = tempnam(__DIR__, 'tmpfile');
+    $tmpfname = tempnam(__DIR__.'/tmp', 'tmpfile');
     $fout .= $tmpfname;
     $fout = fopen($fout, 'w');
   }
@@ -73,7 +73,7 @@ function display_json(array $enveloppe, array $tokens, array $iterable, string $
   }
 }
 
-function display_fmt(string $fmt, array $enveloppe, array $tokens, array $iterable, ?callable $filter=null): void {
+function display_fmt(string $fmt, array $enveloppe, array $tokens, Object $iterable, ?callable $filter=null): void {
   $yaml = Yaml::dump($enveloppe, 99, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
   //echo "$yaml--\n";
   $lines = explode("\n", $yaml);

@@ -28,7 +28,9 @@ doc: |
 */
 abstract class FeatureServer {
   const LOG_FILENAME = __DIR__.'/fts.log.yml'; // chemin du fichier Yaml de log, si vide alors pas de log
-  const LIMIT_MAX = 1000; // doit être identique au paramètre défini dans /api
+  const MAX_LIMIT = 1000; // valeur max de limit par défaut, redéfinie evt. par le driver
+                          // constante utilisée dans la définition de l'API et dans la vérification du paramètre
+
   protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données
   
   static function log(string|array $message): void { // écrit un message dans le fichier Yaml des logs
@@ -165,11 +167,16 @@ abstract class FeatureServer {
     ];
   }
 
-  function api(): array { // retourne la définition de l'API
+  function api(): array { // retourne la définition de l'API par défaut 
     $urlLandingPage = ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
           ."://$_SERVER[HTTP_HOST]".dirname($_SERVER['REQUEST_URI']);
     $apidef = Yaml::parse(@file_get_contents(__DIR__.'/apidef.yaml'));
+    
+    // définition de la LandingPage
     $apidef['servers'][0]['url'] = $urlLandingPage;
+
+    // intégration dans la déf. de l'API de la valeur max de limit
+    $apidef['components']['parameters']['limit']['schema']['maximum'] = self::MAX_LIMIT;
     return $apidef;
   }
   
@@ -217,8 +224,8 @@ abstract class FeatureServer {
       if (isset($_GET['limit'])) {
         if (!ctype_digit($_GET['limit']))
           error("Valeur '$_GET[limit]' non entière interdite pour le paramètre 'limit'", 400);
-        if (((int)$_GET['limit'] > self::LIMIT_MAX) || ((int)$_GET['limit'] < 1))
-          error("Valeur du paramètre 'limit'='$_GET[limit]' hors intervalle [1, ".self::LIMIT_MAX."]", 400);
+        if (((int)$_GET['limit'] > get_class($this)::MAX_LIMIT) || ((int)$_GET['limit'] < 1))
+          error("Valeur du paramètre 'limit'='$_GET[limit]' hors intervalle [1, ".get_class($this)::MAX_LIMIT."]", 400);
       }
       if (isset($_GET['startindex'])) {
         if (!ctype_digit($_GET['startindex']))
@@ -235,7 +242,7 @@ abstract class FeatureServer {
         error("Paramètre(s) ".implode(',', $adiff)." interdit(s) pour $path", 400);
     }
     else {
-      error("path $path non prévu dans ");
+      error("path $path non prévu dans FeatureServer::checkParams()");
     }
   }
   
@@ -254,13 +261,14 @@ abstract class FeatureServer {
 
   abstract function collDescribedBy(string $collId): array; // retourne le schéma d'un Feature de la collection
   
-  // retourne les items de la collection comme array Php
-  abstract function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array;
+  // retourne les items de la collection comme array Php, soit sous la forme itérable soit comme array
+  //abstract function itemsIterable(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array;
+  //abstract function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array;
   
   // retourne l'item $featureId de la collection comme array Php
   abstract function item(string $f, string $collId, string $featureId): array;
 };
 
-require_once __DIR__.'/ftsonwfs.inc.php';
-require_once __DIR__.'/ftsonfile.inc.php';
 require_once __DIR__.'/ftsonsql.inc.php';
+require_once __DIR__.'/ftsonwfs.inc.php';
+//require_once __DIR__.'/ftsonfile.inc.php';

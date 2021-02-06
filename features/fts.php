@@ -28,8 +28,10 @@ doc: |
     - 3'05" pour troncon_hydro R500 sur FX depuis Alwaysdata
     - 47' même données gzippées et !JSON_PRETTY_PRINT soit 1/4
 
+  Utilisation avec curl:
+    curl -X GET "https://features.geoapi.fr/ignf-route500/collections/aerodrome/items?f=json&limit=10&startindex=0" -H  "accept: application/geo+json"
+
   A faire (court-terme):
-    - gérer la réduction de l'empreinte mémoire dans items en Yaml
     - rajouter dans les liens au niveau de chaque collection,
       un lien {type: text/html, rel: canonical, title: information, href= ...}
       vers la doc quand il y a au moins soit une description, soit la définition de propriétés
@@ -384,16 +386,32 @@ try {
   }
   elseif (!$itemId) { // /collections/{collectionId}/items
     $fServer->checkParams("/$action/$collId/items");
-    outputIterable(
-      ($f == 'json' ? 'geojson' : $f),
-      $fServer->itemsIterable(
-        f: $f,
-        collId: $collId,
-        bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
-        limit: $_GET['limit'] ?? 10,
-        startindex: $_GET['startindex'] ?? 0
-      )
-    );
+    // dans ftsOnSql, le paramètre limit vaut au max 10000 et le résultat n'est pas construit en mémoire
+    if (in_array($type, ['mysql','pgsql'])) {
+      outputIterable(
+        ($f == 'json' ? 'geojson' : $f),
+        $fServer->itemsIterable(
+          f: $f,
+          collId: $collId,
+          bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
+          limit: $_GET['limit'] ?? 10,
+          startindex: $_GET['startindex'] ?? 0
+        )
+      );
+    }
+    // dans les autres drivers, le max de limit vaut 1000 et le résultat peut être construit en mémoire
+    else {
+      output(
+        ($f == 'json' ? 'geojson' : $f),
+        $fServer->items(
+          f: $f,
+          collId: $collId,
+          bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
+          limit: $_GET['limit'] ?? 10,
+          startindex: $_GET['startindex'] ?? 0
+        )
+      );
+    }
   }
   else { // /collections/{collectionId}/items/{featureId}
     $fServer->checkParams("/$action/{collectionId}/items/{featureId}");

@@ -156,6 +156,7 @@ class FeatureServerOnSql extends FeatureServer {
   // URI du schéma toolbox défini par l'OGC
   const OGC_SCHEMA_URI = 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml';
   const IDPKEY_NAME = '_idpkey'; // nom du champ ajouté pour s'assurer de disposer d'une clé primaire
+  const MAX_LIMIT = 10000; // valeur max de limit, dépend du driver
   
   //protected ?DatasetDoc $datasetDoc; // Doc éventuelle du jeu de données - déclaré dans la sur-classe
   protected string $path;
@@ -291,6 +292,9 @@ class FeatureServerOnSql extends FeatureServer {
     } catch (ParseException $exception) {
       throw new Exception ("Unable to parse apidef.yaml :".$exception->getMessage());
     }
+    // intégration dans la déf. de l'API de la valeur max de limit
+    $apidef['components']['parameters']['limit']['schema']['maximum'] = self::MAX_LIMIT;
+      
     $title = $this->datasetDoc->title ?? $this->path;
     $apidef['servers'][0] = [
       'description'=> "Service d'accès aux données \"$title\"",
@@ -1266,10 +1270,11 @@ links to support paging (link relation `next`).",
         // La valeur correspondante est par contre éventuellement fournie comme id du feature
         // Cela permet de ne pas modifier la sémantique avec les éventuelles adaptations effectuées pour s'assurer
         // de disposer d'une clé primaire
+        $fId = $tuple[$pkeyColName];
         unset($tuple[self::IDPKEY_NAME]);
         return [
           'type'=> 'Feature',
-          'id'=> $tuple[$pkeyColName],
+          'id'=> $fId,
           'properties'=> $tuple,
           'geometry'=> $geom,
         ];

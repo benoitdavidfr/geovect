@@ -400,4 +400,3 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
     ];
   }
 };
-

@@ -20,6 +20,7 @@ abstract class WfsServer {
   const LOG = __DIR__.'/wfsserver.log.yaml'; // nom du fichier de log ou false pour pas de log
   const CAP_CACHE = __DIR__.'/wfscapcache'; // nom du répertoire dans lequel sont stockés les fichiers XML
                                             // de capacités ainsi que les DescribeFeatureType en json
+  
   protected string $serverUrl; // URL du serveur
   protected array $options; // sous la forme ['option'=> valeur] avec option valant referer et/ou proxy
   
@@ -249,9 +250,6 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
   
   // retourne le résultat de la requête comme string GeoJSON
   function getFeature(string $typename, array $bbox=[], string $where='', int $count=100, int $startindex=0): string {
-    
-    //featureID=feature
-      
     $request = [
       'VERSION'=> '2.0.0',
       'REQUEST'=> 'GetFeature',
