@@ -14,11 +14,11 @@ doc: |
     - les classes *Doc contenant la documentation du jeu de données exposé
 
   A faire:
-    - réduire l'empreinte mémoire dans items
     - gérer correctement une explosion mémoire (?)
-    - implémenter HEAD ? OPTIONS ? (-> standard paragraphe 7.5)
 
 journal: |
+  6/2/20121:
+    - réduction de l'empreinte mémoire dans items en JSON par l'utilisation de display_json()
   31/1/2021:
     - restructuration de doc.yaml pour distinguer les jeux de données de leur spécification
     - Limitation du nbre d'objets retournés à 1000 (paramètre limit) alors que le défaut du standard est 10000
@@ -1130,6 +1130,149 @@ links to support paging (link relation `next`).",
         numberReturned:
           $ref: "#/components/schemas/numberReturned"
     */}
+  }
+  
+  // retourne les items de la collection comme FeatureCollection en array Php
+  function itemsIterable(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
+    $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
+    $jsonColNames = []; // liste des noms des colonnes de type JSON
+    $columns = []; // liste des noms des colonnes pour la requête Sql
+    $filters = []; // filtres sous la forme [{columnName} => {value}]
+    $collection = new CollOnSql($this->sqlSchema, $collId);
+    foreach ($collection->columns() as $column) {
+      if ($column->hasGeometryType()) {
+        if ($collection->geomCol() && ($column->name == $collection->geomCol()->name)) 
+          $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
+      }
+      elseif (!$properties || in_array($column->name, $properties)) {
+        $columns[] = $column->name;
+        if ($column->dataType == 'jsonb')
+          $jsonCols[] = $column->name;
+      }
+      // prise en compte d'un éventuel filtre
+      if (isset($_GET[$column->name]))
+        $filters[$column->name] = $_GET[$column->name];
+    }
+    $selectFrom = "select ".implode(',', $columns)."\nfrom ".$collection->table()->name;
+    $where = '';
+    if ($bbox) {
+      self::checkBbox($bbox);
+      $geomColName = $collection->geomCol()->name;
+      //$where = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
+      $polygonWkt = "POLYGON(($bbox[0] $bbox[1],$bbox[0] $bbox[3],$bbox[2] $bbox[3],$bbox[2] $bbox[1],$bbox[0] $bbox[1]))";
+      $where = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt'))\n";
+      // MySql exige que les SRID soient identiques
+      // j'ai choisi en MySql de charger les géométries en SRID 0 pour éviter l'impossibilité d'utiliser certaines fonctions
+    }
+    if ($filters) {
+      {/*Tests de mise en oeuvre de filtres:
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?insee_comm=2A163
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Préfecture
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Préfecture&bbox=1,42,2,43
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Préfecture+de+région
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Capitale+d'état
+      http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_ferre/items?nature=Changement+d'attribut
+      */}
+      foreach ($filters as $colName => $value) {
+        $value = str_replace("'","''", $value);
+        if (substr($value, -1)=='*')
+          $expr = "$colName like '".substr($value,0, strlen($value)-1)."%'";
+        else
+          $expr = "$colName='$value'";
+        $where .= ($where ? ' and ' : '').$expr;
+      }
+    }
+    $sql = "select count(*) count from ".$collection->table()->name.($where ? "\nwhere $where" : '');
+    $numberMatched = (int) Sql::getTuples($sql)[0]['count'];
+    $sql = $selectFrom
+      .($where ? "\nwhere $where" : '')
+      .($limit ? "\nlimit $limit": '')
+      .($startindex ? " offset $startindex" : '');
+    //echo "sql=$sql\n";
+    $selfurl = self::selfUrl()."?limit=$limit"
+        .($bbox ? "&bbox=".implode(',', $bbox) : '')
+        .($properties ? "&properties=".implode(',', $properties) : '');
+    foreach ($filters as $key => $val)
+      $selfurl .= "&$key=".urlencode($val);
+    $nexturl = $selfurl."&startindex=".($startindex+$limit);
+    $selfurl .= "&startindex=$startindex";
+    
+    $links = [
+      [
+        'href'=> $selfurl.($f<>'json' ? '&f=json' : ''),
+        'rel'=> ($f=='json') ? 'self' : 'alternate',
+        'type'=> 'application/geo+json',
+        'title'=> "this document in GeoJSON",
+      ],
+      [
+        'href'=> $selfurl.($f<>'html' ? '&f=html' : ''),
+        'rel'=> ($f=='html') ? 'self' : 'alternate',
+        'type'=> 'text/html',
+        'title'=> "this document in HTML",
+      ],
+      [
+        'href'=> $selfurl.($f<>'yaml' ? '&f=yaml' : ''),
+        'rel'=> ($f=='yaml') ? 'self' : 'alternate',
+        'type'=> 'application/x-yaml',
+        'title'=> "this document in Yaml",
+      ],
+    ];
+    if ($startindex + $limit < $numberMatched) {
+      $links[] = [
+        'href'=> $nexturl.($f<>'json' ? '&f=json' : ''),
+        'rel'=> 'next',
+        'type'=> 'application/geo+json',
+        'title'=> "next set of data in GeoJSON",
+      ];
+      $links[] = [
+        'href'=> $nexturl.($f<>'html' ? '&f=html' : ''),
+        'rel'=> 'next',
+        'type'=> 'text/html',
+        'title'=> "next set of data in Html",
+      ];
+      $links[] = [
+        'href'=> $nexturl.($f<>'yaml' ? '&f=yaml' : ''),
+        'rel'=> 'next',
+        'type'=> 'application/x-yaml',
+        'title'=> "next set of data in Yaml",
+      ];
+    }
+    $pkeyColName = $collection->pkeyCol()->name;
+    return [
+      'enveloppe'=> [
+        'type'=> 'FeatureCollection',
+        'features'=> 'JSON_ITERABLE',
+        'links'=> $links,
+        'timeStamp'=> date(DATE_ATOM),
+        'numberMatched'=> $numberMatched,
+        'numberReturned'=> 'NB_RETURNED',
+      ],
+      'tokens'=> ['iterable'=>'JSON_ITERABLE','nb_returned'=>'NB_RETURNED'], // les tokens
+      'iterable'=> Sql::query($sql, ['jsonColumns'=> $jsonColNames]),
+      'filter'=> function(array $tuple) use ($pkeyColName): array {
+        if (isset($tuple['st_asgeojson'])) {
+          $geom = json_decode($tuple['st_asgeojson'], true);
+          unset($tuple['st_asgeojson']);
+        }
+        else {
+          $geom = [
+            'type'=> 'GeometryCollection',
+            'geometries'=> [],
+          ];
+        }
+        // La colonne IDPKEY_NAME n'est pas intégrée dans les données en sortie
+        // La valeur correspondante est par contre éventuellement fournie comme id du feature
+        // Cela permet de ne pas modifier la sémantique avec les éventuelles adaptations effectuées pour s'assurer
+        // de disposer d'une clé primaire
+        unset($tuple[self::IDPKEY_NAME]);
+        return [
+          'type'=> 'Feature',
+          'id'=> $tuple[$pkeyColName],
+          'properties'=> $tuple,
+          'geometry'=> $geom,
+        ];
+      }
+    ];
   }
   
   // retourne l'item $id de la collection comme Feature en array Php
