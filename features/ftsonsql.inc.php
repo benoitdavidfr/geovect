@@ -18,7 +18,7 @@ doc: |
 
 journal: |
   6/2/20121:
-    - réduction de l'empreinte mémoire dans items en JSON par l'utilisation de display_json()
+    - réduction de l'empreinte mémoire dans items par l'utilisation de display_json() et display_fmt()
   31/1/2021:
     - restructuration de doc.yaml pour distinguer les jeux de données de leur spécification
     - Limitation du nbre d'objets retournés à 1000 (paramètre limit) alors que le défaut du standard est 10000
@@ -964,7 +964,8 @@ links to support paging (link relation `next`).",
     */}
   }
   
-  // retourne les items de la collection comme FeatureCollection en array Php
+  /* retourne les items de la collection comme FeatureCollection en array Php
+  // REMPLACEE par itemsIterable()
   function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
     $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
     $jsonColNames = []; // liste des noms des colonnes de type JSON
@@ -1004,7 +1005,7 @@ links to support paging (link relation `next`).",
       http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Préfecture+de+région
       http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Capitale+d'état
       http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_ferre/items?nature=Changement+d'attribut
-      */}
+      *//*}
       foreach ($filters as $colName => $value) {
         $value = str_replace("'","''", $value);
         if (substr($value, -1)=='*')
@@ -1129,10 +1130,11 @@ links to support paging (link relation `next`).",
           $ref: "#/components/schemas/numberMatched"
         numberReturned:
           $ref: "#/components/schemas/numberReturned"
-    */}
-  }
+    *//*}
+  }*/
   
   // retourne les items de la collection comme FeatureCollection en array Php
+  // Retourne un array ['enveloppe', 'tokens', 'iterable', 'filter']
   function itemsIterable(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
     $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
     $jsonColNames = []; // liste des noms des colonnes de type JSON

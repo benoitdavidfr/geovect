@@ -50,7 +50,7 @@ doc: |
     - étendre features aux autres OGC API ?
 journal: |
   6/2/20121:
-    - réduction de l'empreinte mémoire dans items en JSON par l'utilisation de display_json()
+    - réduction de l'empreinte mémoire dans items par l'utilisation de display_json() et display_fmt()
   27/1/2021:
     - détection des paramètres non prévus
     - test CITE ok pour /ignf-route500
@@ -165,7 +165,8 @@ function output(string $f, array $array, int $levels=3) {
   }
 }
 
-function outputIterable(string $f, $iterable, int $levels=3) {
+// affiche $iterable en GeoJSON, Html ou Yaml en fonction du paramètre $f
+function outputIterable(string $f, array $iterable) {
   switch ($f) {
     case 'geojson': {
       $flags = JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE;
@@ -173,8 +174,8 @@ function outputIterable(string $f, $iterable, int $levels=3) {
       header('Content-type: application/geo+json; charset="utf8"');
       $fout = '';
       if (in_array('gzip', explode(',', getallheaders()['Accept-Encoding'] ?? ''))) {
-        //header('Content-Encoding: gzip');
-        //$fout = 'compress.zlib://';
+        header('Content-Encoding: gzip');
+        $fout = 'compress.zlib://';
       }
       die (display_json(
         enveloppe: $iterable['enveloppe'],
@@ -183,6 +184,16 @@ function outputIterable(string $f, $iterable, int $levels=3) {
         fout: $fout,
         filter: $iterable['filter'] ?? null,
         flags: $flags
+      ));
+    }
+    case 'yaml': header('Content-type: text/plain; charset="utf8"');
+    case 'html': {
+      die(display_fmt(
+        fmt: $f,
+        enveloppe: $iterable['enveloppe'],
+        tokens: $iterable['tokens'],
+        iterable: $iterable['iterable'],
+        filter: $iterable['filter'] ?? null
       ));
     }
   }
@@ -372,34 +383,17 @@ try {
     $fServer->repairTable('createPrimaryKey', $collId);
   }
   elseif (!$itemId) { // /collections/{collectionId}/items
-    if ($f == 'json') {
-      $fServer->checkParams("/$action/$collId/items");
-      outputIterable(
-        ($f == 'json' ? 'geojson' : $f),
-        $fServer->itemsIterable(
-          f: $f,
-          collId: $collId,
-          bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
-          limit: $_GET['limit'] ?? 10,
-          startindex: $_GET['startindex'] ?? 0
-        ),
-        6
-      );
-    }
-    else {
-      $fServer->checkParams("/$action/$collId/items");
-      output(
-        ($f == 'json' ? 'geojson' : $f),
-        $fServer->items(
-          f: $f,
-          collId: $collId,
-          bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
-          limit: $_GET['limit'] ?? 10,
-          startindex: $_GET['startindex'] ?? 0
-        ),
-        6
-      );
-    }
+    $fServer->checkParams("/$action/$collId/items");
+    outputIterable(
+      ($f == 'json' ? 'geojson' : $f),
+      $fServer->itemsIterable(
+        f: $f,
+        collId: $collId,
+        bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
+        limit: $_GET['limit'] ?? 10,
+        startindex: $_GET['startindex'] ?? 0
+      )
+    );
   }
   else { // /collections/{collectionId}/items/{featureId}
     $fServer->checkParams("/$action/{collectionId}/items/{featureId}");
