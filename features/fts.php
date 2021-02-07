@@ -30,6 +30,8 @@ doc: |
 
   Utilisation avec curl:
     curl -X GET "https://features.geoapi.fr/ignf-route500/collections/aerodrome/items?f=json&limit=10&startindex=0" -H  "accept: application/geo+json"
+    curl -X GET "http://localhost/geovect/features/fts.php/ignf-route500/collections/aerodrome/items?f=json&limit=10&startindex=0" -H  "accept: application/geo+json"
+    curl -X GET "http://localhost/geovect/features/fts.php/route500it/collections/aerodrome/items?f=json&limit=10&startindex=0" -H  "accept: application/geo+json"
 
   A faire (court-terme):
     - rajouter dans les liens au niveau de chaque collection,
@@ -190,6 +192,7 @@ function outputIterable(string $f, array $iterable) {
     }
     case 'yaml': header('Content-type: text/plain; charset="utf8"');
     case 'html': {
+      echo "outputIterable\n";
       die(display_fmt(
         fmt: $f,
         enveloppe: $iterable['enveloppe'],
@@ -332,13 +335,13 @@ if (preg_match('!^/([^/]+)/?$!', $fserverId, $matches)) {
 }
 
 // identification du type de serveur et de son path
-if (!preg_match('!^/(wfs|pgsql|mysql|file)(/.*)$!', $fserverId, $matches)) {
+if (!preg_match('!^/(wfs|pgsql|mysql|mysqlIt|file)(/.*)$!', $fserverId, $matches)) {
   error("Erreur, type de serveur non détecté dans '$_SERVER[PATH_INFO]'", 400);
 }
 //echo 'matches3='; print_r($matches);
 $type = $matches[1];
 $path = $matches[2];
-$fServer = FeatureServer::new($type, $path, $datasetDoc);
+$fServer = FeatureServer::new($type, $path, $f, $datasetDoc);
 
 try {
   if (!$action) { // /
@@ -387,7 +390,7 @@ try {
   elseif (!$itemId) { // /collections/{collectionId}/items
     $fServer->checkParams("/$action/$collId/items");
     // dans ftsOnSql, le paramètre limit vaut au max 10000 et le résultat n'est pas construit en mémoire
-    if (in_array($type, ['mysql','pgsql'])) {
+    if (in_array($type, ['mysqlIt','pgsqlIt'])) {
       outputIterable(
         ($f == 'json' ? 'geojson' : $f),
         $fServer->itemsIterable(

@@ -968,7 +968,7 @@ links to support paging (link relation `next`).",
     */}
   }
   
-  /* retourne les items de la collection comme FeatureCollection en array Php
+  // retourne les items de la collection comme FeatureCollection en array Php
   // REMPLACEE par itemsIterable()
   function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
     $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
@@ -1009,7 +1009,7 @@ links to support paging (link relation `next`).",
       http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Préfecture+de+région
       http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_commune/items?statut=Capitale+d'état
       http://localhost/geovect/features/fts.php/ignf-route500/collections/noeud_ferre/items?nature=Changement+d'attribut
-      *//*}
+      */}
       foreach ($filters as $colName => $value) {
         $value = str_replace("'","''", $value);
         if (substr($value, -1)=='*')
@@ -1134,8 +1134,8 @@ links to support paging (link relation `next`).",
           $ref: "#/components/schemas/numberMatched"
         numberReturned:
           $ref: "#/components/schemas/numberReturned"
-    *//*}
-  }*/
+    */}
+  }
   
   // retourne les items de la collection comme FeatureCollection en array Php
   // Retourne un array ['enveloppe', 'tokens', 'iterable', 'filter']

@@ -55,10 +55,11 @@ abstract class FeatureServer {
   }
   
   // création d'un des différents types de FeatureServer
-  static function new(string $type, string $path, ?DatasetDoc $datasetDoc): self {
+  static function new(string $type, string $path, string $f, ?DatasetDoc $datasetDoc): self {
     switch($type) {
       case 'wfs': return new FeatureServerOnWfs("https:/$path", $datasetDoc);
       case 'file': return new FeatureServerOnFile($path, $datasetDoc);
+      case 'mysqlIt': $type = 'mysql';
       case 'mysql':
       case 'pgsql': return new FeatureServerOnSql("$type:/$path", $datasetDoc);
       default: output($f, ['error'=> "traitement $type non défini"]);

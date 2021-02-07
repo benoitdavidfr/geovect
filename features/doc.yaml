@@ -19,8 +19,18 @@ datasets:
     identifier: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2020-08-04.7z.001
     path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2020
     conformsTo:
-      #$ref: 'doc/r500.yaml#/specifications/ignf-route500v3'
-      $ref: '#/specifications/ignf-route500v3'
+      $ref: 'doc/r500.yaml#/specifications/ignf-route500v3'
+      #$ref: '#/specifications/ignf-route500v3'
+    licence:
+      href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
+      title: licence ouverte Etalab.
+  route500it:
+    title: ROUTE 500 2020 avec display_json
+    identifier: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2020-08-04.7z.001
+    path: /mysqlIt/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2020
+    conformsTo:
+      $ref: 'doc/r500.yaml#/specifications/ignf-route500v3'
+      #$ref: '#/specifications/ignf-route500v3'
     licence:
       href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
       title: licence ouverte Etalab.
