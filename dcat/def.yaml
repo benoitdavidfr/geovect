@@ -1,7 +1,11 @@
-title: boite à outils pour définir un catalogue DCATv2
+title: boite à outils pour définir et publier des catalogues DCATv2
 description: |
+  Dans le cadre de sa politique de gestion des données le pôle ministériel des ministères chargés de l'écologie,
+  des territoires et de la mer donne accès à l'information qu'il gère au travers d'un réseau
+  de catalogues conformes au [standard DCATv2](https://www.w3.org/TR/vocab-dcat-2/).
+  
   Le présent document a pour objectif d'une part de spécifier des documents décrivant un catalogue DCATv2
-  et d'autre part, fournit des éléments pour convertir un tel document en JSON-LD.
+  et d'autre part, de fournir des éléments pour convertir un tel document en JSON-LD.
   Enfin, ce document définit son propre schéma.
 $schema:
   title: Schema JSON du présent document
@@ -59,7 +63,11 @@ catalogSchema:
       - les liens internes à un document ou entre documents de ce projet (Catalog -> Dataset, Catalog -> DataService,
         Catalog -> Catalog, Distribution -> DataService et DataService -> Dataset) sont représentés par des pointeurs JSON ;
         ils seront transformés lors de la conversion en JSON-LD en références internes.
-        Cela permet que ce document ne dépende pas du site sur lequel il est diffusé.
+        Cela permet que ce document ne dépende pas du site sur lequel il est diffusé ;
+      - le nom d'une propriété est normalement le nom de la spec DCATv2 sans le préfixe pour simplifier leur utilisation.
+        Par contre, quand la propriété correspond à un texte libre, son nom est suffixé par le caractère '@'
+        suivi de la langue dans laquelle le texte est rédigé, codée conformément à ISO 639-1 (alpha-2).
+        A priori les langues sont limitées à 'fr' et 'en'.
     Questions à clarifier:
       - dct:language est indiqué comme langue des MD alors que les MD sont en RDF et donc la langue est décrite ;
         il serait plus logique que ce soit la langue de la ressource définie par les MD
@@ -125,6 +133,18 @@ catalogSchema:
         note@fr:
           description: skos:note en français
           type: string
+        note@en:
+          description: skos:note en anglais
+          type: string
+        sameAs:
+          description: owl:sameAs
+          oneOf:
+            - type: string
+              format: uri
+            - type: array
+              items:
+                type: string
+                format: uri
     Standard:
       description: Description d'une spécification d'un jeu de données (dct:Standard)
       type: object
@@ -210,12 +230,22 @@ catalogSchema:
           type: array
           items:
             $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
+        keyword@fr:
+          description: A keyword or tag in French describing the resource (dcat:keyword -> rdfs:Literal)
+          type: array
+          items:
+            type: string
+        keyword@en:
+          description: A keyword or tag in English describing the resource (dcat:keyword -> rdfs:Literal)
+          type: array
+          items:
+            type: string
         conformsTo:
           description: |
             Une spécification à laquelle le jeu de données se conforme (dct:conformsTo -> dct:Standard)
             Peut être utilisé pour un document de spécification, un règlement, un systèmes de référence
             de coordonnées (CRS), ...
-          $ref: '#/catalogSchema/definitions/UriOrSetOfUri'
+          $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
         license:
           description: |
             document juridique définissant les conditions dans lesquelles le jeu de données est mis à disposition.
@@ -324,6 +354,16 @@ catalogSchema:
           type: array
           items:
             $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
+        keyword@fr:
+          description: A keyword or tag in French describing the resource (dcat:keyword -> rdfs:Literal)
+          type: array
+          items:
+            type: string
+        keyword@en:
+          description: A keyword or tag in English describing the resource (dcat:keyword -> rdfs:Literal)
+          type: array
+          items:
+            type: string
         conformsTo:
           description:
             An established standard to which the described resource conforms. (dct:conformsTo)
@@ -343,7 +383,10 @@ catalogSchema:
         endpointURL:
           description: |
             The root location or primary endpoint of the service (a Web-resolvable IRI). (dcat:endpointURL)
-          type: string
+            La référence vers un autre catalogue est exprimée par un pointeur JSON.
+          oneOf:
+            - type: string
+            - $ref: '#/catalogSchema/definitions/JsonPointer'
         endpointDescription:
           description: |
             A description of the services available via the end-points, including their operations, parameters etc.
@@ -408,6 +451,16 @@ catalogSchema:
           items:
             $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
         # Propriétés spécifiques à dcat:Dataset
+        keyword@fr:
+          description: A keyword or tag in French describing the resource (dcat:keyword -> rdfs:Literal)
+          type: array
+          items:
+            type: string
+        keyword@en:
+          description: A keyword or tag in English describing the resource (dcat:keyword -> rdfs:Literal)
+          type: array
+          items:
+            type: string
         distribution:
           description: liste des distributions
           type: object
@@ -434,19 +487,41 @@ catalogSchema:
     title@fr:
       description: titre du catalogue DCAT
       type: string
+    identifier:
+      type: string
     description@fr:
       description: commentaire associé au catalogue
       type: string
     $schema:
       description: chemin référencant le présent schéma JSON
       type: string
-    identifier:
+    language:
+      description: |
+        Langue utilisée pour les métadonnées (dct:language -> dct:LinguisticSystem).
+        DCAT-AP exige d'utiliser le vocabulaire http://publications.europa.eu/resource/authority/language
+        Dans ce schéma on utilise les langues ISO 639-1 (alpha-2).
+        Une ou plusieurs langues peuvent être définies.
+      oneOf:
+        - type: string
+          enum: [fr, en]
+        - type: array
+          items:
+            type: string
+            enum: [fr, en]
+    creator:
+      description: L'entité responsable de la production du jeu de données (dct:creator -> foaf:Agent)
+      $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
+    publisher:
+      description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
+      $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
+    landingPage:
+      description: |
+        dcat:landingPage -> foaf:Document
+        A Web page that can be navigated to in a Web browser to gain access to the catalog, a dataset, its distributions
+        and/or additional information.
       type: string
     homepage:
       description: page d'accueil du catalogue (foaf:homepage -> foaf:Document)
-      type: string
-    publisher:
-      description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
       type: string
     themeTaxonomy:
       description: |
@@ -493,21 +568,21 @@ catalogSchema:
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-zA-Z0-9_/.]+$:
+        ^[-a-zA-Zàçéêèîôù0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/Catalog'
     dataset:
       description: liste des jeux de données (dcat:Dataset) chacun identifié par un identifiant
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-zA-Z0-9_/.]+$:
+        ^[-a-zA-Zàçéêèîôù0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/Dataset'
     service:
       description: liste des services de données (dcat:DataService) chacun identifié par un identifiant
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-zA-Z0-9_/.]+$:
+        ^[-a-zA-Zàçéêèîôù0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/DataService'
 namespaces:
   dc: http://purl.org/dc/elements/1.1/

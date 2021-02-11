@@ -1,0 +1,72 @@
+title@fr: catalogue des organismes régionaux
+description@fr: |
+  Le présent document définit le catalogue DCAT des organismes régionaux de geocat.fr
+  C'est un test d'utilisation du schéma def.yaml#/catalogSchema et plus globalement de la démarche de création et publication
+  de catalogues DCAT.
+$schema: def.yaml#/catalogSchema
+themeTaxonomy: {identifier: http://publications.europa.eu/resource/dataset/eurovoc, title: EuroVoc}
+creator:
+  - $ref: '#/agent/PMEcologieTerritoireMer'
+
+agent:
+  DrealNormandie:
+    a: foaf:Organization
+    prefLabel@fr: Dreal Normandie
+    identifier: http://www.normandie.developpement-durable.gouv.fr/
+  DrealOccitanie:
+    a: foaf:Organization
+    prefLabel@fr: Dreal Occitanie
+    identifier: http://www.occitanie.developpement-durable.gouv.fr/
+  PrefOccitanie:
+    a: foaf:Organization
+    prefLabel@fr: Préfecture Occitanie
+    identifier: https://www.prefectures-regions.gouv.fr/occitanie/
+  
+catalog:
+  DrealNormandie:
+    title@fr: Catalogue des données géographiques de la Dreal Normandie
+    creator:
+      - $ref: '#/agent/DrealNormandie'
+    landingPage: http://www.normandie.developpement-durable.gouv.fr/donnees-geographiques-r278.html
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de la Dreal Normandie
+        accessService:
+          $ref: '#/service/DrealNormandieCsw'
+  PictoOccitanie:
+    title@fr: Portail inter-ministériel cartographique Picto-Occitanie
+    creator:
+      - $ref: '#/agent/DrealOccitanie'
+    publisher:
+      - $ref: '#/agent/PrefOccitanie'
+    landingPage: https://www.picto-occitanie.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de PictoOccitanie
+        accessService:
+          $ref: '#/service/PictoOccitanieCsw'
+  
+service:
+  DrealNormandieCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de la Dreal Normandie
+    creator:
+      $ref: '#/agent/DrealNormandie'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/DrealNormandie'
+    endpointURL: http://metadata.carmencarto.fr/geonetwork/8/fre/csw
+    endpointDescription: http://metadata.carmencarto.fr/geonetwork/8/fre/csw?service=CSW&request=GetCapabilities
+  PictoOccitanieCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de PictoOccitanie
+    creator:
+      $ref: '#/agent/DrealOccitanie'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/PictoOccitanie'
+    endpointURL: https://www.picto-occitanie.fr/geonetwork/srv/fre/csw
+    endpointDescription: https://www.picto-occitanie.fr/geonetwork/srv/fre/csw?service=CSW&request=GetCapabilities
+
