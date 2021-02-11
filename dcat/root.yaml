@@ -1,12 +1,27 @@
 title@fr: catalogue racine de /geovect/dcat publié sur https://geocat.fr
 description@fr: |
   Le présent document définit le catalogue DCAT racine de geocat.fr
+  C'est un test d'utilisation du schéma def.yaml#/catalogSchema
 $schema: def.yaml#/catalogSchema
+themeTaxonomy: {identifier: http://publications.europa.eu/resource/dataset/eurovoc, title: EuroVoc}
+
 agent:
   Ifremer:
     a: foaf:Organization
-    prefLabel: Institut français de recherche pour l'exploitation de la mer
+    prefLabel@fr: Institut français de recherche pour l'exploitation de la mer
     identifier: https://wwz.ifremer.fr/
+  CGDD:
+    a: foaf:Organization
+    prefLabel@fr: Commissariat Général au Développement Durable (CGDD)
+    identifier: https://lannuaire.service-public.fr/gouvernement/administration-centrale-ou-ministere_172120
+  DGALN:
+    a: foaf:Organization
+    prefLabel@fr: Direction générale de l'aménagement, du logement et de la nature (DGALN)
+    identifier: https://lannuaire.service-public.fr/gouvernement/administration-centrale-ou-ministere_172160
+  ofb:
+    a: foaf:Organization
+    prefLabel@fr: Office français de la biodiversité (OFB)
+    identifier: https://ofb.gouv.fr/
     
 catalog:
   featuresgeoapifr:
@@ -26,7 +41,8 @@ catalog:
   Sextant:
     title@fr: Sextant - Infrastructure de données géographiques marines et littorales
     language: [fr,en]
-    creator: '#/agent/Ifremer'
+    creator:
+      - $ref: '#/agent/Ifremer'
     theme:
       - {identifier: http://eurovoc.europa.eu/6404, label: écosystème marin}
     description@fr: |
@@ -41,12 +57,54 @@ catalog:
         title@fr: Service CSW de Sextant
         accessService:
           $ref: '#/service/SextantCsw'
+  EauFrance:
+    title@fr: Catalogue des informations publiques sur l'eau en France
+    creator:
+      - $ref: '#/agent/ofb'
+    landingPage: http://www.data.eaufrance.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de EauFrance
+        accessService:
+          $ref: '#/service/EauFranceCsw'
+
+dataset:
+  GeoLittoral:
+    title@fr: Géolittoral - portail des données sur la mer et le littoral du Ministère en charge de l’environnement et de la mer
+    language: fr
+    description@fr: |
+      Géolittoral diffuse notamment les données géographiques produites dans le cadre de l’accomplissement des politiques
+      publiques portées par le Ministère et a vocation à couvrir la totalité des espaces maritimes et littoraux français.
+      Il met également à disposition des informations et des documents de nature à expliciter ces politiques et leur mise
+      en œuvre.
+    creator:
+      - $ref: '#/agent/DGALN'
+      - $ref: '#/agent/CGDD'
+    theme:
+      - {identifier: http://eurovoc.europa.eu/3142, label: protection du littoral}
+    landingPage: http://www.geolittoral.developpement-durable.gouv.fr/
+    distribution:
+      serviceWfs:
+        title@fr: Service WFS de Géolittoral
+        accessService:
+          $ref: '#/service/GeoLittoralWfs'
+      serviceWms:
+        title@fr: Service WMS de Géolittoral
+        accessService:
+          $ref: '#/service/GeoLittoralWms'
+  zonesHumidesAfb:
+    title@fr: Données d’observation et restauration sur les zones humides
+    creator:
+      - $ref: '#/agent/ofb'
+    landingPage: http://www.zones-humides.org/entre-terre-et-eau/ou-les-trouve-t-on/les-inventaires-de-zones-humides
+
 service:
   SextantCsw:
     type:
       - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
     title@fr: Service CSW de Sextant
-    creator: '#/agent/Ifremer'
+    creator:
+      $ref: '#/agent/Ifremer'
     conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
     theme:
       - {identifier: http://eurovoc.europa.eu/3142, label: protection du littoral}
@@ -54,3 +112,43 @@ service:
       - $ref: '#/catalog/Sextant'
     endpointURL: https://sextant.ifremer.fr/geonetwork/srv/eng/csw
     endpointDescription: https://sextant.ifremer.fr/geonetwork/srv/eng/csw?service=CSW&request=GetCapabilities
+  EauFranceCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de EauFrance
+    creator:
+      - $ref: '#/agent/ofb'
+    theme:
+      - {identifier: http://eurovoc.europa.eu/2470, label: politique de l'environnement}
+    servesDataset:
+      - $ref: '#/catalog/EauFrance'
+    endpointURL: http://www.data.eaufrance.fr/geosource/srv/fre/csw
+    endpointDescription: http://www.data.eaufrance.fr/geosource/srv/fre/csw?service=CSW&request=GetCapabilities
+  GeoLittoralWms:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/view
+    title@fr: Service WMS de Géolittoral
+    language: fr
+    creator:
+      - $ref: '#/agent/DGALN'
+      - $ref: '#/agent/CGDD'
+    theme:
+      - {identifier: http://eurovoc.europa.eu/3142, label: protection du littoral}
+    servesDataset:
+      - $ref: '#/dataset/GeoLittoral'
+    endpointURL: http://geolittoral.din.developpement-durable.gouv.fr/wxs
+    endpointDescription: http://geolittoral.din.developpement-durable.gouv.fr/wxs?SERVICE=WMS&REQUEST=GetCapabilities
+  GeoLittoralWfs:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/download
+    title@fr: Service WFS de Géolittoral
+    language: fr
+    creator:
+      - $ref: '#/agent/DGALN'
+      - $ref: '#/agent/CGDD'
+    theme:
+      - {identifier: http://eurovoc.europa.eu/3142, label: protection du littoral}
+    servesDataset:
+      - $ref: '#/dataset/GeoLittoral'
+    endpointURL: http://geolittoral.din.developpement-durable.gouv.fr/wxs
+    endpointDescription: http://geolittoral.din.developpement-durable.gouv.fr/wxs?REQUEST=SERVICE=WFS&GetCapabilities

@@ -56,9 +56,10 @@ catalogSchema:
         - la description des jeux de données et services définis dans le catalogue
         - quelques MD des catalogues référencés dans le catalogue, ces catalogues référencés doivent être décrits
           dans un document séparé ;
-      - les liens internes à un document (Catalog -> Dataset, Catalog -> DataService, Catalog -> Catalog,
-        Distribution -> DataService et DataService -> Dataset) sont représentés par des pointeurs JSON ;
+      - les liens internes à un document ou entre documents de ce projet (Catalog -> Dataset, Catalog -> DataService,
+        Catalog -> Catalog, Distribution -> DataService et DataService -> Dataset) sont représentés par des pointeurs JSON ;
         ils seront transformés lors de la conversion en JSON-LD en références internes.
+        Cela permet que ce document ne dépende pas du site sur lequel il est diffusé.
     Questions à clarifier:
       - dct:language est indiqué comme langue des MD alors que les MD sont en RDF et donc la langue est décrite ;
         il serait plus logique que ce soit la langue de la ressource définie par les MD
@@ -66,7 +67,7 @@ catalogSchema:
   $schema: http://json-schema.org/draft-06/schema#
   definitions:
     JsonPointer:
-      description: Pointeur JSON (RFC 6901)
+      description: Pointeur JSON (RFC 6901) représenté comme objet ayant une proprité ref
       type: object
       required: [$ref]
       properties:
@@ -92,23 +93,37 @@ catalogSchema:
             title:
               description: étiquette associée
               type: string
+    UriOrJsonPointerOrSet:
+      description: URI ou pointeur JSON ou ensemble
+      oneOf:
+        - {type: string, format: uri}
+        - $ref: '#/catalogSchema/definitions/JsonPointer'
+        - type: array
+          items:
+            oneOf:
+              - {type: string, format: uri}
+              - $ref: '#/catalogSchema/definitions/JsonPointer'
     Agent:
       description: |
         Description d'un agent Foaf (foaf:Agent)
         Une autre possibilité serait de limiter la classe aux organisations (foaf:Organization)
       type: object
       additionalProperties: false
-      required: [prefLabel, identifier]
+      required: [identifier]
       properties:
         a:
           description: précise la classe qui est une sous-classe de foaf:Agent
           type: string
-        prefLabel:
+        prefLabel@fr:
+          description: étiquette en français
+          type: string
+        prefLabel@en:
+          description: étiquette en anglais
           type: string
         identifier:
           type: string
-        note:
-          description: skos:note
+        note@fr:
+          description: skos:note en français
           type: string
     Standard:
       description: Description d'une spécification d'un jeu de données (dct:Standard)
@@ -163,12 +178,25 @@ catalogSchema:
           type: string
         description@en:
           type: string
+        language:
+          description: |
+            Langue utilisée pour les métadonnées (dct:language -> dct:LinguisticSystem).
+            DCAT-AP exige d'utiliser le vocabulaire http://publications.europa.eu/resource/authority/language
+            Dans ce schéma on utilise les langues ISO 639-1 (alpha-2).
+            Une ou plusieurs langues peuvent être définies.
+          oneOf:
+            - type: string
+              enum: [fr, en]
+            - type: array
+              items:
+                type: string
+                enum: [fr, en]
         creator:
           description: L'entité responsable de la production du jeu de données (dct:creator -> foaf:Agent)
-          type: string
+          $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
         publisher:
           description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
-          type: string
+          $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
         landingPage:
           description: |
             dcat:landingPage -> foaf:Document
@@ -187,7 +215,7 @@ catalogSchema:
             Une spécification à laquelle le jeu de données se conforme (dct:conformsTo -> dct:Standard)
             Peut être utilisé pour un document de spécification, un règlement, un systèmes de référence
             de coordonnées (CRS), ...
-          type: string
+          $ref: '#/catalogSchema/definitions/UriOrSetOfUri'
         license:
           description: |
             document juridique définissant les conditions dans lesquelles le jeu de données est mis à disposition.
@@ -264,12 +292,25 @@ catalogSchema:
           type: string
         description@en:
           type: string
+        language:
+          description: |
+            Langue utilisée pour les métadonnées (dct:language -> dct:LinguisticSystem).
+            DCAT-AP exige d'utiliser le vocabulaire http://publications.europa.eu/resource/authority/language
+            Dans ce schéma on utilise les langues ISO 639-1 (alpha-2).
+            Une ou plusieurs langues peuvent être définies.
+          oneOf:
+            - type: string
+              enum: [fr, en]
+            - type: array
+              items:
+                type: string
+                enum: [fr, en]
         creator:
           description: L'entité responsable de la production du jeu de données (dct:creator -> foaf:Agent)
-          type: string
+          $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
         publisher:
           description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
-          type: string
+          $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
         landingPage:
           description: |
             dcat:landingPage -> foaf:Document
@@ -334,12 +375,25 @@ catalogSchema:
           type: string
         description@en:
           type: string
+        language:
+          description: |
+            Langue utilisée pour les métadonnées (dct:language -> dct:LinguisticSystem).
+            DCAT-AP exige d'utiliser le vocabulaire http://publications.europa.eu/resource/authority/language
+            Dans ce schéma on utilise les langues ISO 639-1 (alpha-2).
+            Une ou plusieurs langues peuvent être définies.
+          oneOf:
+            - type: string
+              enum: [fr, en]
+            - type: array
+              items:
+                type: string
+                enum: [fr, en]
         creator:
           description: L'entité responsable de la production du jeu de données (dct:creator -> foaf:Agent)
-          type: string
+          $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
         publisher:
           description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
-          type: string
+          $ref: '#/catalogSchema/definitions/UriOrJsonPointerOrSet'
         landingPage:
           description: |
             dcat:landingPage -> foaf:Document
@@ -368,19 +422,6 @@ catalogSchema:
         homepage:
           description: page d'accueil du catalogue (foaf:homepage -> foaf:Document)
           type: string
-        language:
-          description: |
-            Langue utilisée pour les métadonnées (dct:language -> dct:LinguisticSystem).
-            DCAT-AP exige d'utiliser le vocabulaire http://publications.europa.eu/resource/authority/language
-            Dans ce schéma on utilise les langues ISO 639-1 (alpha-2).
-            Une ou plusieurs langues peuvent être définies.
-          oneOf:
-            - type: string
-              enum: [fr, en]
-            - type: array
-              items:
-                type: string
-                enum: [fr, en]
         themeTaxonomy:
           description: |
             le thésaurus (dcat:themeTaxonomy -> rdfs:Resource) utilisé pour indexer les ressources défini par son URI
