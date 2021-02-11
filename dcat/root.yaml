@@ -47,8 +47,10 @@ service:
       - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
     title@fr: Service CSW de Sextant
     creator: '#/agent/Ifremer'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
     theme:
       - {identifier: http://eurovoc.europa.eu/3142, label: protection du littoral}
     servesDataset:
       - $ref: '#/catalog/Sextant'
-    endpointURL: https://sextant.ifremer.fr/geonetwork/srv/eng/csw?service=CSW&request=GetCapabilities
+    endpointURL: https://sextant.ifremer.fr/geonetwork/srv/eng/csw
+    endpointDescription: https://sextant.ifremer.fr/geonetwork/srv/eng/csw?service=CSW&request=GetCapabilities

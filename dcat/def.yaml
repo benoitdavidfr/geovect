@@ -59,6 +59,9 @@ catalogSchema:
       - les liens internes à un document (Catalog -> Dataset, Catalog -> DataService, Catalog -> Catalog,
         Distribution -> DataService et DataService -> Dataset) sont représentés par des pointeurs JSON ;
         ils seront transformés lors de la conversion en JSON-LD en références internes.
+    Questions à clarifier:
+      - dct:language est indiqué comme langue des MD alors que les MD sont en RDF et donc la langue est décrite ;
+        il serait plus logique que ce soit la langue de la ressource définie par les MD
   $id: http://schema.geocat.fr/catalog
   $schema: http://json-schema.org/draft-06/schema#
   definitions:
