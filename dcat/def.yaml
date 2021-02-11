@@ -1,0 +1,397 @@
+title: boite à outils pour définir un catalogue DCATv2
+description: |
+  Le présent document a pour objectif d'une part de spécifier des documents décrivant un catalogue DCATv2
+  et d'autre part, fournit des éléments pour convertir un tel document en JSON-LD.
+  Enfin, ce document définit son propre schéma.
+$schema:
+  title: Schema JSON du présent document
+  description: |
+    La propriété namespaces du document liste les espaces de noms utilisés et associe à chacun un prefixe.
+    La propriété context du document définit pour chaque classe ses propriétés, notamment la correspondance
+    avec un URI dans la logique de publication du catalogue en JSON-LD.
+  $id: http://schema.geocat.fr/def
+  $schema: http://json-schema.org/draft-06/schema#
+  type: object
+  additionalProperties: false
+  required: [title, description, $schema, catalogSchema, namespaces, context]
+  properties:
+    title:
+      description: titre du présent document
+      type: string
+    description:
+      description: commentaire associé au document
+      type: string
+    $schema:
+      description: schéma JSON du document
+      $ref: http://json-schema.org/schema#
+    catalogSchema:
+      description: schéma JSON des documents décrivant un catalogue DCAT
+      $ref: http://json-schema.org/schema#
+    namespaces:
+      description: dictionnaire des espaces de noms
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-zA-Z0-9_]+$:
+          type: string
+    context:
+      description: dictionnaire définissant les propriétés par classe
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-zA-Z0-9_]+$:
+          description: dictionnaire des propriétés de la classe
+          type: object
+          additionalProperties: false
+          patternProperties:
+            ^[-a-zA-Z0-9_]+$:
+              description: URI de la propriété
+              type: string
+catalogSchema:
+  title: Schema JSON d'un catalogue de données conforme au modèle de données DCAT v2
+  description: |
+    Un certain nombre de choix de conception sont effectués au travers de ce schéma:
+      - un document représentant un catalogue contient:
+        - la description du catalogue
+        - la description des jeux de données et services définis dans le catalogue
+        - quelques MD des catalogues référencés dans le catalogue, ces catalogues référencés doivent être décrits
+          dans un document séparé ;
+      - les liens internes à un document (Catalog -> Dataset, Catalog -> DataService, Catalog -> Catalog,
+        Distribution -> DataService et DataService -> Dataset) sont représentés par des pointeurs JSON ;
+        ils seront transformés lors de la conversion en JSON-LD en références internes.
+  $id: http://schema.geocat.fr/catalog
+  $schema: http://json-schema.org/draft-06/schema#
+  definitions:
+    JsonPointer:
+      description: Pointeur JSON (RFC 6901)
+      type: object
+      required: [$ref]
+      properties:
+        $ref:
+          type: string
+          format: json-pointer
+    UriOrLabelledUri:
+      description: certains URI sont peu explicites, cet objet permet de leur associer une étiquette ou un titre
+      oneOf:
+        - type: string
+          format: uri
+        - type: object
+          additionalProperties: false
+          required: [identifier]
+          properties:
+            identifier:
+              description: URI du concept
+              type: string
+              format: uri
+            label:
+              description: étiquette associée
+              type: string
+            title:
+              description: étiquette associée
+              type: string
+    Agent:
+      description: |
+        Description d'un agent Foaf (foaf:Agent)
+        Une autre possibilité serait de limiter la classe aux organisations (foaf:Organization)
+      type: object
+      additionalProperties: false
+      required: [prefLabel, identifier]
+      properties:
+        a:
+          description: précise la classe qui est une sous-classe de foaf:Agent
+          type: string
+        prefLabel:
+          type: string
+        identifier:
+          type: string
+        note:
+          description: skos:note
+          type: string
+    Standard:
+      description: Description d'une spécification d'un jeu de données (dct:Standard)
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title:
+          type: string
+        identifier:
+          type: string
+        availableAt:
+          type: string
+        description:
+          type: string
+        abstract:
+          type: string
+        issued:
+          description : date de la publication (dct:issued) conforme à ISO 8601
+          type: string
+        publisher:
+          description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
+          type: string
+        metadata:
+          description: référence à des métadonnées des données, par exemple en ISO 19115/19139
+          type: string
+        spatialResolutionInMeters:
+          description: (dcat:spatialResolutionInMeters)
+          type: number
+    Dataset:
+      description: Description (dcat:Dataset) d'un jeu de données
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        title:
+          description: titre en français
+          type: string
+        title@en:
+          description: titre en anglais
+          type: string
+        identifier:
+          type: string
+        type:
+          description: dct:type
+          type: string
+        description:
+          type: string
+        creator:
+          description: L'entité responsable de la production du jeu de données (dct:creator -> foaf:Agent)
+          type: string
+        conformsTo:
+          description: |
+            Une spécification à laquelle le jeu de données se conforme (dct:conformsTo -> dct:Standard)
+            Peut être utilisé pour un document de spécification, un règlement, un systèmes de référence
+            de coordonnées (CRS), ...
+          type: string
+        license:
+          description: |
+            document juridique définissant les conditions dans lesquelles le jeu de données est mis à disposition.
+            (dct:license -> dct:LicenseDocument)
+          type: string
+        rights:
+          description: |
+            Une déclaration qui concerne tous les droits non traités avec dct:license ou dct:accessRights,
+            tels que les déclarations de copyright.
+            (dct:rights -> dct:RightsStatement)
+          type: string
+        hasPart:
+          description: pour une série de données, liste des jeux contenus définis par des pointeurs JSON (dct:hasPart)
+          type: array
+          items:
+            $ref: '#/catalogSchema/definitions/JsonPointer'
+        isPartOf:
+          description: pour un jeu de données, la série de données contenante définie par un pointeur JSON (dct:isPartOf)
+          $ref: '#/catalogSchema/definitions/JsonPointer'
+        distribution:
+          description: liste des distributions
+          type: object
+          additionalProperties: false
+          patternProperties:
+            ^[-a-zA-Z0-9_]+$:
+              $ref: '#/catalogSchema/definitions/Distribution'
+    Distribution:
+      description: Description (dcat:Distribution) d'une distribution d'un jeu de données
+      oneOf:
+        - description: Description comme DataService
+          type: object
+          additionalProperties: false
+          required: [accessService]
+          properties:
+            accessService:
+              description: pointeur JSON référençant le service exposant le jeu de données
+              $ref: '#/catalogSchema/definitions/JsonPointer'
+        - description: Description comme téléchargement
+          type: object
+          additionalProperties: false
+          required: [downloadUrl]
+          properties:
+            downloadUrl:
+              description: URL de téléchargement
+              type: string
+            mediaType:
+              description: type MIME
+              type: string
+              enum:
+                - application/x-shp+zip # ensemble de fichiers Shape zippés
+                - application/x-shp+7z # ensemble de fichiers Shape 7zippés
+    DataService:
+      description: Description DCAT d'un service de données (dcat:DataService)
+      type: object
+      additionalProperties: false
+      required: [title, identifier]
+      properties:
+        title:
+          description: titre en français
+          type: string
+        title@en:
+          description: titre en anglais
+          type: string
+        identifier:
+          type: string
+        description:
+          type: string
+        conformsTo:
+          description:
+            An established standard to which the described resource conforms. (dct:conformsTo)
+          type: string
+        endpointURL:
+          description: |
+            The root location or primary endpoint of the service (a Web-resolvable IRI). (dcat:endpointURL)
+          type: string
+        endpointDescription:
+          description: |
+            A description of the services available via the end-points, including their operations, parameters etc.
+            (dcat:endpointDescription)
+          type: string
+        servesDataset:
+          type: array
+          items:
+            $ref: '#/catalogSchema/definitions/JsonPointer'
+    Catalog:
+      description: |
+        Description (dcat:Catalog) d'un catalogue référencé dans le catalogue courant.
+        Un tel catalogue fils ne doit pas contenir de jeux de données, de service ou de catalogues ;
+        il référence le catalogue stocké dans un autre document
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        title:
+          description: titre en français
+          type: string
+        title@en:
+          description: titre en anglais
+          type: string
+        identifier:
+          type: string
+        homepage:
+          description: page d'accueil du catalogue (foaf:homepage -> foaf:Document)
+          type: string
+        publisher:
+          description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
+          type: string
+        themeTaxonomy:
+          description: |
+            le thésaurus (dcat:themeTaxonomy -> rdfs:Resource) utilisé pour indexer les ressources défini par son URI
+            plus éventuellement un titre
+          $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
+        theme:
+          description: |
+            concepts décrivant le catalogue et appartenant au thésaurus (dcat:theme -> skos:Concept)
+            Chaque concept est défini par son URI plus éventuellement une étiquette
+          type: array
+          items:
+            $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
+        spatial:
+          description: concept de GeoNames (https://www.geonames.org/) indexant spatialement le catalogue
+          type: object
+          additionalProperties: false
+          required: [identifier]
+          properties:
+            identifier:
+              description: URI du concept
+              type: string
+            label:
+              description: étiquette associée
+              type: string
+  type: object
+  additionalProperties: false
+  required: [title, $schema]
+  properties:
+    title:
+      description: titre du catalogue DCAT
+      type: string
+    description:
+      description: commentaire associé au catalogue
+      type: string
+    $schema:
+      description: chemin référencant le présent schéma JSON
+      type: string
+    identifier:
+      type: string
+    homepage:
+      description: page d'accueil du catalogue (foaf:homepage -> foaf:Document)
+      type: string
+    publisher:
+      description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
+      type: string
+    themeTaxonomy:
+      description: |
+        le thésaurus (dcat:themeTaxonomy -> rdfs:Resource) utilisé pour indexer les ressources défini par son URI
+        plus éventuellement un titre
+      $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
+    theme:
+      description: |
+        concepts décrivant le catalogue et appartenant au thésaurus (dcat:theme -> skos:Concept)
+        Chaque concept est défini par son URI plus éventuellement une étiquette
+      type: array
+      items:
+        $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
+    spatial:
+      description: concept de GeoNames (https://www.geonames.org/) indexant spatialement le catalogue
+      type: object
+      additionalProperties: false
+      required: [identifier]
+      properties:
+        identifier:
+          description: URI du concept
+          type: string
+        label:
+          description: étiquette associée
+          type: string
+    agent:
+      description: |
+        liste des agents au sens de Foaf (foaf:Agent) (personnes, organisations, ...).  
+        Les références internes sont alors remplacées par des pointeurs.
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-zA-Z0-9_]+$:
+          $ref: '#/catalogSchema/definitions/Agent'
+    standard:
+      description: liste de spécifications (dct:Standard) des jeux de données, services ou catalogues
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-zA-Z0-9_/.]+$:
+          $ref: '#/catalogSchema/definitions/Standard'
+    catalog:
+      description: liste des catalogues référencés (dcat:Catalog) chacun identifié par un identifiant
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-zA-Z0-9_/.]+$:
+          $ref: '#/catalogSchema/definitions/Catalog'
+    dataset:
+      description: liste des jeux de données (dcat:Dataset) chacun identifié par un identifiant
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-zA-Z0-9_/.]+$:
+          $ref: '#/catalogSchema/definitions/Dataset'
+    service:
+      description: liste des services de données (dcat:DataService) chacun identifié par un identifiant
+      type: object
+      additionalProperties: false
+      patternProperties:
+        ^[-a-zA-Z0-9_/.]+$:
+          $ref: '#/catalogSchema/definitions/DataService'
+namespaces:
+  dc: http://purl.org/dc/elements/1.1/
+  dcat: http://www.w3.org/ns/dcat#
+  dct: http://purl.org/dc/terms/
+  dctype: http://purl.org/dc/dcmitype/
+  foaf: http://xmlns.com/foaf/0.1/
+  locn: http://www.w3.org/ns/locn#
+  odrl: http://www.w3.org/ns/odrl/2/
+  owl: http://www.w3.org/2002/07/owl#
+  prov: http://www.w3.org/ns/prov#
+  rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns#
+  rdfs: http://www.w3.org/2000/01/rdf-schema#
+  skos: http://www.w3.org/2004/02/skos/core#
+  time: http://www.w3.org/2006/time#
+  vcard: http://www.w3.org/2006/vcard/ns#
+  xsd: http://www.w3.org/2001/XMLSchema#
+context:
+  Catalog:
+    title: dct:title

@@ -1,0 +1,216 @@
+title: Catalogue des jeux de données et services exposés par https://features.geoapi.fr
+description: |
+  Le présent document définit le catalogue des jeux de données et services exposés par https://features.geoapi.fr
+  en respectant le modèle de données de DCATv2.  
+  C'est un test d'utilisation du schéma def.yaml#/catalogSchema
+$schema: def.yaml#/catalogSchema
+#  $ref: '/var/www/html/geovect/dcat/def.yaml#/catalogSchema'
+identifier: https://features.geoapi.fr
+publisher: https://www.ecologie.gouv.fr/
+homepage: https://features.geoapi.fr/
+themeTaxonomy: http://publications.europa.eu/resource/dataset/eurovoc - EuroVoc
+theme:
+  - {identifier: http://eurovoc.europa.eu/2470, label: politique de l'environnement}
+  - {identifier: http://eurovoc.europa.eu/4074, label: prévention des risques pour l'environnement}
+  - {identifier: http://eurovoc.europa.eu/2494, label: politique des transports}
+  - {identifier: http://eurovoc.europa.eu/2498, label: politique énergétique}
+  - {identifier: http://eurovoc.europa.eu/2496, label: politique du logement}
+  - {identifier: http://eurovoc.europa.eu/4619, label: urbanisme}
+  - {identifier: http://eurovoc.europa.eu/2475, label: politique de la construction}
+spatial: {identifier: https://www.geonames.org/3017382, label: France}
+
+agent:
+  MinEcologie:
+    a: foaf:Organization
+    prefLabel: Ministère chargé de l'écologie
+    identifier: https://www.ecologie.gouv.fr/
+  IGN-F:
+    a: foaf:Organization
+    prefLabel: Institut national de l’information géographique et forestière (IGN)
+    identifier: https://ign.fr
+  Shom:
+    a: foaf:Organization
+    prefLabel: Service Hydrographique et Océanographique de la Marine (Shom)
+    identifier: https://www.shom.fr
+  naturalEarth:
+    a: foaf:Organization
+    prefLabel: collaboration of volunteers making Natural Earth
+    identifier: https://www.naturalearthdata.com/about/contributors/
+    note: |
+      Making Natural Earth is a collaboration involving many volunteer NACIS members and cartographers around the globe.
+      Nathaniel Vaughn Kelso and Tom Patterson led the effort.
+
+standard:
+  ignf-route500v3:
+    title: ROUTE 500, Descritif de contenu, version 3.0, avril 2020 (ROUTE500_3-0)
+    issued: '2020-04'
+    abstract: |
+      ROUTE500® est une base de données routières en deux dimensions (2D) contenant environ 800 000 km de routes du réseau
+      principal et des éléments d’habillage.  
+      ROUTE 500® est un produit numérique entièrement dérivé de la base de données unifiée, une des grandes bases de données
+      géographiques administrées par l’Institut national de l’information géographique et forestière sur le territoire
+      français. Il est destiné à être le support indispensable à diverses applications relatives au transport routier
+      (recherche d’itinéraires contraints de ville à ville et calcul de distances sur ces itinéraires, optimisation de
+      transport, suivi de flotte, transport multimodal et applications de type « géomarketing ») et de proposer les éléments
+      d’habillage nécessaires à l’établissement de plans cartographiques à des échelles voisines du 1:250 000.
+    availableAt: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/DC_ROUTE500_3-0.pdf
+    metadata: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/IGNF_ROUTE500r_3-0.xml
+    spatialResolutionInMeters: 50 # 0,2 mm x 250 000
+  ignf-route500v2.1:
+    title: ROUTE 500, Descritif de contenu, version 2.1, juillet 2001 (ROUTE500_2-1)
+    issued: '2001-07'
+    availableAt: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/DC_ROUTE500_2-1.pdf
+    metadata: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/IGNF_ROUTE500r_2-1.xml
+
+dataset:
+  ne_110m_cultural:
+    title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
+    identifier: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/
+    description: |
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales.
+      Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing,
+      well-crafted maps with cartography or GIS software.  
+      This dataset corresponds to the small scale data, 1:110m. Suitable for schematic maps of the world on a postcard
+      or as a small locator globe.
+      This dataset includes Cultural Vector Data Themes.  
+    creator: https://www.naturalearthdata.com/about/contributors/
+    license: https://www.naturalearthdata.com/about/terms-of-use/
+    rights: Données dans le domaine public
+    distribution:
+      download:
+        downloadUrl: https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/110m_cultural.zip
+        mediaType: application/x-shp+zip
+      features:
+        accessService:
+          $ref: '#/service/ne_110m_cultural'
+  ne_110m_physical:
+    title: Natural Earth, 1:110m scale, Physical Vector Data Themes
+    identifier: https://www.naturalearthdata.com/downloads/110m-physical-vectors/
+    distribution:
+      features:
+        accessService:
+          $ref: '#/service/ne_110m_physical'
+  ne_10m_cultural:
+    title: Natural Earth, 1:10m scale, Cultural Vector Data Themes
+    identifier: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/
+    distribution:
+      features:
+        accessService:
+          $ref: '#/service/ne_10m_cultural'
+  ne_10m_physical:
+    title@en: Natural Earth, 1:10m scale, Physical Vector Data Themes
+    identifier: https://www.naturalearthdata.com/downloads/10m-physical-vectors/
+    distribution:
+      features:
+        accessService:
+          $ref: '#/service/ne_10m_physical'
+  ignf-route500:
+    type: http://inspire.ec.europa.eu/metadata-codelist/ResourceType/series
+    title: ROUTE 500 (IGN)
+    hasPart:
+      - $ref: '#/dataset/ignf-route500_2020'
+      - $ref: '#/dataset/ignf-route500_2019'
+  ignf-route500_2020:
+    title: ROUTE 500 2020 (IGN)
+    conformsTo: '#/Standard/ignf-route500v3'
+    isPartOf:
+      $ref: '#/Dataset/ignf-route500'
+    distribution:
+      download:
+        downloadUrl: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2020-08-04.7z.001
+        mediaType: application/x-shp+7z
+      features:
+        accessService:
+          $ref: '#/service/ignf-route500_2020'
+  ignf-route500_2019:
+    title: ROUTE 500 2019 (IGN)
+    conformsTo: '#/Standard/ignf-route500v3'
+    isPartOf:
+      $ref: '#/Dataset/ignf-route500'
+    distribution:
+      download:
+        downloadUrl: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2019-10-30.7z.001
+        mediaType: application/x-shp+7z
+      features:
+        accessService:
+          $ref: '#/service/ignf-route500_2019'
+  ignf-bdcarto:
+    title: BD CARTO (IGN)
+    distribution:
+      ignGpWfs:
+        accessService:
+          $ref: '#/service/ignf-gp-wfs'
+      features:
+        accessService:
+          $ref: '#/service/ignf-bdcarto'
+
+service:
+  ne_110m_cultural:
+    title: service OGC API Features pour Natural Earth, échelle 1:110m, thèmes culturels vecteur
+    title@en: OGC API Features service of Natural Earth, 1:110m scale, Cultural Vector Data Themes
+    identifier: https://features.geoapi.fr/ne_110m_cultural
+    endpointURL: https://features.geoapi.fr/ne_110m_cultural
+    endpointDescription: https://features.geoapi.fr/ne_110m_cultural/api
+    servesDataset:
+      - $ref: '#/dataset/ne_110m_cultural'
+  ne_110m_physical:
+    title: service OGC API Features pour Natural Earth, échelle 1:110m, thèmes physiques vecteur
+    title@en: OGC API Features service of Natural Earth, 1:110m scale, Physical Vector Data Themes
+    identifier: https://features.geoapi.fr/ne_110m_physical
+    endpointURL: https://features.geoapi.fr/ne_110m_physical
+    endpointDescription: https://features.geoapi.fr/ne_110m_physical/api
+    servesDataset:
+      - $ref: '#/dataset/ne_110m_physical'
+  ne_10m_cultural:
+    title: service OGC API Features pour Natural Earth, échelle 1:10m, thèmes culturels vecteur
+    title@en: OGC API Features service of Natural Earth, 1:10m scale, Cultural Vector Data Themes
+    identifier: https://features.geoapi.fr/ne_10m_cultural
+    endpointURL: https://features.geoapi.fr/ne_10m_cultural
+    endpointDescription: https://features.geoapi.fr/ne_10m_cultural/api
+    servesDataset:
+      - $ref: '#/dataset/ne_10m_cultural'
+  ne_10m_physical:
+    title: service OGC API Features pour Natural Earth, échelle 1:10m, thèmes physiques vecteur
+    title@en: OGC API Features service of Natural Earth, 1:10m scale, Physical Vector Data Themes
+    identifier: https://features.geoapi.fr/ne_10m_physical
+    endpointURL: https://features.geoapi.fr/ne_10m_physical
+    endpointDescription: https://features.geoapi.fr/ne_10m_physical/api
+    servesDataset:
+      - $ref: '#/dataset/ne_10m_physical'
+  ignf-route500_2020:
+    title: service OGC API Features de ROUTE 500 2020
+    identifier: https://features.geoapi.fr/ignf-route500_2020
+    endpointURL: https://features.geoapi.fr/ignf-route500_2020
+    endpointDescription: https://features.geoapi.fr/ignf-route500_2020/api
+    servesDataset:
+      - $ref: '#/dataset/ignf-route500_2020'
+  ignf-route500_2019:
+    title: service OGC API Features de ROUTE 500 2019
+    identifier: https://features.geoapi.fr/ignf-route500_2019
+    conformsTo: http://www.opengis.net/spec/ogcapi-features-1/1.0/req/core
+    endpointURL: https://features.geoapi.fr/ignf-route500_2019
+    endpointDescription: https://features.geoapi.fr/ignf-route500_2019/api
+    servesDataset:
+      - $ref: '#/dataset/ignf-route500_2019'
+  ignf-gp-wfs:
+    title: service WFS du Géoportail IGN
+    identifier: https://wxs.ign.fr/{clé}/geoportail/wfs
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/wfs/2.0.0
+    endpointURL: https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs
+    endpointDescription: https://wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr&service=WFS&request=GetCapabilities
+    servesDataset:
+      - $ref: '#/dataset/ignf-bdcarto'
+  ignf-bdcarto:
+    title: service OGC API Features de BDCARTO
+    identifier: https://features.geoapi.fr/ignf-bdcarto
+    conformsTo: http://www.opengis.net/spec/ogcapi-features-1/1.0/req/core
+    endpointURL: https://features.geoapi.fr/ignf-bdcarto
+    endpointDescription: https://features.geoapi.fr/ignf-bdcarto/api
+    servesDataset:
+      - $ref: '#/dataset/ignf-bdcarto'
+
+
+    
+    
+    
+    

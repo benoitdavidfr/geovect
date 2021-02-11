@@ -1,14 +1,18 @@
 title: geovect/dcat - catalogue de données au standard DCAT v2
 path: /geovect/dcat
 doc: |
-  Gestion d'un catalogue au standard DCAT v2
-  uri: dcat.geocat.fr
-  Les métadonnées sont gérées en Yaml selon le même principe que http://georef.eu/yamldoc/?doc=cdmet / http://id.georef.eu/cdmet
-  Définition d'un catalogue principal et de catalogues secondaires.
-  Le catalogue principal est accessible à l'URI https://dcat.geocat.fr/ en JSON-LD et en Html.
-  Les catalogues secondaires sont accessibles à l'URI https://dcat.geocat.fr/xxxx
-  Un schéma JSON est défini
+  après 7/2/2021:
+    Nlle version du schéma du catalogue dans root.yaml
+    Catalogue des données de https://features.geoapi.fr/
+  avant 7/2/2021:
+    Gestion d'un catalogue au standard DCAT v2
+    uri: dcat.geocat.fr
+    Les métadonnées sont gérées en Yaml selon le même principe que http://georef.eu/yamldoc/?doc=cdmet / http://id.georef.eu/cdmet
+    Définition d'un catalogue principal et de catalogues secondaires.
+    Le catalogue principal est accessible à l'URI https://dcat.geocat.fr/ en JSON-LD et en Html.
+    Les catalogues secondaires sont accessibles à l'URI https://dcat.geocat.fr/xxxx
+    Un schéma JSON est défini
   
-  Questions:
-    - ou stocker la spécification des produits notamment IGN ? dans le catalogue ?
+    Questions:
+      - ou stocker la spécification des produits notamment IGN ? dans le catalogue ?
     
