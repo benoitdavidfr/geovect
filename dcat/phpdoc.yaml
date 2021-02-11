@@ -1,9 +1,24 @@
 title: geovect/dcat - catalogue de données au standard DCAT v2
 path: /geovect/dcat
 doc: |
-  après 7/2/2021:
-    Nlle version du schéma du catalogue dans root.yaml
-    Catalogue des données de https://features.geoapi.fr/
+  L'objectif de ce sous-projet est de définir une méthode pour décrire des catalogues DCAT v2.
+  Chaque catalogue est décrit dans un fichier Yaml conforme au schéma def.yam#/catalogSchema
+  qui permet de décrire:
+    - les métadonnées du catalogue correspondant au document (title, ...),
+    - les métadonnées des jeux de données, des services et des catalogues référencés dans le catalogue correspondant
+      au document,
+    - d'éventuelles organisations (foaf:Agent) référencées dans les éléments précédents et non définis par ailleurs,
+    - d'éventuelles spécifications (dct:Standard) référencées dans les éléments précédents et non définis par ailleurs,
+    
+  Le catalogue root.yaml est conçu pour être le catalogue racine de l'infrastructure de données du pôle ministériel.
+  Le catalogue featuresgeoapifr.yaml est celui de https://features.geoapi.fr/
+  
+  Le fichier def.yaml définit le schéma des documents décrivant un catalogue et certains éléments utiles à la transformation
+  des fichiers en JSON-LD.
+  
+  Ces catalogues doivent être exposés en JSON-LD à l'URI https://geocat.fr
+  Ils pourraient aussi être exposés en Yaml-LD et le Html en rendant dans le Yaml-LD les liens cliquables.
+  
   avant 7/2/2021:
     Gestion d'un catalogue au standard DCAT v2
     uri: dcat.geocat.fr

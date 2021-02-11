@@ -141,7 +141,8 @@ catalogSchema:
       additionalProperties: false
       required: []
       properties:
-        title:
+        # Propriétés de dcat:Resource
+        title@fr:
           description: titre en français
           type: string
         title@en:
@@ -151,12 +152,33 @@ catalogSchema:
           type: string
         type:
           description: dct:type
+          oneOf:
+            - type: string
+            - type: array
+              items: {type: string}
+        description@fr:
           type: string
-        description:
+        description@en:
           type: string
         creator:
           description: L'entité responsable de la production du jeu de données (dct:creator -> foaf:Agent)
           type: string
+        publisher:
+          description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
+          type: string
+        landingPage:
+          description: |
+            dcat:landingPage -> foaf:Document
+            A Web page that can be navigated to in a Web browser to gain access to the catalog, a dataset, its distributions
+            and/or additional information.
+          type: string
+        theme:
+          description: |
+            concepts décrivant la ressource et appartenant au thésaurus (dcat:theme -> skos:Concept)
+            Chaque concept est défini par son URI plus éventuellement une étiquette
+          type: array
+          items:
+            $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
         conformsTo:
           description: |
             Une spécification à laquelle le jeu de données se conforme (dct:conformsTo -> dct:Standard)
@@ -174,6 +196,7 @@ catalogSchema:
             tels que les déclarations de copyright.
             (dct:rights -> dct:RightsStatement)
           type: string
+        # Propriétés spécifiques à dcat:Dataset
         hasPart:
           description: pour une série de données, liste des jeux contenus définis par des pointeurs JSON (dct:hasPart)
           type: array
@@ -191,36 +214,36 @@ catalogSchema:
               $ref: '#/catalogSchema/definitions/Distribution'
     Distribution:
       description: Description (dcat:Distribution) d'une distribution d'un jeu de données
-      oneOf:
-        - description: Description comme DataService
-          type: object
-          additionalProperties: false
-          required: [accessService]
-          properties:
-            accessService:
-              description: pointeur JSON référençant le service exposant le jeu de données
-              $ref: '#/catalogSchema/definitions/JsonPointer'
-        - description: Description comme téléchargement
-          type: object
-          additionalProperties: false
-          required: [downloadUrl]
-          properties:
-            downloadUrl:
-              description: URL de téléchargement
-              type: string
-            mediaType:
-              description: type MIME
-              type: string
-              enum:
-                - application/x-shp+zip # ensemble de fichiers Shape zippés
-                - application/x-shp+7z # ensemble de fichiers Shape 7zippés
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        title@fr:
+          description: titre en français
+          type: string
+        title@en:
+          description: titre en anglais
+          type: string
+        accessService:
+          description: pointeur JSON référençant le service exposant le jeu de données
+          $ref: '#/catalogSchema/definitions/JsonPointer'
+        downloadUrl:
+          description: URL de téléchargement
+          type: string
+        mediaType:
+          description: type MIME
+          type: string
+          enum:
+            - application/x-shp+zip # ensemble de fichiers Shape zippés
+            - application/x-shp+7z # ensemble de fichiers Shape 7zippés
     DataService:
       description: Description DCAT d'un service de données (dcat:DataService)
       type: object
       additionalProperties: false
-      required: [title, identifier]
+      required: []
       properties:
-        title:
+        # Propriétés de dcat:Resource
+        title@fr:
           description: titre en français
           type: string
         title@en:
@@ -228,12 +251,51 @@ catalogSchema:
           type: string
         identifier:
           type: string
-        description:
+        type:
+          description: dct:type
+          oneOf:
+            - type: string
+            - type: array
+              items: {type: string}
+        description@fr:
           type: string
+        description@en:
+          type: string
+        creator:
+          description: L'entité responsable de la production du jeu de données (dct:creator -> foaf:Agent)
+          type: string
+        publisher:
+          description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
+          type: string
+        landingPage:
+          description: |
+            dcat:landingPage -> foaf:Document
+            A Web page that can be navigated to in a Web browser to gain access to the catalog, a dataset, its distributions
+            and/or additional information.
+          type: string
+        theme:
+          description: |
+            concepts décrivant la ressource et appartenant au thésaurus (dcat:theme -> skos:Concept)
+            Chaque concept est défini par son URI plus éventuellement une étiquette
+          type: array
+          items:
+            $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
         conformsTo:
           description:
             An established standard to which the described resource conforms. (dct:conformsTo)
           type: string
+        license:
+          description: |
+            document juridique définissant les conditions dans lesquelles le jeu de données est mis à disposition.
+            (dct:license -> dct:LicenseDocument)
+          type: string
+        rights:
+          description: |
+            Une déclaration qui concerne tous les droits non traités avec dct:license ou dct:accessRights,
+            tels que les déclarations de copyright.
+            (dct:rights -> dct:RightsStatement)
+          type: string
+        # Propriétés spécifiques à dcat:Dataset
         endpointURL:
           description: |
             The root location or primary endpoint of the service (a Web-resolvable IRI). (dcat:endpointURL)
@@ -256,7 +318,8 @@ catalogSchema:
       additionalProperties: false
       required: []
       properties:
-        title:
+        # Propriétés de dcat:Resource
+        title@fr:
           description: titre en français
           type: string
         title@en:
@@ -264,44 +327,70 @@ catalogSchema:
           type: string
         identifier:
           type: string
-        homepage:
-          description: page d'accueil du catalogue (foaf:homepage -> foaf:Document)
+        description@fr:
+          type: string
+        description@en:
+          type: string
+        creator:
+          description: L'entité responsable de la production du jeu de données (dct:creator -> foaf:Agent)
           type: string
         publisher:
           description: l'entité responsable de la publication (dct:publisher -> foaf:Agent)
           type: string
+        landingPage:
+          description: |
+            dcat:landingPage -> foaf:Document
+            A Web page that can be navigated to in a Web browser to gain access to the catalog, a dataset, its distributions
+            and/or additional information.
+          type: string
+        theme:
+          description: |
+            concepts décrivant la ressource et appartenant au thésaurus (dcat:theme -> skos:Concept)
+            Chaque concept est défini par son URI plus éventuellement une étiquette
+          type: array
+          items:
+            $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
+        # Propriétés spécifiques à dcat:Dataset
+        distribution:
+          description: liste des distributions
+          type: object
+          additionalProperties: false
+          patternProperties:
+            ^[-a-zA-Z0-9_]+$:
+              $ref: '#/catalogSchema/definitions/Distribution'
+        spatial:
+          description: concept de GeoNames (https://www.geonames.org/) indexant spatialement le jeu de données ou le catalogue
+          $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
+        # Propriétés spécifiques à dcat:Catalog
+        homepage:
+          description: page d'accueil du catalogue (foaf:homepage -> foaf:Document)
+          type: string
+        language:
+          description: |
+            Langue utilisée pour les métadonnées (dct:language -> dct:LinguisticSystem).
+            DCAT-AP exige d'utiliser le vocabulaire http://publications.europa.eu/resource/authority/language
+            Dans ce schéma on utilise les langues ISO 639-1 (alpha-2).
+            Une ou plusieurs langues peuvent être définies.
+          oneOf:
+            - type: string
+              enum: [fr, en]
+            - type: array
+              items:
+                type: string
+                enum: [fr, en]
         themeTaxonomy:
           description: |
             le thésaurus (dcat:themeTaxonomy -> rdfs:Resource) utilisé pour indexer les ressources défini par son URI
             plus éventuellement un titre
           $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
-        theme:
-          description: |
-            concepts décrivant le catalogue et appartenant au thésaurus (dcat:theme -> skos:Concept)
-            Chaque concept est défini par son URI plus éventuellement une étiquette
-          type: array
-          items:
-            $ref: '#/catalogSchema/definitions/UriOrLabelledUri'
-        spatial:
-          description: concept de GeoNames (https://www.geonames.org/) indexant spatialement le catalogue
-          type: object
-          additionalProperties: false
-          required: [identifier]
-          properties:
-            identifier:
-              description: URI du concept
-              type: string
-            label:
-              description: étiquette associée
-              type: string
   type: object
   additionalProperties: false
-  required: [title, $schema]
+  required: [$schema]
   properties:
-    title:
+    title@fr:
       description: titre du catalogue DCAT
       type: string
-    description:
+    description@fr:
       description: commentaire associé au catalogue
       type: string
     $schema:

@@ -1,11 +1,16 @@
-title: catalogue racine de /geovect/dcat publié sur https://geocat.fr
-description: |
+title@fr: catalogue racine de /geovect/dcat publié sur https://geocat.fr
+description@fr: |
   Le présent document définit le catalogue DCAT racine de geocat.fr
 $schema: def.yaml#/catalogSchema
+agent:
+  Ifremer:
+    a: foaf:Organization
+    prefLabel: Institut français de recherche pour l'exploitation de la mer
+    identifier: https://wwz.ifremer.fr/
+    
 catalog:
   featuresgeoapifr:
-    title: Catalogue des jeux de données et services exposés par https://features.geoapi.fr
-    identifier: https://geocat.fr/featuresgeoapifr
+    title@fr: Catalogue des jeux de données et services exposés par https://features.geoapi.fr
     publisher: https://www.ecologie.gouv.fr/
     homepage: https://geocat.fr/featuresgeoapifr
     themeTaxonomy: {identifier: http://publications.europa.eu/resource/dataset/eurovoc, title: EuroVoc}
@@ -18,3 +23,32 @@ catalog:
       - {identifier: http://eurovoc.europa.eu/4619, label: urbanisme}
       - {identifier: http://eurovoc.europa.eu/2475, label: politique de la construction}
     spatial: {identifier: https://www.geonames.org/3017382, label: France}
+  Sextant:
+    title@fr: Sextant - Infrastructure de données géographiques marines et littorales
+    language: [fr,en]
+    creator: '#/agent/Ifremer'
+    theme:
+      - {identifier: http://eurovoc.europa.eu/6404, label: écosystème marin}
+    description@fr: |
+      Infrastructure de Données Géographiques (IDG) marines et littorales, Sextant a pour objectif de documenter, diffuser
+      et promouvoir un catalogue de données relevant du milieu marin. A destination des laboratoires et des partenaires de
+      l’Ifremer, ainsi que des acteurs nationaux et européens œuvrant dans le domaine marin et littoral, Sextant fournit
+      des outils favorisant et facilitant l’archivage, la consultation et la mise à disposition de ces données
+      géographiques.
+    landingPage: https://sextant.ifremer.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de Sextant
+        accessService:
+          $ref: '#/service/SextantCsw'
+service:
+  SextantCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de Sextant
+    creator: '#/agent/Ifremer'
+    theme:
+      - {identifier: http://eurovoc.europa.eu/3142, label: protection du littoral}
+    servesDataset:
+      - $ref: '#/catalog/Sextant'
+    endpointURL: https://sextant.ifremer.fr/geonetwork/srv/eng/csw?service=CSW&request=GetCapabilities

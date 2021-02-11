@@ -1,4 +1,5 @@
 <?php
+PERIME
 namespace dcat;
 /*PhpDoc:
 name: load.php
