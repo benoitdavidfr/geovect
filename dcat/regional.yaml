@@ -9,6 +9,26 @@ creator:
   - $ref: '#/agent/PMEcologieTerritoireMer'
 
 agent:
+  DrealBretagne:
+    a: foaf:Organization
+    prefLabel@fr: Dreal Bretagne
+    identifier: http://www.bretagne.developpement-durable.gouv.fr/
+  PrefBretagne:
+    a: foaf:Organization
+    prefLabel@fr: Préfecture de région Bretagne
+    identifier: https://www.prefectures-regions.gouv.fr/bretagne/
+  RegionBretagne:
+    a: foaf:Organization
+    prefLabel@fr: Région Bretagne
+    identifier: https://www.bretagne.bzh/
+  DrealPaysDeLaLoire:
+    a: foaf:Organization
+    prefLabel@fr: Dreal des Pays de la Loire
+    identifier: http://www.pays-de-la-loire.developpement-durable.gouv.fr/
+  PrefPaysDeLaLoire:
+    a: foaf:Organization
+    prefLabel@fr: Préfecture de région des Pays de la Loire
+    identifier: https://www.prefectures-regions.gouv.fr/pays-de-la-loire
   DrealNormandie:
     a: foaf:Organization
     prefLabel@fr: Dreal Normandie
@@ -19,9 +39,69 @@ agent:
     identifier: http://www.occitanie.developpement-durable.gouv.fr/
   PrefOccitanie:
     a: foaf:Organization
-    prefLabel@fr: Préfecture Occitanie
+    prefLabel@fr: Préfecture de région Occitanie
     identifier: https://www.prefectures-regions.gouv.fr/occitanie/
-  
+  PrefAuRA:
+    a: foaf:Organization
+    prefLabel@fr: Préfecture de Région Auvergne-Rhône-Alpes
+    identifier: https://www.prefectures-regions.gouv.fr/auvergne-rhone-alpes
+  RegionHautsDeFrance:
+    a: foaf:Organization
+    prefLabel@fr: Région Hauts-de-France
+    identifier: https://www.hautsdefrance.fr/
+  ternum-bfc.fr:
+    a: foaf:Organization
+    prefLabel@fr: GIP Territoires Numériques Bourgogne-Franche-Comté
+    identifier: https://www.ternum-bfc.fr/
+  DrealPaca:
+    a: foaf:Organization
+    prefLabel@fr: Dreal Provence Alpes-Côte d’Azur
+    identifier: http://www.paca.developpement-durable.gouv.fr/
+  DrealNAquitaine:
+    a: foaf:Organization
+    prefLabel@fr: Dreal de Nouvelle-Aquitaine
+    identifier: http://www.nouvelle-aquitaine.developpement-durable.gouv.fr/
+  PrefNAquitaine:
+    a: foaf:Organization
+    prefLabel@fr: Préfecture de région de Nouvelle-Aquitaine
+    identifier: https://www.prefectures-regions.gouv.fr/nouvelle-aquitaine
+  DrealGrandEst:
+    a: foaf:Organization
+    prefLabel@fr: Dreal Grand Est
+    identifier: http://www.grand-est.developpement-durable.gouv.fr/
+  DrealCentreValDeLoire:
+    a: foaf:Organization
+    prefLabel@fr: Dreal Centre Val de Loire
+    identifier: http://www.centre-val-de-loire.developpement-durable.gouv.fr/
+  DrieeIleDeFrance:
+    a: foaf:Organization
+    prefLabel@fr: DRIEE Ile-de-france
+    identifier: http://www.driee.ile-de-france.developpement-durable.gouv.fr/
+  DrieaIleDeFrance:
+    a: foaf:Organization
+    prefLabel@fr: DRIEA Ile-de-france
+    identifier: http://www.driea.ile-de-france.developpement-durable.gouv.fr/
+  DrealCorse:
+    a: foaf:Organization
+    prefLabel@fr: Dreal Corse
+    identifier: http://www.corse.developpement-durable.gouv.fr/
+  ParcNationalDeGuadeloupe:
+    a: foaf:Organization
+    prefLabel@fr: Parc National de Guadeloupe
+    identifier: http://www.guadeloupe-parcnational.fr/
+  geomartinique.fr:
+    a: foaf:Organization
+    prefLabel@fr: association « Centre de Ressources Géomatiques et Infrastructure de Données Géographiques de la Martinique », désignée par le sigle « GéoMartinique »
+    identifier: https://www.geomartinique.fr/accueil/presentations/presentation
+  audeg.fr:
+    a: foaf:Organization
+    prefLabel@fr: Agence d’Urbanisme et de Développement de la Guyane
+    identifier: https://www.audeg.fr/
+  DealRéunion:
+    a: foaf:Organization
+    prefLabel@fr: Deal Réunion
+    identifier: http://www.reunion.developpement-durable.gouv.fr/
+
 catalog:
   DrealNormandie:
     title@fr: Catalogue des données géographiques de la Dreal Normandie
@@ -45,6 +125,180 @@ catalog:
         title@fr: Service CSW de PictoOccitanie
         accessService:
           $ref: '#/service/PictoOccitanieCsw'
+  GéoBretagne:
+    title@fr: GéoBretagne, le partenariat breton des données géolocalisées
+    creator:
+      - $ref: '#/agent/DrealBretagne'
+    publisher:
+      - $ref: '#/agent/PrefBretagne'
+      - $ref: '#/agent/RegionBretagne'
+    landingPage: https://cms.geobretagne.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de GéoBretagne
+        accessService:
+          $ref: '#/service/GéoBretagneCsw'
+  SigLoire:
+    title@fr: SIGLOIRE, infrastructure de partage et de diffusion de l’information géographique des services de l’État sur la région Pays de la Loire
+    creator:
+      - $ref: '#/agent/DrealPaysDeLaLoire'
+    publisher:
+      - $ref: '#/agent/PrefPaysDeLaLoire'
+      - $ref: '#/agent/DrealPaysDeLaLoire'
+    landingPage: http://www.sigloire.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de SigLoire
+        accessService:
+          $ref: '#/service/SigLoireCsw'
+  DatARA:
+    title@fr: DatARA, données publiques ouvertes en Auvergne-Rhône-Alpes
+    creator:
+      - $ref: '#/agent/PrefAuRA'
+    publisher:
+      - $ref: '#/agent/PrefAuRA'
+    landingPage: https://www.datara.gouv.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de DatARA
+        accessService:
+          $ref: '#/service/DatARACsw'
+  Géo2France:
+    title@fr: Géo2France, Mutualisation de l'information géographique en Hauts-de-France
+    creator:
+      - $ref: '#/agent/RegionHautsDeFrance'
+    publisher:
+      - $ref: '#/agent/RegionHautsDeFrance'
+    landingPage: https://www.geo2france.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de Géo2France
+        accessService:
+          $ref: '#/service/Géo2FranceCsw'
+  IdéoBFC:
+    title@fr: IdéoBFC, Le portail de la donnée et de la connaissance en Bourgogne-Franche-Comté
+    creator:
+      - $ref: '#/agent/ternum-bfc.fr'
+    publisher:
+      - $ref: '#/agent/ternum-bfc.fr'
+    landingPage: https://ideo.ternum-bfc.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de IdéoBFC
+        accessService:
+          $ref: '#/service/IdéoBFCCsw'
+  DrealPaca:
+    title@fr: Catalogue des données géographiques de la Dreal PACA
+    creator:
+      - $ref: '#/agent/DrealPaca'
+    landingPage: http://www.paca.developpement-durable.gouv.fr/donnees-cartes-publications-r344.html
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de GéoIDE
+        accessService:
+          $ref: 'national.yaml#/service/GéoIdeCsw'
+  Sigena:
+    title@fr: SIGENA, Services de l'Information Géographique de l'État en Nouvelle-Aquitaine
+    creator:
+      - $ref: '#/agent/DrealNAquitaine'
+    publisher:
+      - $ref: '#/agent/PrefNAquitaine'
+    landingPage: https://www.sigena.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de Sigena
+        accessService:
+          $ref: '#/service/SigenaCsw'
+  DrealGrandEst:
+    title@fr: Catalogue des données géographiques de la Dreal Grand Est
+    creator:
+      - $ref: '#/agent/DrealGrandEst'
+    landingPage: http://www.grand-est.developpement-durable.gouv.fr/le-catalogue-de-donnees-geographiques-a26.html
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de GéoIDE
+        accessService:
+          $ref: 'national.yaml#/service/GéoIdeCsw'
+  DrealCentreValDeLoire:
+    title@fr: Catalogue des données géographiques de la Dreal Centre Val de Loire
+    creator:
+      - $ref: '#/agent/DrealCentreValDeLoire'
+    landingPage: http://www.centre-val-de-loire.developpement-durable.gouv.fr/telechargement-des-donnees-sig-r32.html
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de la Dreal Centre Val de Loire
+        accessService:
+          $ref: '#/service/DrealCentreValDeLoireCsw'
+  DrieeIleDeFrance:
+    title@fr: Catalogue des données géographiques de la DRIEE Ile-de-france
+    creator:
+      - $ref: '#/agent/DrieeIleDeFrance'
+    landingPage: http://www.driee.ile-de-france.developpement-durable.gouv.fr/services-inspire-r1166.html
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de la DRIEE Ile-de-france
+        accessService:
+          $ref: '#/service/DrieeIleDeFranceCsw'
+  DrieaIleDeFrance:
+    title@fr: Catalogue des données géographiques de la DRIEA Ile-de-france
+    creator:
+      - $ref: '#/agent/DrieaIleDeFrance'
+    landingPage: http://www.driea.ile-de-france.developpement-durable.gouv.fr/cartes-et-donnees-geographiques-r2339.html
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de GéoIDE
+        accessService:
+          $ref: 'national.yaml#/service/GéoIdeCsw'
+  AcOddCorse:
+    title@fr: Atlas cartographique de l'observatoire du développement durable de la Corse
+    creator:
+      - $ref: '#/agent/DrealCorse'
+    landingPage: http://www.oddc.fr/Accueil_cartographie_page_111_5,128.htm
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de l'Atlas cartographique de l'observatoire du développement durable de la Corse
+        accessService:
+          $ref: '#/service/AcOddCorseCsw'
+  KaruGéo:
+    title@fr: KaruGéo, Le portail d'informations géographiques de la Guadeloupe
+    creator:
+      - $ref: '#/agent/ParcNationalDeGuadeloupe'
+    landingPage: https://www.karugeo.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de KaruGéo
+        accessService:
+          $ref: '#/service/KaruGéoCsw'
+  GéoMartinique:
+    title@fr: GéoMartinique, Le portail de l'information géographique en Martinique
+    creator:
+      - $ref: '#/agent/geomartinique.fr'
+    landingPage: https://www.geomartinique.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de GéoMartinique
+        accessService:
+          $ref: '#/service/GéoMartiniqueCsw'
+  GéoGuyane:
+    title@fr: GéoGuyane, Portail géographique de la Guyane
+    creator:
+      - $ref: '#/agent/audeg.fr'
+    landingPage: https://www.geoguyane.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de GéoGuyane
+        accessService:
+          $ref: '#/service/GéoGuyaneCsw'
+  DealRéunion:
+    title@fr: Catalogue des données géographiques de la Deal Réunion
+    creator:
+      - $ref: '#/agent/DealRéunion'
+    landingPage: http://www.reunion.developpement-durable.gouv.fr/informations-geographiques-r104.html
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de la Deal Réunion
+        accessService:
+          $ref: '#/service/DealRéunionCsw'
   
 service:
   DrealNormandieCsw:
@@ -69,4 +323,146 @@ service:
       - $ref: '#/catalog/PictoOccitanie'
     endpointURL: https://www.picto-occitanie.fr/geonetwork/srv/fre/csw
     endpointDescription: https://www.picto-occitanie.fr/geonetwork/srv/fre/csw?service=CSW&request=GetCapabilities
-
+  GéoBretagneCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de GéoBretagne
+    creator:
+      $ref: '#/agent/DrealBretagne'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/GéoBretagne'
+    endpointURL: https://geobretagne.fr/geonetwork/srv/fre/csw
+    endpointDescription: https://geobretagne.fr/geonetwork/srv/fre/csw?SERVICE=CSW&REQUEST=GetCapabilities
+  SigLoireCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de SigLoire
+    creator:
+      $ref: '#/agent/DrealPaysDeLaLoire'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/SigLoire'
+    endpointURL: http://catalogue.sigloire.fr/geonetwork/srv/fre/csw
+    endpointDescription: http://catalogue.sigloire.fr/geonetwork/srv/fre/csw?SERVICE=CSW&REQUEST=GetCapabilities
+  DatARACsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de DatARA
+    creator:
+      - $ref: '#/agent/PrefAuRA'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/DatARA'
+    endpointURL: https://www.datara.gouv.fr/geonetwork/srv/fre/csw
+    endpointDescription: https://www.datara.gouv.fr/geonetwork/srv/fre/csw?SERVICE=CSW&REQUEST=GetCapabilities
+  Géo2FranceCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de Géo2France
+    creator:
+      - $ref: '#/agent/RegionHautsDeFrance'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/Géo2France'
+    endpointURL: https://www.geo2france.fr/geonetwork/srv/fre/csw
+    endpointDescription: https://www.geo2france.fr/geonetwork/srv/fre/csw?SERVICE=CSW&REQUEST=GetCapabilities
+  IdéoBFCCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de IdéoBFC
+    creator:
+      - $ref: '#/agent/ternum-bfc.fr'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/IdéoBFC'
+    endpointURL: https://www.ideobfc.fr/geonetwork/srv/fre/csw
+    endpointDescription: https://www.ideobfc.fr/geonetwork/srv/fre/csw?SERVICE=CSW&REQUEST=GetCapabilities
+  SigenaCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de Sigena
+    creator:
+      $ref: '#/agent/DrealNAquitaine'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/Sigena'
+    endpointURL: https://www.sigena.fr/geonetwork/srv/fre/csw
+    endpointDescription: https://www.sigena.fr/geonetwork/srv/fre/csw?SERVICE=CSW&REQUEST=GetCapabilities
+  DrealCentreValDeLoireCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de la Dreal Centre Val de Loire
+    creator:
+      $ref: '#/agent/DrealCentreValDeLoire'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/DrealCentreValDeLoire'
+    endpointURL: http://metadata.carmencarto.fr/geonetwork/11/fre/csw
+    endpointDescription: http://metadata.carmencarto.fr/geonetwork/11/fre/csw?service=CSW&request=GetCapabilities
+  DrieeIleDeFranceCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de la DRIEE Ile-de-france
+    creator:
+      $ref: '#/agent/DrieeIleDeFrance'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/DrieeIleDeFrance'
+    endpointURL: http://metadata.carmencarto.fr/geonetwork/18/fre/csw
+    endpointDescription: http://metadata.carmencarto.fr/geonetwork/18/fre/csw?service=CSW&request=GetCapabilities
+  AcOddCorseCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de l'Atlas cartographique de l'observatoire du développement durable de la Corse
+    creator:
+      $ref: '#/agent/DrealCorse'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/AcOddCorse'
+    endpointURL: https://georchestra.ac-corse.fr/geoserver/ows
+    endpointDescription: https://georchestra.ac-corse.fr/geoserver/ows?service=CSW&request=GetCapabilities
+  KaruGéoCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de KaruGéo
+    creator:
+      $ref: '#/agent/ParcNationalDeGuadeloupe'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/KaruGéo'
+    endpointURL: https://www.karugeo.fr/geonetwork/srv/fre/csw
+    endpointDescription: https://www.karugeo.fr/geonetwork/srv/fre/csw?service=CSW&request=GetCapabilities
+  GéoMartiniqueCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de GéoMartinique
+    creator:
+      $ref: '#/agent/geomartinique.fr'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/GéoMartinique'
+    endpointURL: http://www.geomartinique.fr/geonetwork/srv/fre/csw
+    endpointDescription: http://www.geomartinique.fr/geonetwork/srv/fre/csw?service=CSW&request=GetCapabilities
+  GéoGuyaneCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de GéoGuyane
+    creator:
+      $ref: '#/agent/audeg.fr'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/GéoGuyane'
+    endpointURL: http://www.geoguyane.fr/geonetwork/srv/fre/csw
+    endpointDescription: http://www.geoguyane.fr/geonetwork/srv/fre/csw?service=CSW&request=GetCapabilities
+  DealRéunionCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de la Deal Réunion
+    creator:
+      $ref: '#/agent/DealRéunion'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/DealRéunion'
+    endpointURL: http://metadata.carmencarto.fr/geonetwork/29/fre/csw
+    endpointDescription: http://metadata.carmencarto.fr/geonetwork/29/fre/csw?service=CSW&request=GetCapabilities
