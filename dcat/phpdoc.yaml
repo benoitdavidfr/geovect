@@ -30,4 +30,5 @@ doc: |
   
     Questions:
       - ou stocker la spécification des produits notamment IGN ? dans le catalogue ?
-    
+phpScripts:
+  - /geovect/dcat/dcat.php
