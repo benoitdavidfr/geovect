@@ -554,35 +554,35 @@ catalogSchema:
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-zA-Zàçéêèîôù0-9_/.]+$:
+        ^[-a-zA-Z0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/Agent'
     standard:
       description: liste de spécifications (dct:Standard) des jeux de données, services ou catalogues
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-zA-Zàçéêèîôù0-9_/.]+$:
+        ^[-a-zA-Z0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/Standard'
     catalog:
       description: liste des catalogues référencés (dcat:Catalog) chacun identifié par un identifiant
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-zA-Zàçéêèîôù0-9_/.]+$:
+        ^[-a-zA-Z0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/Catalog'
     dataset:
       description: liste des jeux de données (dcat:Dataset) chacun identifié par un identifiant
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-zA-Zàçéêèîôù0-9_/.]+$:
+        ^[-a-zA-Z0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/Dataset'
     service:
       description: liste des services de données (dcat:DataService) chacun identifié par un identifiant
       type: object
       additionalProperties: false
       patternProperties:
-        ^[-a-zA-Zàçéêèîôù0-9_/.]+$:
+        ^[-a-zA-Z0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/DataService'
 namespaces:
   dc: http://purl.org/dc/elements/1.1/

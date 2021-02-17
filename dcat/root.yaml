@@ -6,7 +6,7 @@ description@fr: |
 $schema: def.yaml#/catalogSchema
 themeTaxonomy: {identifier: http://publications.europa.eu/resource/dataset/eurovoc, title: EuroVoc}
 creator:
-  - $ref: '#/agent/PMEcologieTerritoireMer'
+  - $ref: 'national.yaml#/agent/PMEcologieTerritoireMer'
   
 catalog:
   national:

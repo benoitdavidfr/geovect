@@ -43,6 +43,10 @@ agent:
     a: foaf:Organization
     prefLabel@fr: Service Hydrographique et Océanographique de la Marine (Shom)
     identifier: https://www.shom.fr
+  Cerema:
+    a: foaf:Organization
+    prefLabel@fr: centre d’études et d’expertise sur les risques, l’environnement, la mobilité et l’aménagement (Cérema)
+    identifier: https://www.cerema.fr
   ONF:
     a: foaf:Organization
     prefLabel@fr: Office National des Forêts (ONF)
@@ -83,6 +87,15 @@ catalog:
       serviceCsw:
         title@fr: Service CSW de Atlas Catalogue du Sandre
         accessService: {$ref: '#/service/SandreAtlasCsw'}
+  Ign:
+    title@fr: Catalogue du géoportail IGN
+    creator:
+      - $ref: '#/agent/IGN-F'
+    landingPage: https://www.geoportail.gouv.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW du géoportail IGN
+        accessService: {$ref: '#/service/IgnCsw'}
   Shom:
     title@fr: Catalogue des données du Shom
     title@en: Metadata catalog of SHOM
@@ -123,7 +136,7 @@ catalog:
       serviceCsw:
         title@fr: Service CSW de l'ONF
         accessService: {$ref: '#/service/OnfCsw'}
-  GéoIDE:
+  GeoIDE:
     title@fr: Catalogue de données géographiques des ministères chargés de l'écologie, des territoires et de l'agriculture
     creator:
       - $ref: '#/agent/PMEcologieTerritoireMer'
@@ -131,8 +144,8 @@ catalog:
     distribution:
       serviceCsw:
         title@fr: Service CSW de GéoIDE
-        accessService: {$ref: '#/service/GéoIdeCsw'}
-    
+        accessService: {$ref: '#/service/GeoIdeCsw'}
+
 dataset:
   GeoLittoral:
     title@fr: Géolittoral - portail des données sur la mer et le littoral du Ministère en charge de l’environnement et de la mer
@@ -201,10 +214,21 @@ service:
       - $ref: '#/catalog/SandreAtlas'
     endpointURL: http://www.sandre.eaufrance.fr/atlas/srv/fre/csw
     endpointDescription: http://www.sandre.eaufrance.fr/atlas/srv/fre/csw?service=CSW&request=GetCapabilities
+  IgnCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW du géoportail IGN
+    creator:
+      - $ref: '#/agent/IGN-F'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/Ign'
+    endpointURL: https://wxs.ign.fr/catalogue/csw
+    endpointDescription: https://wxs.ign.fr/catalogue/csw?service=CSW&request=GetCapabilities
   ShomCsw:
     type:
       - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
-    title@fr: Service CSW de EauFrance
+    title@fr: Service CSW du Shom
     creator:
       - $ref: '#/agent/Shom'
     conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
@@ -228,13 +252,13 @@ service:
       - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
     title@fr: Service CSW de l'ONF
     creator:
-      - $ref: '#/agent/Onf'
+      - $ref: '#/agent/ONF'
     conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
     servesDataset:
-      - $ref: '#/catalog/ONF'
+      - $ref: '#/catalog/Onf'
     endpointURL: http://metadata.carmencarto.fr/geonetwork/105/fre/csw
     endpointDescription: http://metadata.carmencarto.fr/geonetwork/105/fre/csw?service=CSW&request=GetCapabilities
-  GéoIdeCsw:
+  GeoIdeCsw:
     type:
       - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
     title@fr: Service CSW de GéoIDE
@@ -242,7 +266,7 @@ service:
       - $ref: '#/agent/PMEcologieTerritoireMer'
     conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
     servesDataset:
-      - $ref: '#/catalog/GéoIDE'
+      - $ref: '#/catalog/GeoIDE'
     endpointURL: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-harvestable
     endpointDescription: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-harvestable?service=CSW&request=GetCapabilities
   GeoLittoralWms:

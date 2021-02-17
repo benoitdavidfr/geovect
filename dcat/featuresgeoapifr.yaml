@@ -7,7 +7,7 @@ $schema: def.yaml#/catalogSchema
 #  $ref: '/var/www/html/geovect/dcat/def.yaml#/catalogSchema'
 identifier: https://features.geoapi.fr
 publisher:
-  - $ref: root#/agent/MinEcologie
+  - $ref: national.yaml#/agent/MinEcologie
 homepage: https://features.geoapi.fr/
 themeTaxonomy: http://publications.europa.eu/resource/dataset/eurovoc - EuroVoc
 theme:
@@ -82,7 +82,7 @@ dataset:
     license: https://www.naturalearthdata.com/about/terms-of-use/
     rights: Données dans le domaine public
     isPartOf:
-      $ref: '#/Dataset/naturalEarth'
+      $ref: '#/dataset/naturalEarth'
     distribution:
       download:
         downloadUrl: https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/110m_cultural.zip
@@ -94,7 +94,7 @@ dataset:
     title@en: Natural Earth, 1:110m scale, Physical Vector Data Themes
     identifier: https://www.naturalearthdata.com/downloads/110m-physical-vectors/
     isPartOf:
-      $ref: '#/Dataset/naturalEarth'
+      $ref: '#/dataset/naturalEarth'
     distribution:
       features:
         accessService:
@@ -102,6 +102,8 @@ dataset:
   ne_10m_cultural:
     title@en: Natural Earth, 1:10m scale, Cultural Vector Data Themes
     identifier: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/
+    isPartOf:
+      $ref: '#/dataset/naturalEarth'
     distribution:
       features:
         accessService:
@@ -110,7 +112,7 @@ dataset:
     title@en: Natural Earth, 1:10m scale, Physical Vector Data Themes
     identifier: https://www.naturalearthdata.com/downloads/10m-physical-vectors/
     isPartOf:
-      $ref: '#/Dataset/naturalEarth'
+      $ref: '#/dataset/naturalEarth'
     distribution:
       features:
         accessService:
@@ -118,16 +120,16 @@ dataset:
   ignf-route500:
     type: http://inspire.ec.europa.eu/metadata-codelist/ResourceType/series
     title@fr: ROUTE 500 (IGN)
-    creator: {$ref: root.yaml#/agent/IGN-F}
+    creator: {$ref: national.yaml#/agent/IGN-F}
     hasPart:
       - $ref: '#/dataset/ignf-route500_2020'
       - $ref: '#/dataset/ignf-route500_2019'
   ignf-route500_2020:
     title@fr: ROUTE 500 2020 (IGN)
     conformsTo:
-      $ref: '#/Standard/ignf-route500v3'
+      $ref: '#/standard/ignf-route500v3'
     isPartOf:
-      $ref: '#/Dataset/ignf-route500'
+      $ref: '#/dataset/ignf-route500'
     distribution:
       download:
         downloadUrl: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2020-08-04.7z.001
@@ -138,9 +140,9 @@ dataset:
   ignf-route500_2019:
     title@fr: ROUTE 500 2019 (IGN)
     conformsTo:
-      $ref: '#/Standard/ignf-route500v3'
+      $ref: '#/standard/ignf-route500v3'
     isPartOf:
-      $ref: '#/Dataset/ignf-route500'
+      $ref: '#/dataset/ignf-route500'
     distribution:
       download:
         downloadUrl: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2019-10-30.7z.001
@@ -150,7 +152,7 @@ dataset:
           $ref: '#/service/ignf-route500_2019'
   ignf-bdcarto:
     title@fr: BD CARTO (IGN)
-    creator: {$ref: root.yaml#/agent/IGN-F}
+    creator: {$ref: national.yaml#/agent/IGN-F}
     distribution:
       ignGpWfs:
         accessService:
