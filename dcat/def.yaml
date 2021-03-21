@@ -585,12 +585,15 @@ catalogSchema:
         ^[-a-zA-Z0-9_/.]+$:
           $ref: '#/catalogSchema/definitions/DataService'
 namespaces:
-  dc: http://purl.org/dc/elements/1.1/
+  dc: http://purl.org/dc/elements/1.1/ # 15 élements d'origine du DC, URI périmée remplacée par dct:
   dcat: http://www.w3.org/ns/dcat#
-  dct: http://purl.org/dc/terms/
-  dctype: http://purl.org/dc/dcmitype/
+  dct: http://purl.org/dc/terms/ # Dublin Core terms défined formelly defined in RDF published as ISO 15836-2:2019
+  # The DCMI Type Vocabulary, which defines classes for basic types of thing that can be described using DCMI metadata terms.
+  dctype: http://purl.org/dc/dcmitype/ 
   foaf: http://xmlns.com/foaf/0.1/
-  locn: http://www.w3.org/ns/locn#
+  locn: http://www.w3.org/ns/locn# # Location Core Vocabulary developed by ISA
+  # ODRL Version 2.2 Ontology, provides an information model, vocabulary, and encoding mechanisms for representing statements
+  # about the usage of content and services
   odrl: http://www.w3.org/ns/odrl/2/
   owl: http://www.w3.org/2002/07/owl#
   prov: http://www.w3.org/ns/prov#

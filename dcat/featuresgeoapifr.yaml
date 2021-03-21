@@ -120,6 +120,8 @@ dataset:
   ignf-route500:
     type: http://inspire.ec.europa.eu/metadata-codelist/ResourceType/series
     title@fr: ROUTE 500 (IGN)
+    description@fr: |
+      Cette série de données regroupe les différentes versions de ROUTE 500.
     creator: {$ref: national.yaml#/agent/IGN-F}
     hasPart:
       - $ref: '#/dataset/ignf-route500_2020'

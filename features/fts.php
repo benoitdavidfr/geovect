@@ -53,7 +53,7 @@ doc: |
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
 journal: |
-  6/2/20121:
+  6/2/2021:
     - réduction de l'empreinte mémoire dans items par l'utilisation de display_json() et display_fmt()
   27/1/2021:
     - détection des paramètres non prévus

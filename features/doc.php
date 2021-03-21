@@ -11,6 +11,8 @@ doc: |
     - 'Erreur .properties.acces="Saisonnier" not in enum=["A péage","Libre"]'
 
 journal: |
+  21/3/2021:
+    - ajout temporalExtent dans CollectionDoc
   3/2/2021:
     - modif lien dataset -> specification par un pointeur JSON
   31/1/2021:
@@ -272,6 +274,7 @@ class CollectionDoc {
   protected string $title;
   protected ?string $description=null;
   protected string|array $geometryType;
+  protected array $temporalExtent = [];
   protected array $properties=[];
   
   function schema() { /* Schema JSON 
@@ -338,6 +341,7 @@ class CollectionDoc {
     if (isset($yaml['description']))
       $this->description = rtrim($yaml['description']); // Il y a souvent un \n à la fin de la chaine
     $this->geometryType = $yaml['geometryType'];
+    $this->temporalExtent = $yaml['temporalExtent'] ?? [];
     foreach ($yaml['properties'] ?? [] as $propid => $property) {
       $this->properties[$propid] = new PropertyDoc($propid, $property);
     }

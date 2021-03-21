@@ -162,7 +162,6 @@ class Table extends FeatureCollection {
       'bdavid_route500.limite_administrative',
       [ 'nature'=> ["Limite côtière", "Frontière internationale"] ]
     );
-    //$table = new Table('', 'mysql://root@172.17.0.3/sys', [], 'ne_110m.coastline');
     echo $table->bbox([]),"<br>\n";
   }
 
@@ -197,7 +196,6 @@ class Table extends FeatureCollection {
     return;
   }
   static function test_features() {
-    //$table = new Table('', 'mysql://root@172.17.0.3/sys', 'ne_110m.coastline');
     $table = new Table(
       '',
       'mysql://bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500',

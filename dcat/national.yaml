@@ -24,7 +24,15 @@ agent:
   DGALN:
     a: foaf:Organization
     prefLabel@fr: Direction générale de l'aménagement, du logement et de la nature (DGALN)
-    identifier: https://www.legifrance.gouv.fr/jorf/article_jo/JORFARTI000019146972
+    identifier: https://www.legifrance.gouv.fr/eli/decret/2008/7/9/2008-680/jo/article_7
+  DGPR:
+    a: foaf:Organization
+    prefLabel@fr: Direction générale de la Prévention des Risques (DGPR)
+    identifier: https://www.legifrance.gouv.fr/eli/decret/2008/7/9/2008-680/jo/article_8
+  BRGM:
+    a: foaf:organization
+    prefLabel@fr: Service Géologique National
+    identifier: https://www.brgm.fr/
   Ifremer:
     a: foaf:Organization
     prefLabel@fr: Institut français de recherche pour l'exploitation de la mer
@@ -96,6 +104,15 @@ catalog:
       serviceCsw:
         title@fr: Service CSW du géoportail IGN
         accessService: {$ref: '#/service/IgnCsw'}
+  IgnInspire:
+    title@fr: Catalogue Inspire du géoportail IGN
+    creator:
+      - $ref: '#/agent/IGN-F'
+    landingPage: https://www.geoportail.gouv.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW du catalogue Inspire IGN
+        accessService: {$ref: '#/service/IgnInspireCsw'}
   Shom:
     title@fr: Catalogue des données du Shom
     title@en: Metadata catalog of SHOM
@@ -145,6 +162,17 @@ catalog:
       serviceCsw:
         title@fr: Service CSW de GéoIDE
         accessService: {$ref: '#/service/GeoIdeCsw'}
+  GeoRisques:
+    title@fr: Portail national sur les risques
+    publisher:
+      - $ref: '#/agent/DGPR'
+    creator:
+      - $ref: '#/agent/BRGM'
+    landingPage: https://www.georisques.gouv.fr/
+    distribution:
+      serviceCsw:
+        title@fr: Service CSW de GéoRisques
+        accessService: {$ref: '#/service/GeoRisquesCsw'}
 
 dataset:
   GeoLittoral:
@@ -225,6 +253,17 @@ service:
       - $ref: '#/catalog/Ign'
     endpointURL: https://wxs.ign.fr/catalogue/csw
     endpointDescription: https://wxs.ign.fr/catalogue/csw?service=CSW&request=GetCapabilities
+  IgnInspireCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW du catalogue Inspire IGN
+    creator:
+      - $ref: '#/agent/IGN-F'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/IgnInspire'
+    endpointURL: https://wxs.ign.fr/catalogue/csw-inspire
+    endpointDescription: https://wxs.ign.fr/catalogue/csw-inspire?service=CSW&request=GetCapabilities
   ShomCsw:
     type:
       - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
@@ -269,6 +308,19 @@ service:
       - $ref: '#/catalog/GeoIDE'
     endpointURL: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-harvestable
     endpointDescription: http://ogc.geo-ide.developpement-durable.gouv.fr/csw/all-harvestable?service=CSW&request=GetCapabilities
+  GeoRisquesCsw:
+    type:
+      - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/discovery
+    title@fr: Service CSW de GéoRisques
+    publisher:
+      - $ref: '#/agent/DGPR'
+    creator:
+      - $ref: '#/agent/BRGM'
+    conformsTo: http://www.opengis.net/def/serviceType/ogc/csw
+    servesDataset:
+      - $ref: '#/catalog/GeoRisques'
+    endpointURL: https://catalogue.georisques.gouv.fr/geonetwork/srv/fre/csw
+    endpointDescription: https://catalogue.georisques.gouv.fr/geonetwork/srv/fre/csw?service=CSW&request=GetCapabilities
   GeoLittoralWms:
     type:
       - https://inspire.ec.europa.eu/metadata-codelist/SpatialDataServiceType/view
@@ -297,3 +349,4 @@ service:
       - $ref: '#/dataset/GeoLittoral'
     endpointURL: http://geolittoral.din.developpement-durable.gouv.fr/wxs
     endpointDescription: http://geolittoral.din.developpement-durable.gouv.fr/wxs?REQUEST=SERVICE=WFS&GetCapabilities
+

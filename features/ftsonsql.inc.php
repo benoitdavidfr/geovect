@@ -17,6 +17,12 @@ doc: |
     - gérer correctement une explosion mémoire (?)
 
 journal: |
+  21/3/2021/
+    - correction d'un 2e bug dans items() lors d'un bbox
+    - ajout dans items() d'un tri pour s'assurer que l'ordre est identique entre les appels successifs
+    - ajout dans les propriétés d'une collection de son extension temporelle quand elle est définie dans la doc
+  20/3/2021/
+    - correction d'un bug dans items() sur PgSql lors d'un bbox
   6/2/20121:
     - réduction de l'empreinte mémoire dans items par l'utilisation de display_json() et display_fmt()
   31/1/2021:
@@ -127,6 +133,39 @@ class CollOnSql {
       $spatialExtent = MySql::spatialExtent($this->table->name, $this->geomCol->name);
       return $spatialExtent ? [$spatialExtent] : [];
     }
+  }
+  
+  function temporalExtent(array $temporalExtent): array {
+    //echo "Appel de CollOnSql::temporalExtent()\n";
+    //echo Yaml::dump($temporalExtent);
+    $sql = "select count(*) nbre from ".$this->table->name." where $temporalExtent[startProperty] is null";
+    //echo "$sql\n";
+    $nbreNull = Sql::getTuples($sql)[0]['nbre'];
+    //echo "nbreNull=$nbreNull\n";
+    if ($nbreNull <> 0) {
+      $start = null;
+    }
+    else {
+      $sql = "select min($temporalExtent[startProperty]) min from ".$this->table->name;
+      //echo "$sql\n";
+      $start = Sql::getTuples($sql)[0]['min'];
+      //echo "start=$start\n";
+    }
+    
+    $sql = "select count(*) nbre from ".$this->table->name." where $temporalExtent[endProperty] is null";
+    //echo "$sql\n";
+    $nbreNull = Sql::getTuples($sql)[0]['nbre'];
+    //echo "nbreNull=$nbreNull\n";
+    if ($nbreNull <> 0) {
+      $end = null;
+    }
+    else {
+      $sql = "select max($temporalExtent[endProperty]) max from ".$this->table->name;
+      //echo "$sql\n";
+      $end = Sql::getTuples($sql)[0]['max'];
+      //echo "end=$end\n";
+    }
+    return ['interval' => [[$start, $end]]];
   }
 };
 
@@ -637,8 +676,12 @@ links to support paging (link relation `next`).",
   // structuration d'une collection utilisée pour les réponses à /collections et à /collections/{collId}
   private function collection_structuration(string $collUrl, string $collId, string $f): array {
     $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
-    $spatialExtentBboxes = (new CollOnSql($this->sqlSchema, $collId))->spatialExtentBboxes();
-    $temporalExtent = null;
+    $collSql = new CollOnSql($this->sqlSchema, $collId);
+    $spatialExtentBboxes = $collSql->spatialExtentBboxes();
+    if ($collDoc && $collDoc->temporalExtent)
+      $temporalExtent = $collSql->temporalExtent($collDoc->temporalExtent);
+    else
+      $temporalExtent = null;
     return [
       'id'=> $collId,
       'title'=> $collDoc ? $collDoc->title : $collId,
@@ -969,7 +1012,7 @@ links to support paging (link relation `next`).",
   }
   
   // retourne les items de la collection comme FeatureCollection en array Php
-  // REMPLACEE par itemsIterable()
+  // REMPLACEE dans certains cas par itemsIterable()
   function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
     $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
     $jsonColNames = []; // liste des noms des colonnes de type JSON
@@ -991,15 +1034,19 @@ links to support paging (link relation `next`).",
         $filters[$column->name] = $_GET[$column->name];
     }
     $selectFrom = "select ".implode(',', $columns)."\nfrom ".$collection->table()->name;
-    $where = '';
+    $where = [];
     if ($bbox) {
       self::checkBbox($bbox);
       $geomColName = $collection->geomCol()->name;
-      //$where = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
+      $wherePgSql = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
       $polygonWkt = "POLYGON(($bbox[0] $bbox[1],$bbox[0] $bbox[3],$bbox[2] $bbox[3],$bbox[2] $bbox[1],$bbox[0] $bbox[1]))";
-      $where = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt'))\n";
+      $whereMySql = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt'))\n";
       // MySql exige que les SRID soient identiques
       // j'ai choisi en MySql de charger les géométries en SRID 0 pour éviter l'impossibilité d'utiliser certaines fonctions
+      $where = [
+        'PgSql'=> "\nwhere $wherePgSql",
+        'MySql'=> "\nwhere $whereMySql",
+      ];
     }
     if ($filters) {
       {/*Tests de mise en oeuvre de filtres:
@@ -1016,16 +1063,22 @@ links to support paging (link relation `next`).",
           $expr = "$colName like '".substr($value,0, strlen($value)-1)."%'";
         else
           $expr = "$colName='$value'";
-        $where .= ($where ? ' and ' : '').$expr;
+        $where[] = ($where ? ' and ' : '').$expr;
       }
     }
-    $sql = "select count(*) count from ".$collection->table()->name.($where ? "\nwhere $where" : '');
+    $sql = [
+      "select count(*) count from ".$collection->table()->name,
+      $where,
+    ];
     $numberMatched = (int) Sql::getTuples($sql)[0]['count'];
-    $sql = $selectFrom
-      .($where ? "\nwhere $where" : '')
-      .($limit ? "\nlimit $limit": '')
-      .($startindex ? " offset $startindex" : '');
-    //echo "sql=$sql\n";
+    $sql = [
+      $selectFrom,
+      $where,
+      "\norder by ".$collection->pkeyCol()->name, // ordre nécessaire pour s'assurer qu'il est identique entre 2 appels
+      ($limit ? "\nlimit $limit": ''),
+      ($startindex ? " offset $startindex" : ''),
+    ];
+    //echo "sql=",Sql::toString($sql),"\n";
     $items = [];
     foreach (Sql::query($sql) as $tuple) {
       if (isset($tuple['st_asgeojson'])) {

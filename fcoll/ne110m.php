@@ -19,7 +19,7 @@ require_once __DIR__.'/../../phplib/sql.inc.php';
 
 //header('Content-type: application/json');
 
-MySql::open('mysql://root@172.17.0.3/');
+MySql::open('mysql://root@mysqlserver/');
 
 //print_r($argv); die();
 if (php_sapi_name()=='cli') {

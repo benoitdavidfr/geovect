@@ -115,7 +115,7 @@ echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>testseria</title
 //header('Content-type: application/json; charset="utf8"');
 
 if (0) { // ss display_json() -> nb=1432, memory_get_peak_usage=126.3 MB
-  Sql::open('pgsql://docker@172.17.0.4/gis/public');
+  Sql::open('pgsql://docker@pgsqlserver/gis/public');
   $sql = "select ogc_fid, id, nom_com, nom_com_m, statut, insee_can, insee_arr, insee_dep, insee_reg, code_epci, population,
       type, ST_AsGeoJSON(wkb_geometry) wkb_geometry
   from commune_carto
@@ -133,7 +133,7 @@ if (0) { // ss display_json() -> nb=1432, memory_get_peak_usage=126.3 MB
   ]));
 }
 elseif (1) { // utilisation de display_json()
-  Sql::open('pgsql://docker@172.17.0.4/gis/public');
+  Sql::open('pgsql://docker@pgsqlserver/gis/public');
   $sql = "select ogc_fid, id, nom_com, nom_com_m, statut, insee_can, insee_arr, insee_dep, insee_reg, code_epci, population,
       type, ST_AsGeoJSON(wkb_geometry) wkb_geometry
   from commune_carto

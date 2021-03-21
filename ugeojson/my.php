@@ -14,7 +14,7 @@ use Symfony\Component\Yaml\Yaml;
 
 // paramètres de BD / host
 $dbParamsByHost = [
-  'localhost'=> 'mysql://root@172.17.0.3/',
+  'localhost'=> 'mysql://root@mysqlserver/',
   //'localhost'=> 'mysql://bdavid@mysql-bdavid.alwaysdata.net/',
   'bdavid.alwaysdata.net'=> 'mysql://bdavid@mysql-bdavid.alwaysdata.net/',
   //'bdavid.alwaysdata.net'=> 'pgsql://bdavid@postgresql-bdavid.alwaysdata.net/',

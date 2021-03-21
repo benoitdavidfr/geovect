@@ -16,6 +16,15 @@ require_once __DIR__.'/../vendor/autoload.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+
+function jsonLdContext() { // Génère le contexte JSON-LD avec les espaces de nom 
+  /*return [
+    '@version'=> '1.1', // génère une erreur dans Fuseki
+  ]
+  + Yaml::parseFile(__DIR__.'/def.yaml')['namespaces'];*/
+  return Yaml::parseFile(__DIR__.'/def.yaml')['namespaces'];
+}
+
 // stocke l'array transmis à la création et le rend à la demande
 abstract class YamlObject implements \JsonSerializable {
   protected array $yaml=[];
@@ -42,12 +51,35 @@ abstract class Resource extends YamlObject {
   }
   
   abstract function uri(): string;
-  abstract function turtle(): string;
+  //abstract function turtle(): string;
+  
+  function jsonld(): array { // la définition JSON-LD de la ressource et de son appartenance au catalogue racine
+    $propHasPart = match(get_called_class()) {
+      'dcat\\Dataset'=> 'dcat:dataset',
+      'dcat\\Catalog'=> 'dcat:catalog',
+      'dcat\\DataService'=> 'dcat:service',
+    };
+    return [
+      '@context' => jsonLdContext(),
+      '@id'=> 'https://geocat.fr/',
+      '@type'=> 'dcat:Catalog',
+      $propHasPart => [
+        [
+          '@id'=> $this->uri(),
+          '@type'=> 'dcat:'.substr(get_called_class(), strlen(__NAMESPACE__)+1),
+          'dct:title'=> [
+            '@value'=> $this->{'title@fr'},
+            '@language'=> 'fr',
+          ],
+        ],
+      ],
+    ];
+  }
 };
 
 class Dataset extends Resource {
   function uri(): string {}
-  function turtle(): string {}
+  //function turtle(): string {}
 };
 
 // un objet Catalog est un sous-catalogue d'un DCat
@@ -71,12 +103,9 @@ class Catalog extends Dataset {
     return $accessServices;
   }
 
-  function uri(): string {
-    $pcat = basename($this->dcat->path, '.yaml');
-    return "https://geocat.fr/$pcat/catalog/$this->id";
-  }
+  function uri(): string { return "https://geocat.fr/catalog/$this->id"; }
 
-  function turtle(): string {
+  /*function turtle(): string {
     //print_r($this);
     $ttl = [];
     $def = file_get_contents(__DIR__.'/def.yaml');
@@ -92,26 +121,26 @@ class Catalog extends Dataset {
       .$this->{'title@fr'}
       ."\"@fr .";
     return implode("\n", $ttl);
-  }
+    {/* Turtle example
+      @base <http://example.org/> .
+      @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+      @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+      @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+      @prefix rel: <http://www.perceive.net/schemas/relationship/> .
+
+      <#green-goblin>
+          rel:enemyOf <#spiderman> ;
+          a foaf:Person ;    # in the context of the Marvel universe
+          foaf:name "Green Goblin" .
+
+      <#spiderman>
+          rel:enemyOf <#green-goblin> ;
+          a foaf:Person ;
+          foaf:name "Spiderman" .
+
+    *}
+  }*/
 };
-/*
-@base <http://example.org/> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
-@prefix rel: <http://www.perceive.net/schemas/relationship/> .
-
-<#green-goblin>
-    rel:enemyOf <#spiderman> ;
-    a foaf:Person ;    # in the context of the Marvel universe
-    foaf:name "Green Goblin" .
-
-<#spiderman>
-    rel:enemyOf <#green-goblin> ;
-    a foaf:Person ;
-    foaf:name "Spiderman" .
-
-*/
 
 class DataService extends Resource {
   function isCsw(): bool {

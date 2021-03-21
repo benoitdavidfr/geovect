@@ -47,7 +47,7 @@ datasets:
   ne_110m_cultural:
     title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
     path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_cultural
-    #path: /mysql/root@172.17.0.3/ne_110m_cultural
+    #path: /mysql/root@mysqlserver/ne_110m_cultural
     identifier: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/
     conformsTo:
       $ref: 'doc/ne.yaml#/specifications/ne_110m_cultural'
@@ -57,7 +57,7 @@ datasets:
   ne_110m_physical:
     title: Natural Earth, 1:110m scale, Physical Vector Data Themes
     path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_physical
-    #path: /mysql/root@172.17.0.3/ne_110m_physical
+    #path: /mysql/root@mysqlserver/ne_110m_physical
     identifier: https://www.naturalearthdata.com/downloads/110m-physical-vectors/
     conformsTo:
       $ref: 'doc/ne.yaml#/specifications/ne_110m_physical'
@@ -87,10 +87,10 @@ datasets:
 
   local-route500_2020:
     title: ROUTE 500 2020 sur le serveur Docker
-    path: /mysql/root@172.17.0.3/route500_2020
+    path: /mysql/root@mysqlserver/route500_2020
   local-route500_2019:
     title: ROUTE 500 2019 sur le serveur Docker
-    path: /mysql/root@172.17.0.3/route500_2019
+    path: /mysql/root@mysqlserver/route500_2019
   shomwfs:
     title: Serveur WFS du Shom
     path: /wfs/services.data.shom.fr/INSPIRE/wfs
@@ -116,10 +116,20 @@ datasets:
 
   localgis:
     title: Serveur PgSql sur Docker, base gis, schema public
-    path: /pgsql/docker@172.17.0.4/gis/public
+    path: /pgsql/docker@pgsqlserver/gis/public
+    conformsTo:
+      $ref: 'doc/comhisto.yaml#/specifications/comhisto'
+    licence:
+      href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
+      title: licence ouverte Etalab.
   comhisto:
     title: Référentiel de l'historique des communes
     path: /pgsql/benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public
+    conformsTo:
+      $ref: 'doc/comhisto.yaml#/specifications/comhisto'
+    licence:
+      href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
+      title: licence ouverte Etalab.
   test@mysql:
     title: base de test
     path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect

@@ -1,6 +1,6 @@
 title: schéma JSON de la documentation
 abstract: |
-  L'objectif est de définir une doc des jeux de données exposés en s'inspirant des schema JSON
+  Ce schéma définit la doc des jeux de données exposés en s'inspirant des schema JSON
   et permettant de générer facilement un schéma JSON.
   
   Cette doc distingue les concepts de:
@@ -12,14 +12,17 @@ abstract: |
   Un jeu de données peut référencer une spécification.
   
   Une spécification décrit la structuration des données, notamment:
-    - la définition des collections, de leurs propriétés, des valeurs en cas de type énuméré.
-    - la définition du type de géométrie de chaque collection
+    - la définition des collections, de leurs propriétés, des valeurs en cas de type énuméré,
+    - la définition du type de géométrie de chaque collection,
+    - l'éventuelle définition des propriétés définissant l'extension temporelle.
   La documentation d'un jeu de données peut être partielle.
   
   Ajouter la possibilité d'indiquer qu'un attribut définit un géoréférencement indirect.
   Par exemple, le code Insee d'une commune ou une adresse, définit un tel géoréférencement
 
   journal:
+    21/3/2021:
+      - ajout de la possibilité de définir une extension temporelle, utilisée pour comhisto
     3/2/2021:
       - modif lien dataset -> specification pour un pointeur JSON pour permettre d'éclater le fichier doc.yaml en plusieurs
 $id: http://feature.geoapi.fr/schema/doc
@@ -102,6 +105,7 @@ definitions:
           - string
           - integer
           - number
+          - date
       enum:
         $ref: '#/definitions/enumType'
       unit:
@@ -121,6 +125,9 @@ definitions:
                 type: string
           - description: cas particulier où les valeurs sont les premiers entiers positifs ou nuls
             type: array
+            items:
+              description: signification de la valeur
+              type: string
   geometryType:
     description: |
       liste des types géométriques élémentaires construite à partir du type GeoJSON de géométrie en y ajoutant
@@ -195,11 +202,32 @@ definitions:
           - MultiPolygon3D
           - GeometryCollection
           - none
+      temporalExtent:
+        description: Définition des propriétés définissant l'extension temporelle de la collection
+        oneOf:
+          - description: définition par une propriété de début et une de de fin
+            type: object
+            additionalProperties: false
+            properties:
+              startProperty:
+                description: id de la propriété définissant le début de l'extension temporelle d'un n-uplet
+                type: string
+              endProperty:
+                description: id de la propriété définissant la fin de l'extension temporelle d'un n-uplet
+                type: string
+          - description: définition par une propriété de date
+            type: object
+            additionalProperties: false
+            properties:
+              dateProperty:
+                description: id de la propriété définissant la date associée à un n-uplet
+                type: string
       properties:
         description: |
           Dictionnaire des propriétés des items de la collection indexé sur le nom de la propriété.
           La description est optionelle.
         type: object
+        additionalProperties: false
         patternProperties:
           ^[-a-zA-Z0-9_]*$:
             $ref: '#/definitions/property'
@@ -225,7 +253,7 @@ definitions:
         description: URI de référence de la spécification
         type: string
       source:
-        description: Document source de la spécification, au cas où identfier n'est pas adapté
+        description: Document source de la spécification, au cas où identifier n'est pas adapté
         type: string
       metadata:
         description: lien vers des MD génériques par ex. ISO 19139
