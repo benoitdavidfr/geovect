@@ -15,5 +15,8 @@ Des serveurs de test sont disponibles aux adresses :
   - https://features.geoapi.fr/ignf-route500 - Base de données Route 500 de l'IGN
   - https://features.geoapi.fr/ne_110m_cultural - Natural Earth - 1:110m scale - Cultural data themes
   - https://features.geoapi.fr/ne_110m_physical - Natural Earth - 1:110m scale - Physical data themes
+  - https://features.geoapi.fr/ne_10m_cultural - Natural Earth - 1:10m scale - Cultural data themes
+  - https://features.geoapi.fr/ne_10m_physical - Natural Earth - 1:10m scale - Physical data themes
+  - https://features.geoapi.fr/comhisto - Référentiel communal historique simplifié (ComHisto)
 
 Ils peuvent notamment être utilisés avec QGis (version >= 3.16).
