@@ -23,7 +23,7 @@ journal: |
     - ajout Homogeneous::filter()
   5/5/2019:
     - création de la classe LnPos
-    - réécriture de plusieurs algoritmes pour les rendre plus génériques
+    - réécriture de plusieurs algorithmes pour les rendre plus génériques
     - définition d'un espace de noms
     - définition de la classe Homogeneous pour éviter que GeometryCollection porte un champ coords
   4/5/2019:

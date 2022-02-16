@@ -75,6 +75,9 @@ doc: |
     
     
 journal: |
+  15-16/2/2022:
+    - évolutions de ogr2php pour charger NE dans OVH
+    - mise à jour de Symfony/Yaml pour Php 8.1
   29/12/2020:
     - rénovation fondée sur un catalogue DCAT et des services OGC nlle génération
   25/5/2019:

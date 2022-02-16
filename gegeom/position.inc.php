@@ -441,7 +441,7 @@ doc: |
 */}
 class LnPos {
   /*PhpDoc: methods
-  name: toString
+  name: power
   title: "static function power(array $lnpos): int - renvoie la puissance de la LnPos ou -1 pour une liste vide, génère une exception si un array non liste est rencontré"
   */
   static function power(array $lnpos): int {
@@ -478,13 +478,13 @@ class LnPos {
   }
   static function test_wkt() {
     foreach([
-      [],
-      [0,1],
-      [[0,1],[2,3]], // LPos
-      [[[0,1],[2,3]]], // LLPos
-      [[[[0,1],[2,3]]]], // LLLPos
-    ] as $lnpos) {
-      echo self::wkt($lnpos),"<br>\n";
+      "liste vide"=> [],
+      "Pos"=> [0,1],
+      "LPos"=> [[0,1],[2,3]], // LPos
+      "LLPos"=> [[[0,1],[2,3]],[[3,4]]], // LLPos
+      "LLLPos"=> [[[[0,1],[2,3]],[[3,4]]],[[[5,6]]]], // LLLPos
+    ] as $label => $lnpos) {
+      echo "$label -> ",self::wkt($lnpos),"<br>\n";
     }
   }
   

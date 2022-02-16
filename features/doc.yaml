@@ -44,7 +44,7 @@ datasets:
       href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
       title: licence ouverte Etalab.
 
-  ne_110m_cultural:
+  ne110m_cultural:
     title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
     #path: /mysql/root@mysqlserver/ne_110m_cultural
     #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_cultural
@@ -55,10 +55,10 @@ datasets:
     licence:
       href: http://www.naturalearthdata.com/about/terms-of-use/
       title: Public domain
-  ne_110m_physical:
+  ne110m_physical:
     title: Natural Earth, 1:110m scale, Physical Vector Data Themes
     #path: /mysql/root@mysqlserver/ne_110m_physical
-    #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_physical
+    #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne110m_physical
     path: /pgsql/benoit@db207552-001.dbaas.ovh.net:35250/ne110m_physical/public
     identifier: https://www.naturalearthdata.com/downloads/110m-physical-vectors/
     conformsTo:
@@ -66,7 +66,7 @@ datasets:
     licence:
       href: http://www.naturalearthdata.com/about/terms-of-use/
       title: Public domain
-  ne_10m_cultural:
+  ne10m_cultural:
     title: Natural Earth, 1:10m scale, Cultural Vector Data Themes
     #path: /mysql/root@172.17.0.3/ne_10m_cultural
     #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m_cultural
@@ -77,7 +77,7 @@ datasets:
     licence:
       href: http://www.naturalearthdata.com/about/terms-of-use/
       title: Public domain
-  ne_10m_physical:
+  ne10m_physical:
     title: Natural Earth, 1:10m scale, Physical Vector Data Themes
     #path: /mysql/root@172.17.0.3/ne_10m_physical
     #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m_physical

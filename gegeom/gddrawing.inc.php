@@ -31,7 +31,7 @@ require_once __DIR__.'/drawing.inc.php';
 
 {/*PhpDoc: classes
 name:  GdDrawing
-title: GdDrawing - classe implémentant un dessin utilisant les primitives GD + copie & rééchantillonnage d'image
+title: class GdDrawing extends Drawing - classe implémentant un dessin utilisant les primitives GD + copie & rééchantillonnage d'image
 methods:
 doc: |
   Un dessin définit un système de coord. utilisateurs, une taille d'image d'affichage et une couleur de fond.
@@ -189,7 +189,7 @@ class GdDrawing extends Drawing {
       }
     }
     //echo "<pre>imagefilledpolygon(pts="; print_r($pts); die(")");
-    if (!imagefilledpolygon($this->im, $pts, count($pts)/2, $color))
+    if (!imagefilledpolygon($this->im, $pts, /*count($pts)/2, */$color))
       throw new \Exception("Erreur imagefilledpolygon(im, pts, num, $color) ligne ".__LINE__);
     if (isset($style['stroke'])) {
       foreach ($llpos as $lpos)
@@ -276,5 +276,5 @@ if (basename(__FILE__) == basename($_SERVER['PHP_SELF'])) { // test élémentair
   //(new Polygon([[[100,100],[100,200],[200,200],[300,300],[100,100]]]))->draw($drawing, ['fill'=> 0xaaff]);
 
   $drawing->flush();
-  $drawing->flush('', true);  
+  //$drawing->flush('', true);  // Utiliser cette ligne pour ne pas transmettre le header en cas de bug
 }
