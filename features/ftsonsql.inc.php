@@ -17,11 +17,13 @@ doc: |
     - gérer correctement une explosion mémoire (?)
 
 journal: |
-  21/3/2021/
+  16/2/2022:
+    - traitement des col. geography comme les colonnes geometry sous le nom geo
+  21/3/2021:
     - correction d'un 2e bug dans items() lors d'un bbox
     - ajout dans items() d'un tri pour s'assurer que l'ordre est identique entre les appels successifs
     - ajout dans les propriétés d'une collection de son extension temporelle quand elle est définie dans la doc
-  20/3/2021/
+  20/3/2021:
     - correction d'un bug dans items() sur PgSql lors d'un bbox
   6/2/20121:
     - réduction de l'empreinte mémoire dans items par l'utilisation de display_json() et display_fmt()
@@ -73,21 +75,22 @@ class CollOnSql {
   const SEP = '__'; // séparateur entre nom de table et nom de colonne pour créer le nom de collection
   
   protected \Sql\Table $table; // Table correspondant à la collection
-  protected ?\Sql\Column $geomCol=null; // colonne géométrique, null ssi collection non géométrique
+  //protected ?\Sql\Column $geomCol=null; // colonne géométrique, null ssi collection non géométrique
+  protected ?\Sql\Column $geoCol=null; // colonne géo (géométrique ou géographique), null ssi collection non géo
   //protected array $columns; // [ \Sql\Column ]
 
   static function collNames(\Sql\Schema $sqlSchema): array { // retourne la liste des noms de collection
     $collNames = [];
     foreach ($sqlSchema->tables as $table_name => $sqlTable) {
-      if (!$sqlTable->pkeyCol()) // on ne prend pas les tables qi ne comportent pas de clé primaire
+      if (!$sqlTable->pkeyCol()) // on ne prend pas les tables qui ne comportent pas de clé primaire
         continue;
-      $geomColumns = $sqlTable->listOfGeometryColumns();
-      if (count($geomColumns) <= 1) { // la table comporte au plus un champ géométrique
+      $geoColumns = $sqlTable->listOfGeoColumns();
+      if (count($geoColumns) <= 1) { // la table comporte au plus un champ géométrique
         $collNames[] = $table_name;
       }
       else { // la table comorte plus d'un champ géométrique
-        foreach (array_keys($geomColumns) as $geomColumnName)
-          $collNames[] = $table_name.self::SEP.$geomColumnName;
+        foreach (array_keys($geoColumns) as $geoColumnName)
+          $collNames[] = $table_name.self::SEP.$geoColumnName;
       }
     }
     return $collNames;
@@ -98,20 +101,20 @@ class CollOnSql {
     //echo "listOfColumnsOfTable="; print_r(SqlSchema::listOfColumnsOfTable($schema, $collId));
     if ($table = $schema->tables[$collId] ?? null) { // cas normal 
       $this->table = $table;
-      $geomColumns = $this->table->listOfGeometryColumns();
-      if (count($geomColumns) == 1)
-        $this->geomCol = array_values($geomColumns)[0];
+      $geoColumns = $this->table->listOfGeoColumns();
+      if (count($geoColumns) == 1)
+        $this->geoCol = array_values($geoColumns)[0];
     }
     else { // cas où {collId} est la concaténation des noms de la table et de la colonne géométrique
-      $this->geomCol = $schema->concatTableGeomNames($collId, self::SEP);
-      if (!$this->geomCol)
+      $this->geoCol = $schema->concatTableGeomNames($collId, self::SEP);
+      if (!$this->geoCol)
         throw new Exception("collection $collId inconnue", 404);
-      $this->table = $this->geomCol->table;
+      $this->table = $this->geoCol->table;
     }
   }
   
   function table(): \Sql\Table { return $this->table; }
-  function geomCol(): ?\Sql\Column { return $this->geomCol; }
+  function geoCol(): ?\Sql\Column { return $this->geoCol; }
   //function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
   function pkeyCol(): \Sql\Column { return $this->table->pkeyCol(); }
   function columns(): array { return $this->table->columns; } // [ {name}=> \Sql\Column]
@@ -119,10 +122,10 @@ class CollOnSql {
   function spatialExtentBboxes(): array { // retourne une liste de BBox, chacune comme [lonmin, latmin, lonmax, latmax]
     // pas très satisfaisant, pour la France il faudrait un bbox par DOM !
     // les mettre dans la doc ?
-    if (!$this->geomCol)
+    if (!$this->geoCol)
       return [];
     elseif (Sql::software()=='PgSql') { // calcul en PgSql 
-      $sql = "select ST_Extent(".$this->geomCol->name.") as table_extent FROM ".$this->table->name;
+      $sql = "select ST_Extent(".$this->geoCol->name.") as table_extent FROM ".$this->table->name;
       $extent = Sql::getTuples($sql)[0]['table_extent'];
       //echo "$extent\n";
       if (!preg_match('!^BOX\(([-\d\.]+) ([-\d\.]+),([-\d\.]+) ([-\d\.]+)\)$!', $extent, $matches))
@@ -130,7 +133,7 @@ class CollOnSql {
       return [[round($matches[1], 4), round($matches[2], 4), round($matches[3], 4), round($matches[4], 4)]];
     }
     elseif (Sql::software()=='MySql') { // en MySql, appel de la méthode adhoc 
-      $spatialExtent = MySql::spatialExtent($this->table->name, $this->geomCol->name);
+      $spatialExtent = MySql::spatialExtent($this->table->name, $this->geoCol->name);
       return $spatialExtent ? [$spatialExtent] : [];
     }
   }
@@ -653,7 +656,7 @@ links to support paging (link relation `next`).",
     foreach ($this->sqlSchema->tables as $tname => $table) {
       $pkeyCol = $table->pkeyCol();
       $tables[$tname] = [
-        'geomColumnNames'=> array_keys($table->listOfGeometryColumns()),
+        'geoColumnNames'=> array_keys($table->listOfGeoColumns()),
         'pkColumnName'=> $pkeyCol ? $pkeyCol->name : null,
       ];
     }
@@ -936,8 +939,8 @@ links to support paging (link relation `next`).",
         $propertiesSchema[$column->name] = $prop;
       }
     }
-    $geomSchema = !$collOnSql->geomCol() ? [
-        'description'=> "no geometry coded as a GeometryCollection with 0 geometries",
+    $geoSchema = !$collOnSql->geoCol() ? [
+        'description'=> "no geometry ot geography coded as a GeometryCollection with 0 geometries",
         '$ref'=> self::OGC_SCHEMA_URI.'#/components/schemas/geometrycollectionGeoJSON',
       ]
       : ($docFSchema['properties']['geometry'] ?? [
@@ -963,7 +966,7 @@ links to support paging (link relation `next`).",
             'additionalProperties'=> false,
             'properties'=> $propertiesSchema,
           ],
-          'geometry'=> $geomSchema,
+          'geometry'=> $geoSchema,
         ],
       ]
     );
@@ -1020,8 +1023,8 @@ links to support paging (link relation `next`).",
     $filters = []; // filtres sous la forme [{columnName} => {value}]
     $collection = new CollOnSql($this->sqlSchema, $collId);
     foreach ($collection->columns() as $column) {
-      if ($column->hasGeometryType()) {
-        if ($collection->geomCol() && ($column->name == $collection->geomCol()->name)) 
+      if ($column->hasGeoType()) {
+        if ($collection->geoCol() && ($column->name == $collection->geoCol()->name)) 
           $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }
       elseif (!$properties || in_array($column->name, $properties)) {
@@ -1037,10 +1040,10 @@ links to support paging (link relation `next`).",
     $where = [];
     if ($bbox) {
       self::checkBbox($bbox);
-      $geomColName = $collection->geomCol()->name;
-      $wherePgSql = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
+      $geoColName = $collection->geoCol()->name;
+      $wherePgSql = "$geoColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
       $polygonWkt = "POLYGON(($bbox[0] $bbox[1],$bbox[0] $bbox[3],$bbox[2] $bbox[3],$bbox[2] $bbox[1],$bbox[0] $bbox[1]))";
-      $whereMySql = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt'))\n";
+      $whereMySql = "ST_Intersects($geoColName, ST_GeomFromText('$polygonWkt'))\n";
       // MySql exige que les SRID soient identiques
       // j'ai choisi en MySql de charger les géométries en SRID 0 pour éviter l'impossibilité d'utiliser certaines fonctions
       $where = [
@@ -1200,7 +1203,7 @@ links to support paging (link relation `next`).",
     $collection = new CollOnSql($this->sqlSchema, $collId);
     foreach ($collection->columns() as $column) {
       if ($column->hasGeometryType()) {
-        if ($collection->geomCol() && ($column->name == $collection->geomCol()->name)) 
+        if ($collection->geoCol() && ($column->name == $collection->geoCol()->name)) 
           $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }
       elseif (!$properties || in_array($column->name, $properties)) {
@@ -1216,10 +1219,10 @@ links to support paging (link relation `next`).",
     $where = '';
     if ($bbox) {
       self::checkBbox($bbox);
-      $geomColName = $collection->geomCol()->name;
+      $geoColName = $collection->geoCol()->name;
       //$where = "$geomColName && ST_MakeEnvelope($bbox[0], $bbox[1], $bbox[2], $bbox[3], 4326)\n"; // Plante sur MySQL
       $polygonWkt = "POLYGON(($bbox[0] $bbox[1],$bbox[0] $bbox[3],$bbox[2] $bbox[3],$bbox[2] $bbox[1],$bbox[0] $bbox[1]))";
-      $where = "ST_Intersects($geomColName, ST_GeomFromText('$polygonWkt'))\n";
+      $where = "ST_Intersects($geoColName, ST_GeomFromText('$polygonWkt'))\n";
       // MySql exige que les SRID soient identiques
       // j'ai choisi en MySql de charger les géométries en SRID 0 pour éviter l'impossibilité d'utiliser certaines fonctions
     }
@@ -1342,7 +1345,7 @@ links to support paging (link relation `next`).",
     $collection = new CollOnSql($this->sqlSchema, $collId);
     foreach ($collection->columns() as $column) {
       if ($column->hasGeometryType()) {
-        if ($collection->geomCol() && ($column->name == $collection->geomCol()->name))
+        if ($collection->geoCol() && ($column->name == $collection->geoCol()->name))
           $columns[] = "ST_AsGeoJSON($column->name) st_asgeojson";
       }
       elseif ($column->dataType == 'jsonb') {

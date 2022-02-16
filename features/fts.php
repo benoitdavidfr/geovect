@@ -1,5 +1,5 @@
 <?php
-/ *PhpDoc:
+/*PhpDoc:
 name: fts.php
 title: fts.php - exposition de données au protocoles API Features
 doc: |
@@ -361,10 +361,10 @@ try {
     foreach ($fServer->checkTables() as $tableName => $tableProp) {
       //echo Yaml::dump([$tableName => $tableProp]);
       echo "$tableName:\n";
-      if ($tableProp['geomColumnNames'])
-        echo "  geom ",implode(', ', $tableProp['geomColumnNames'])," ok\n";
+      if ($tableProp['geoColumnNames'])
+        echo "  geo ",implode(', ', $tableProp['geoColumnNames'])," ok\n";
       else
-        echo "  geom KO\n";
+        echo "  geo KO\n";
       if ($tableProp['pkColumnName'])
         echo "  pk ok\n";
       else
