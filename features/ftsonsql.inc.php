@@ -125,7 +125,7 @@ class CollOnSql {
     if (!$this->geoCol)
       return [];
     elseif (Sql::software()=='PgSql') { // calcul en PgSql 
-      $sql = "select ST_Extent(".$this->geoCol->name.") as table_extent FROM ".$this->table->name;
+      $sql = "select ST_Extent(".$this->geoCol->name."::geometry) as table_extent FROM ".$this->table->name;
       $extent = Sql::getTuples($sql)[0]['table_extent'];
       //echo "$extent\n";
       if (!preg_match('!^BOX\(([-\d\.]+) ([-\d\.]+),([-\d\.]+) ([-\d\.]+)\)$!', $extent, $matches))

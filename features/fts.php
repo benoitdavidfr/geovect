@@ -126,7 +126,7 @@ define('HTTP_ERROR_LABELS', [
 // Définit le fuseau horaire par défaut à utiliser
 date_default_timezone_set('UTC');
 
-if (0)
+//if (0)
 FeatureServer::log([
   'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
   'Headers'=> getallheaders(),
