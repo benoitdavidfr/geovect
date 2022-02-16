@@ -19,6 +19,8 @@ doc: |
   d'un dictionnaire associant une chaine de paramètres sans mot de passe au mot de passe correspondant.
   De plus, il est possible de définir des vues qui sont une sélection dans une table définie par un ensemble de critères. 
 journal: |
+  15/2/2022:
+    - passage en Php 8.1
   23-24/5/2019:
     - suppression des mots de passe transférés dans /phplib/sql.inc.php
     - extension pour PgSql
@@ -233,7 +235,7 @@ class DbSchema extends FCTree {
       return $child->child($criteria, implode('/',$subpath));
   }
   
-  function getIterator() {
+  function getIterator(): \Traversable {
     Sql::open($this->params);
     $children = [];
     $schemaname = basename($this->path);
@@ -282,7 +284,7 @@ class DbServer extends FCTree {
       return $child->child(implode('/',$subpath));
   }
   
-  function getIterator() {
+  function getIterator(): \Traversable {
     $children = [];
     $query = [
       "select distinct table_schema from information_schema.columns where ",
@@ -352,7 +354,7 @@ class YamFileDbServers extends FCTree {
       return $child->child(implode('/',$subpath));
   }
   
-  function getIterator() {
+  function getIterator(): \Traversable {
     $children = [];
     foreach($this->yaml['dbServers'] as $name => $dbServer) {
       $children[$name] = new DbServer($this->path."/dbServers-$name", $dbServer);

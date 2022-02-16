@@ -20,6 +20,8 @@ doc: |
     - descendre récursivement dans l'arbre avec child()
 
 journal: |
+  15/2/2022:
+    - passage en Php 8.1
   21-22/5/2019:
     - suppression du paramètre $criteria dans la gestion eds FCTree
   18/5/2019:
@@ -140,7 +142,7 @@ class FileDir extends FCTree {
   // child() n'est pas utilisée pour un FileDir
   function child(string $subpath) {}
   
-  function getIterator() {
+  function getIterator(): \Iterator {
     $children = [];
     $dirpath = (self::ROOT.$this->path);
     if ($dh = opendir($dirpath)) {

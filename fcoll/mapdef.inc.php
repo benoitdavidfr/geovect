@@ -6,6 +6,8 @@ title: mapdef.inc.php - définition de cartes
 classes:
 doc: |
 journal: |
+  15/2/2022:
+    - passage en Php 8.1
   14/5/2019:
     - création du fichier par scission de fdataset.inc.php
   13/5/2019:
@@ -30,7 +32,7 @@ class YamFileMapDefs extends FCTree {
     return $subpath ? new MapDef($this->path.'/'.$subpath, $this->yaml['mapDefs'][$subpath]) : $this;
   }
   
-  function getIterator() {
+  function getIterator(): \Traversable {
     //echo "YamFileMapDefs::getIterator()<br>\n";
     //echo "<pre>yaml="; print_r($this->yaml); echo "</pre>\n";
     $children = [];

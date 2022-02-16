@@ -46,8 +46,9 @@ datasets:
 
   ne_110m_cultural:
     title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
-    path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_cultural
     #path: /mysql/root@mysqlserver/ne_110m_cultural
+    #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_cultural
+    path: /pgsql/benoit@db207552-001.dbaas.ovh.net:35250/ne110m_cultural/public
     identifier: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/
     conformsTo:
       $ref: 'doc/ne.yaml#/specifications/ne_110m_cultural'

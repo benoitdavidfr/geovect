@@ -74,12 +74,6 @@ class IAG_GRS_1980 implements iEllipsoid {
   static function e2() { return 1 - pow(1 - self::PARAMS['f'], 2); }
   static function e() { return sqrt(self::e2()); }
 };
-{/* Ancienne classe pour mémoire
-class Clarke1866 {
-  const a = 6378206.4; // Grand axe de l'ellipsoide Clarke 1866
-  static function e2() { return 0.00676866; }
-};*/
-}
 
 /*PhpDoc: classes
 name:  Lambert93
@@ -199,22 +193,22 @@ class Ellipsoid implements iEllipsoid {
     'WGS-84'=> [
       'title'=> "Ellipsoide WGS-84 utilisé pour le GPS, quasiment identique à l'IAG_GRS-1980",
       'epsg'=> 'EPSG:4326',
-      'a'=> 6378137.0, // Grand axe de l'ellipsoide - en anglais Equatorial radius - en mètres
+      'a'=> 6378137.0, // Demi grand axe de l'ellipsoide - en anglais Equatorial radius - en mètres
       'f' => 1/298.257223563, // 1/f: inverse de l'aplatissement = a / (a - b), en: inverse flatening
     ],
     'Clarke1866'=> [
       'title'=> "Ellipsoide Clarke 1866",
       'epsg'=> 'EPSG:7008',
       'comment'=> "Ellipsoide utilisé pour le système géodésique North American Datum 1927 (NAD 27) utilisé aux USA",
-      'a'=> 6378206.4, // Grand axe de l'ellipsoide Clarke 1866
-      'b'=> 6356583.8, // Petit axe
+      'a'=> 6378206.4, // Demi grand axe de l'ellipsoide Clarke 1866
+      'b'=> 6356583.8, // Demi petit axe
       'f'=> 1/294.978698214,
     ],
     'UnitSphere'=> [
       'title'=> "Sphère unité",
       'comment'=> "Sphère unité",
-      'a'=> 1, // Grand axe de l'ellipsoide Clarke 1866
-      'b'=> 1, // Petit axe
+      'a'=> 1, // Demi grand axe de l'ellipsoide Clarke 1866
+      'b'=> 1, // Demi petit axe
       'f'=> 0, // excentricité = (a - b) / a
     ],
   ];
@@ -522,7 +516,7 @@ class Legal {
 
 
 /*PhpDoc: classes
-name:  Legal
+name:  Sinusoidal
 title: class Sinusoidal extends IAG_GRS_1980 - projection Sinusoidale
 methods:
 doc: |

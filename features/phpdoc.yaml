@@ -27,6 +27,11 @@ doc: |
     
   synchro:
     http://localhost/synchro.php?remote=http://bdavid.alwaysdata.net/&dir=geovect/features
+journal:
+  20-21/3/2021:
+    - corrections de bugs
+    - ajout extension temporelle
+    - ajout documentation du serveur comhisto
 phpScripts:
   - /geovect/features/fts.php
   - /geovect/features/doc.php

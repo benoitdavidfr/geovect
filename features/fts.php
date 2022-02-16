@@ -1,5 +1,5 @@
 <?php
-/*PhpDoc:
+/ *PhpDoc:
 name: fts.php
 title: fts.php - exposition de données au protocoles API Features
 doc: |
