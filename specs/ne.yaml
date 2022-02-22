@@ -1,0 +1,685 @@
+title: ne.yaml - spécifications de Natural Earth
+abstract: |
+  Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales.
+  Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing,
+  well-crafted maps with cartography or GIS software.  
+$schema: specs
+specifications:
+  ne110m_cultural:
+    title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
+    source: https://www.naturalearthdata.com/features/
+    collections:
+      admin_0_countries:
+        title: Countries
+        description: |
+          Countries – matched boundary lines and polygons with names attributes for countries and sovereign states.
+          Includes dependencies (French Polynesia), map units (U.S. Pacific Island Territories) and sub-national
+          map subunits (Corsica versus mainland Metropolitan France).
+          
+          Countries distinguish between metropolitan (homeland) and independent and semi-independent portions
+          of sovereign states. To see the dependent overseas regions broken out (like in ISO codes, see France for example),
+          use map units instead.
+        geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: ['Admin-0 country']
+          type:
+            title: type
+            enum: ['Sovereign country',Country,Dependency,Disputed,Indeterminate]
+          adm0_a3:
+            title: identification code adm0 alpha 3
+            type: string
+          iso_a2:
+            title: code ISO alpha 2
+            type: string
+          iso_a3:
+            title: code ISO alpha 3
+            type: string
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+          name_long:
+            title: long name
+            type: string
+          formal_en:
+            title: formal name in English
+            type: string
+          pop_est:
+            title: population estimation in number of inhabitants
+            type: string
+          pop_year:
+            title: year of validity of population estimation
+            type: string
+      admin_0_countries_lakes:
+        title: Countries without boundary lakes
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_boundary_lines_land:
+        title: Land boundaries
+        geometryType: LineString2D
+      admin_0_sovereignty:
+        title: Sovereignty
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_map_units:
+        title: Map units
+        geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: ['Admin-0 map unit']
+          type:
+            title: type
+            enum: ['Sovereign country',Country,Dependency,Indeterminate,'Geo unit']
+          su_a3:
+            title: identification code 3 alpha
+            type: string
+      admin_0_pacific_groupings:
+        title: Pacific grouping boxes
+        description: Pacific nation groupings – boxes for keeping these far-flung islands tidy.
+        geometryType: LineString2D
+      admin_0_scale_rank:
+        title: admin_0_scale_rank
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_tiny_countries:
+        title: Tiny country points
+        geometryType: Point2D
+      admin_1_states_provinces:
+        title: States and provinces (only USA)
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces_lakes:
+        title: States and provinces without large lakes (only USA)
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces_lines:
+        title: State and province boundaries (only USA)
+        geometryType: LineString2D
+      admin_1_states_provinces_scale_rank:
+        title: States and provinces whith scale rank (only USA)
+        geometryType: [Polygon2D, MultiPolygon2D]
+      populated_places:
+        title: City and town points
+        description: |
+          Populated places – point symbols with name attributes. Includes capitals, major cities and towns,
+          plus significant smaller towns in sparsely inhabited regions.
+          We favor regional significance over population census in determining rankings.
+        geometryType: Point2D
+      populated_places_simple:
+        title: City and town points (with less fields)
+        geometryType: Point2D
+
+  ne110m_physical:
+    title: Natural Earth, 1:110m scale, Physical Vector Data Themes
+    source: https://www.naturalearthdata.com/features/
+    collections: 
+      coastline:
+        title: Coastline
+        description: Ocean coastline, including major islands. Coastline is matched to land and water polygons.
+        geometryType: LineString2D
+      land:
+        title: Land
+        description: Land polygons including major islands
+        geometryType: [Polygon2D, MultiPolygon2D]
+      ocean:
+        title: Ocean
+        description: Ocean polygon split into contiguous pieces.
+        geometryType: [Polygon2D, MultiPolygon2D]
+      rivers_lake_centerlines:
+        title: Rivers and Lake Centerlines
+        description: |
+          Single-line drainages including optional lake centerlines.
+          Ranked by relative importance. Includes name and line width attributes.
+          Don’t want minor lakes? Turn on their centerlines to avoid unseemly data gaps.
+        geometryType: LineString2D
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [River]
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+      lakes:
+        title: Lakes and Reservoirs
+        description: |
+          Natural and artificial lakes. Ranked by relative importance, coordinating with river ranking.
+          Includes name attributes.
+        geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [Lake, 'Alkaline Lake']
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+      glaciated_areas:
+        title: Glaciated areas
+        description: |
+           Includes glaciers and recently de-glaciated areas.
+           Polygons derived from DCW, except for Antarctica derived from MOA.
+           Includes name attributes for major polar glaciers. (?)
+        geometryType: Polygon2D
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [Glacier]
+      geographic_lines:
+        title: Geographic lines
+        description: Polar circles, tropical circles, equator, and International Date Line.
+        geometryType: [LineString2D,MultiLineString2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: ['Circle of latitude','Date line']
+          abbrev:
+            title: Abbreviated name
+            type: string
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+      geography_marine_polys:
+        title: Labels for marine areas
+        geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [ocean, sea, bay, gulf]
+          label:
+            title: label
+            type: string
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+      geography_regions_elevation_points:
+        title: Labels for elevation points
+        geometryType: Point2D
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [mountain, depression, pass]
+          elevation:
+            title: elevation
+            type: string
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+      geography_regions_points:
+        title: Labels of major physical points
+        geometryType: Point2D
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [waterfall]
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+      geography_regions_polys:
+        title: Labels of major physical areas
+        geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: [Continent, Island, 'Island group', Tundra, 'Range/mtn', Plain, Basin, 'Pen/cape', Desert, Plateau,
+              Isthmus, Peninsula, Geoarea]
+          name:
+            title: name
+            type: string
+          name_en:
+            title: name in English
+            type: string
+          name_fr:
+            title: name in French
+            type: string
+      wgs84_bounding_box:
+        title: WGS84 bounding box
+        geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          featurecla:
+            title: Feature Class
+            enum: ['WGS84 bounding box']
+
+  ne10m_cultural:
+    title: Natural Earth, 1:10m scale, Cultural Vector Data Themes
+    source: https://www.naturalearthdata.com/features/
+    collections:
+      admin_0_countries: # admin0
+        title: Adm0 - Countries
+        geometryType: [Polygon2D, MultiPolygon2D]
+        description: |
+          Countries distinguish between metropolitan (homeland) and independent and semi-independent portions of sovereign
+          states. If you want to see the dependent overseas regions broken out (like in ISO codes, see France for example),
+          use map units instead.
+
+          Each country is coded with a world region that roughly follows the United Nations setup.
+
+          Countries are coded with standard ISO and FIPS codes. French INSEE codes are also included.
+
+          Includes [some thematic data from the United Nations](http://data.un.org/DataMartInfo.aspx),
+          U.S. Central Intelligence Agency, and elsewhere.
+          
+          Matched boundary lines and polygons with names attributes for countries and sovereign states.
+          Includes dependencies (French Polynesia), map units (U.S. Pacific Island Territories) and sub-national map subunits
+          (Corsica versus mainland Metropolitan France).
+      admin_0_countries_full:
+        title: Adm0 - Countries (all fields)
+        geometryType: [Polygon2D, MultiPolygon2D]
+        description: |
+          Countries distinguish between metropolitan (homeland) and independent and semi-independent portions of sovereign
+          states. If you want to see the dependent overseas regions broken out (like in ISO codes, see France for example),
+          use map units instead.
+
+          Each country is coded with a world region that roughly follows the United Nations setup.
+
+          Countries are coded with standard ISO and FIPS codes. French INSEE codes are also included.
+
+          Includes [some thematic data from the United Nations](http://data.un.org/DataMartInfo.aspx),
+          U.S. Central Intelligence Agency, and elsewhere.
+          
+          Matched boundary lines and polygons with names attributes for countries and sovereign states.
+          Includes dependencies (French Polynesia), map units (U.S. Pacific Island Territories) and sub-national map subunits
+          (Corsica versus mainland Metropolitan France).
+      admin_0_countries_lakes:
+        title: Adm0 - Countries wo boundary lakes
+        description: Countries without boundary lakes
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_boundary_lines_land:
+        title: Adm0 - Land boundary Lines
+        geometryType: [LineString2D, MultiLineString2D]
+      admin_0_boundary_lines_maritime_indicator:
+        title: Adm0 - Maritime indicators
+        description: |
+          200-mile nautical limits.
+          Limited attributes in terms of type of boundary: disputed, treaty, and median lines.
+        geometryType: LineString2D
+      admin_0_sovereignty:
+        title: Adm0 - Sovereign States
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_map_units:
+        title: Adm0 - Map units
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_boundary_lines_map_units:
+        title: Adm0 - Map unit boundary Lines
+        geometryType: LineString2D
+      admin_0_map_subunits:
+        title: Adm0 - Map subunits
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_disputed_areas:
+        title: Adm0 - Breakaway, Disputed Areas
+        description: |
+          Disputed areas and breakaway regions From Kashmir to the Elemi Triangle, Northern Cyprus to Western Sahara.
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_boundary_lines_disputed_areas:
+        title: Adm0 - Breakaway, Disputed Areas (Boundary lines)
+        geometryType: [LineString2D, MultiLineString2D]
+      admin_0_disputed_areas_scale_rank_minor_islands:
+        title: Adm0 - Breakaway, Disputed Areas w scale ranks
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_antarctic_claims:
+        title: Adm0 - Antarctic claims
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_antarctic_claim_limit_lines:
+        title: Adm0 - Antarctic claim limit lines
+        geometryType: LineString2D
+      admin_0_pacific_groupings:
+        title: Adm0 - Pacific grouping lines
+        geometryType: LineString2D
+      admin_0_label_points:
+        title: Adm0 - Label Points
+        geometryType: Point2D
+      admin_0_scale_rank:
+        title: Adm0 w scale rank
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_scale_rank_minor_islands:
+        title: Adm0 w scale rank and minor islands
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_0_seams:
+        title: admin_0_seams
+        geometryType: LineString2D
+      
+      admin_1_states_provinces: # admin1
+        title: Adm1 - States and Provinces (First order admin)
+        description: |
+          NOTE: This theme is still in beta!
+
+          Internal, first-order administrative boundaries and polygons for all but a few tiny countries.
+          Includes name attributes (including diacritical marks), name variants, and some statistical codes (FIPS, ISO, HASC).
+
+          Looking for Cyrillic or Chinese characters? The GeoDB format preserves local scripts better than SHP format.
+
+          Admin-0 units that lack admin-1:
+
+          Antarctica, some disputed areas, tiny island nations, and principalities such as Monaco, Andorra,
+          Liechtenstein, and San Marino.
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces_scale_rank:
+        title: Adm1 - States and Provinces as scale ranks
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces_scale_rank_minor_islands:
+        title: Adm1 - States and Provinces w. scale ranks and minor islands
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces_lakes:
+        title: Adm1 - States and Provinces wo large lakes
+        geometryType: [Polygon2D, MultiPolygon2D]
+      admin_1_states_provinces_lines:
+        title: Adm1 - States and Provinces boundary lines
+        geometryType: [LineString2D, MultiLineString2D]
+      admin_1_label_points:
+        title: Adm1 - First order admin label points
+        geometryType: Point2D
+      admin_1_label_points_details:
+        title: Adm1 - First order admin label point details
+        geometryType: Point2D
+      admin_1_seams:
+        title: Adm1 - ne_10m_admin_1_seams
+        geometryType: [LineString2D, MultiLineString2D]
+      
+      populated_places: # populated_places
+        title: Pop - Populated Places
+        description: |
+          Point symbols with name attributes.
+          Includes all admin-0 and many admin-1 capitals, major cities and towns, plus a sampling of smaller towns
+          in sparsely inhabited regions. We favor regional significance over population census in determining our selection
+          of places. Use the scale rankings to filter the number of towns that appear on your map.
+        geometryType: Point2D
+      populated_places_simple:
+        title: Pop - Populated Places (simple)
+        geometryType: Point2D
+      urban_areas_landscan:
+        title: Pop - Population estimates using LandScan
+        description: |
+          [LandScan](http://www.ornl.gov/sci/landscan/) derived population estimates are provided for 90% of our cities.
+          Those lacking population estimates are often in sparsely inhabited areas. We provide a range of population values
+          that account for the total “metropolitan” population rather than it’s administrative boundary population.
+          Use the PopMax column to size your town labels.
+          Starting in version 1.1, popMax has been throttled down to the UN estimated metro population
+          for the ~500 largest urban areas in the world.
+          This affects towns in China, India, and parts of Africa where our Landscan counting method usually over estimated.
+
+          Population estimates were derived from the LANDSCAN dataset maintained and distributed by the Oak Ridge National
+          Laboratory. These data were converted from raster to vector and pixels with fewer than 200 persons per square
+          kilometer were removed from the dataset as they were classified as rural.
+          Once urban pixels were selected, these pixels were aggregated into contiguous units.
+          Concurrently Thiessen polygons were created based on the selected city points.
+          The Thiessen polygons were used to intersect the contiguous city boundaries to produce bounded areas for the cities.
+          As a result, our estimates capture a metropolitan and micropolitan populations per city regardless of
+          administrative units.
+
+          Once intersected, the contiguous polygons were recalculated, using aerial interpolation assuming uniform
+          population distribution within each pixel, to determine the population total.
+          This process was conducted multiple times, for each scale level, to produce population estimates for each city
+          at nested scales of 1:300 million, 1:110 million, 1:50 million, 1:20 million, and 1:10 million.
+          
+          Population ranks
+
+          Are calculated as rank_max and rank_min using this general VB formula that can be pasted into ArcMap
+          Field Calculator advanced area (set your output to x):
+
+              a = [pop_max]
+
+              if( a > 10000000 ) then
+              x = 14
+              elseif( a > 5000000 ) then
+              x = 13
+              elseif( a > 1000000 ) then
+              x = 12
+              elseif( a > 500000 ) then
+              x = 11
+              elseif( a > 200000 ) then
+              x = 10
+              elseif( a > 100000 ) then
+              x = 9
+              elseif( a > 50000 ) then
+              x = 8
+              elseif( a > 20000 ) then
+              x = 7
+              elseif( a > 10000 ) then
+              x = 6
+              elseif( a > 5000 ) then
+              x = 5
+              elseif( a > 2000 ) then
+              x = 4
+              elseif( a > 1000 ) then
+              x = 3
+              elseif( a > 200 ) then
+              x = 2
+              elseif( a > 0 ) then
+              x = 1
+              else
+              x = 0
+              end if
+        geometryType: [Polygon2D, MultiPolygon2D]
+      urban_areas:
+        title: Urban Areas
+        description: |
+          Derived from 2002-2003 MODIS satellite data at 1 km resolution:
+
+              Schneider, A., M. A. Friedl, D. K. McIver, and C. E. Woodcock (2003)
+              Mapping urban areas by fusing multiple sources of coarse resolution remotely sensed data.
+              Photogrammetric Engineering and Remote Sensing, volume 69, pages 1377-1386.
+          
+          Issues:
+
+          New version of the MODIS-derived urban area grid is now available (announcement, data download) at 0.5 km
+          and uses an improved algorithm for better accuracy:
+
+              Schneider, A., M. A. Friedl and D. Potere (2009) A new map of global urban extent from MODIS data.
+              Environmental Research Letters, volume 4, article 044003.
+
+              Schneider, A., M. A. Friedl and D. Potere (2009)
+              Monitoring urban areas globally using MODIS 500m data: New methods and datasets based on urban ecoregions.
+              Remote Sensing of Environment, in review.
+
+          No scale ranks. Missing just a couple polygons for points included in populated places.
+
+          Could be split apart (intersected with thiessen polygons derived from populated places points) and joined with
+          populated places points to derive names and population values (and density).
+        geometryType: [Polygon2D, MultiPolygon2D]
+      
+      roads: # transportation
+        title: T - Roads
+        geometryType: [LineString2D, MultiLineString2D]
+      roads_north_america:
+        title: T - Roads (North America)
+        geometryType: [LineString2D, MultiLineString2D]
+      railroads:
+        title: T - Railroads
+        geometryType: LineString2D
+      railroads_north_america:
+        title: T - Railroads (North America)
+        geometryType: LineString2D
+      airports:
+        title: T - Airports
+        geometryType: Point2D
+      ports:
+        title: T - Ports
+        geometryType: Point2D
+      
+      parks_and_protected_lands_area: # Parks
+        title: P - Parks and Protected Lands (USA only)
+        geometryType: [Polygon2D, MultiPolygon2D]
+      parks_and_protected_lands_scale_rank:
+        title: P - Parks and Protected Lands with scale rank (USA only)
+        geometryType: [Polygon2D, MultiPolygon2D]
+      parks_and_protected_lands_line:
+        title: P - Parks and Protected Lands limits (USA only)
+        geometryType: [LineString2D, MultiLineString2D]
+      parks_and_protected_lands_point:
+        title: P - Parks and Protected Lands points (USA only)
+        geometryType: Point2D
+      # time zones
+      time_zones:
+        title: T - Time zones
+        geometryType: [Polygon2D, MultiPolygon2D]
+      
+  ne10m_physical:
+    title: Natural Earth, 1:10m scale, Physical Vector Data Themes
+    source: https://www.naturalearthdata.com/features/
+    collections:
+      coastline:
+        title: Ocean coastline
+        description: |
+          Ocean coastline, including major islands. Coastline is matched to land and water polygons.
+          The Caspian Sea, which is technically a lake, is included. The ocean coastline, the foundation for building all
+          of NEV, primarily derives from World Data Bank 2 with modest generalization applied via line simplification
+          in Adobe Illustrator. The Antarctica coast derives from NASA Mosaic of Antarctica.
+
+          https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-coastline/
+          [doc](https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-coastline/)
+        geometryType: LineString2D
+      land:
+        title: Land
+        geometryType: [Polygon2D, MultiPolygon2D]
+      land_scale_rank:
+        title: Land w. scale rank
+        geometryType: [Polygon2D, MultiPolygon2D]
+      minor_islands:
+        title: Minor Islands
+        geometryType: [Polygon2D, MultiPolygon2D]
+      minor_islands_coastline:
+        title: Minor Island coastline
+        geometryType: LineString2D
+      minor_islands_label_points:
+        title: Minor Island label points
+        geometryType: Point2D
+      reefs:
+        title: Reefs
+        geometryType: LineString2D
+      ocean:
+        title: Ocean
+        geometryType: [Polygon2D, MultiPolygon2D]
+      # Je ne vois pas de différence avec ocean
+      #ocean_scale_rank:
+        #title: Ocean w. scale rank
+        #geometryType: [Polygon2D, MultiPolygon2D]*/
+      land_ocean_seams:
+        title: Land and ocean seamlines
+        description: |
+          Land and ocean seamlines for the extent of each associated raster dataset in the mosaic dataset.
+          Overlapping raster datasets can be blended along the seamline by a specified width.
+        geometryType: LineString2D
+      land_ocean_label_points:
+        title: Ocean label points
+        geometryType: Point2D
+      rivers_lake_centerlines:
+        title: Rivers + lake centerlines
+        geometryType: [LineString2D, MultiLineString2D]
+      rivers_lake_centerlines_scale_rank:
+        title: Rivers + lake centerlines w. scale rank
+        geometryType: [LineString2D, MultiLineString2D]
+      rivers_europe:
+        title: Rivers - Suppl. Europe
+        geometryType: [LineString2D, MultiLineString2D]
+      rivers_north_america:
+        title: Rivers - Suppl. North America
+        geometryType: [LineString2D, MultiLineString2D]
+      lakes:
+        title: Lakes
+        geometryType: [Polygon2D, MultiPolygon2D]
+      lakes_historic:
+        title: Historic lakes
+        geometryType: [Polygon2D, MultiPolygon2D]
+      lakes_pluvial:
+        title: Pluvial lakes
+        geometryType: [Polygon2D, MultiPolygon2D]
+      lakes_europe:
+        title: Lakes - Suppl. Europe
+        geometryType: [Polygon2D, MultiPolygon2D]
+      lakes_north_america:
+        title: Lakes - Suppl. North America
+        geometryType: [Polygon2D, MultiPolygon2D]
+      playas:
+        title: Playas
+        geometryType: [Polygon2D, MultiPolygon2D]
+      geography_regions_elevation_points:
+        title: ne_10m_geography_regions_elevation_points
+        geometryType: Point2D
+      geography_regions_points:
+        title: Labels of major physical points
+        geometryType: Point2D
+      geography_marine_polys:
+        title: ne_10m_geography_marine_polys
+        geometryType: [Polygon2D, MultiPolygon2D]
+      geographic_lines:
+        title: Geographic lines
+        description: Polar circles, tropical circles, equator, and International Date Line.
+        geometryType: [LineString2D, MultiLineString2D]
+      geography_regions_polys:
+        title: Labels for marine areas
+        geometryType: [Polygon2D, MultiPolygon2D]
+      glaciated_areas:
+        title: Glaciated areas
+        geometryType: [Polygon2D, MultiPolygon2D]
+      antarctic_ice_shelves_polys:
+        title: Antartic ice shelves
+        geometryType: [Polygon2D, MultiPolygon2D]
+      antarctic_ice_shelves_lines:
+        title: Antartic ice shelves limits
+        geometryType: [LineString2D, MultiLineString2D]
+      bathymetry:
+        title: Bathymetry
+        geometryType: [Polygon2D, MultiPolygon2D]
+      graticules:
+        title: Graticules
+        description: |
+          Use:
+            - scalerank=1 for every 30°,
+            - scalerank=2 for every 20°,
+            - scalerank=3 for every 15°,
+            - scalerank=4 for every 10°,
+            - scalerank=5 for every 5°,
+            - scalerank=6 for every 1°,
+        geometryType: LineString2D
+        properties:
+          scalerank:
+            title: scalerank
+            enum:
+              1: {label: every 30°}
+              2: {label: every 20°}
+              3: {label: every 15°}
+              4: {label: every 10°}
+              5: {label: every 5°}
+              6: {label: every 1°}
+      wgs84_bounding_box:
+        title: wgs84_bounding_box
+        geometryType: [Polygon2D, MultiPolygon2D]
+  
+eof:

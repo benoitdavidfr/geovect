@@ -1,0 +1,497 @@
+title: spécifications de ROUTE 500
+abstract: |
+$schema: specs
+specifications:
+  ignf-route500v3:
+    title: ROUTE 500, Descritif de contenu, version 3.0, avril 2020 (ROUTE500_3-0)
+    issued: '2020-04'
+    abstract: |
+      La base de données ROUTE 500® contient l'intégralité du réseau routier classé caractérisé par un certain nombre de
+      propriétés et complété par les éléments du réseau routier secondaire permettant la desserte des chefs-lieux
+      de communes et des principales infrastructures de transport.
+    identifier: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/DC_ROUTE500_3-0.pdf
+    metadata: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/IGNF_ROUTE500r_3-0.xml
+    # Je considère que la résolution de Route 500 est de 40 m soit 3.6e-4° (40 m * 360° / 40 000 km)
+    # Les coordonnées sont arrondies à 4 décimales au chargement
+    precision: 4
+    collections: 
+      commune:
+        title: Commune
+        description: |
+          Cette classe comporte environ 36 600 communes du territoire français métropolitain. Les informations sémantiques
+          relatives à ces communes se trouvent dans le thème routier.
+        geometryType: [Polygon2D, MultiPolygon2D]
+        properties:
+          id_rte500:
+            title: Identifiant de l'objet
+            type: integer
+      limite_administrative:
+        title: Limite administrative
+        description: |
+          Portion continue de contour de commune limitant deux communes, une commune et un territoire étranger ou une commune
+          et le domaine marin.
+          Toutes les limites communales sont sélectionnées.
+        geometryType: LineString2D
+        properties:
+          id_rte500:
+            title: Identifiant de l'objet
+            type: integer
+          nature:
+            title: Nature de la limite administrative
+            enum:
+              "Limite côtière":
+                label: Limite entre un département et le domaine marin.
+              "Frontière internationale":
+                label: Limite entre un département et un État étranger.
+              "Limite de région":
+                label: Limite entre deux régions.
+              "Limite de département":
+                label: Limite entre deux départements.
+              "Limite d'arrondissement":
+                label: Limite entre deux arrondissements.
+              "Limite de commune":
+                label: Limite entre deux communes.
+      cote_frontiere:
+        title: Traits de côtes et frontières internationales
+        description: |
+          Éléments issus du graphe des limites communales. Le trait de côte représenté est la laisse des plus hautes eaux.
+        geometryType: LineString2D
+        properties:
+          nature:
+            title: Nature de la limite.
+            enum:
+              Côte:
+                label: Trait de côte.
+              "Frontière internationale":
+                label: Limite entre un département et un État étranger.
+      troncon_hydrographique:
+        title: Cours d'eau
+        description: Tronçon hydrographique et cours d'eau.
+        geometryType: LineString2D
+        properties:
+          largeur:
+            title: Largeur du tronçon hydrographique.
+            enum:
+              - Plus de 50 mètres
+              - Entre 15 et 50 mètres
+              - De 0 à 15 mètres
+          toponyme:
+            title: Nom du cours d'eau.
+            description: 5à caractères au plus en minuscules accentuées
+            type: string
+      zone_occupation_sol:
+        title: Zone d'occupation du sol
+        description: |
+          Le territoire est partitionné en zones connexes et de nature homogène.
+          Chaque zone est donc localisée et possède une nature.
+          Tout point du territoire a été interprété lors de la saisie, et appartient à une zone et une seule.
+          Sont retenues dans cette classe, les :
+            - zones bâties d'une surface supérieure à 100 hectares ;
+            - zones de forêts d'une surface supérieure à 500 hectares ;
+            - zones couvertes d'eau d'une surface supérieure à 20 hectares.
+          La zone de pleine mer est schématisée au-delà de la laisse des plus hautes eaux afin de constituer un polygone
+          régulier délimitant la zone couverte
+        geometryType: Polygon2D
+        properties:
+          nature:
+            title: Nature de la zone d'occupation du sol.
+            enum:
+              Bâti:
+                label: Zones bâties.
+              Eau:
+                label: Zones couvertes d'eau (fleuves, rivières, lacs, étangs, mers, océan, ...).
+              Forêt:
+                label: Zones boisées (forêts, bois, ...).
+      noeud_ferre:
+        title: Noeud ferré
+        description: |
+          Un nœud ferré correspond à un embranchement, à un équipement (gare, etc.) ou à un changement de valeur d'attribut
+          sur un tronçon de voie ferrée.
+          C'est une extrémité d'un tronçon de voie ferrée.
+        geometryType: Point2D
+        properties:
+          id_rte500:
+            title: Identifiant
+            identifier: yes
+            type: number
+          nature:
+            title: Nature du nœud
+            enum:
+              "Changement d'attribut":
+                label: Changement d'attribut
+              "Gare de fret":
+                label: Gare de fret
+                description: Gare de fret seulement.
+              "Gare de voyageurs":
+                label: Gare de voyageurs
+                description: Gare ou point d'arrêt ouvert aux voyageurs seulement.
+              "Gare de voyageurs et de fret":
+                label: Gare de voyageurs et de fret
+                description: Gare ouverte aux voyageurs et au fret.
+              "Intersection du réseau ferré":
+                label: Intersection du réseau ferré
+                description: Aiguillage, passage supérieur/inférieur, cul-de-sac, ...
+          toponyme:
+            title: Nom du noeud
+            type: string
+          id_troncon:
+            title: Identifiant du tronçon de route permettant d'accéder au nœud
+            description: |
+              uniquement renseigné pour les nœuds de type gare.
+              La valeur 0 est utilisée pour les nœuds qui ne sont pas de type gare.
+            type: number
+          id_commune:
+            title: Identifiant de la commune à laquelle appartient le nœud ferré
+            description: |
+              uniquement pour les nœuds de type gare.
+              La valeur 0 est utilisée pour les nœuds qui ne sont pas de type gare.
+            type: number
+      troncon_voie_ferree:
+        title: Tronçon de voie ferrée
+        description: |
+          Portion connexe de voies ferrées dont les extrémités correspondent à une gare, à un embranchement ou à un changement
+          de valeur d'un des trois champs caractérisant les tronçons.
+          Sont retenues toutes les voies ferrées SNCF normales ou à grande vitesse, exploitées ou en construction.
+        geometryType: LineString2D
+        properties:
+          id_rte500:
+            title: Identifiant du tronçon
+            type: integer
+          nature:
+            title: Nature du tronçon
+            enum:
+              LGV:
+                label: Ligne à grande vitesse
+              'Voie normale':
+                label: Voie normale
+          energie:
+            title: Énergie de propulsion
+            enum:
+              Electrifiée:
+                label: Électrifiée ou en cours d'électrification
+              'Non électrifiée':
+                label: Non électrifiée
+          classement:
+            title: Classement du tronçon
+            enum:
+              - En service
+      aerodrome:
+        title: Aérodrome
+        description: |
+          Définition: Terrain spécialement aménagé pour l'atterrissage, le décollage et les manœuvres des aéronefs
+          y compris les installations bâties (aérogares).
+          Sélection: Aérodromes ouverts à la circulation aérienne publique desservis par au moins une ligne régulière de
+          transport de voyageurs.
+          Modélisation géométrique: Un aérodrome est localisé par un sommet géométrique situé au centre des bâtiments assurant
+          l'accueil des voyageurs, si une seule aérogare, sinon au centroïde de l'emprise de l'aérodrome.
+        geometryType: Point2D
+        properties:
+          id_rte500:
+            title: Identifiant
+            identifier: yes
+            type: number
+          id_troncon:
+            title: Identifiant du tronçon de route permettant d'accéder à l'aérodrome
+            type: number
+          toponyme:
+            title: Nom de l'aérodrome
+            type: string
+      communication_restreinte:
+        title: Communication restreinte
+        description: |
+          Définition: La communication entre un tronçon routier dit « initial » et un tronçon routier dit « final »
+          via un nœud routier commun est impossible ou soumise à certaines restrictions de poids et/ou de hauteur.
+          Sélection: Les communications restreintes sont saisies pour les intersections situées sur des tronçons de type
+          autoroutier et vert hors agglomération.
+          Modélisation géométrique: Une communication restreinte est localisée sur le nœud routier qu'elle concerne.
+        geometryType: Point2D
+        properties:
+          id_rte500:
+            title: Identifiant
+            identifier: yes
+            type: number
+          id_nd_rte:
+            title: Identifiant du nœud routier concerné par la communication restreinte
+            type: number
+          id_tro_ini:
+            title: Identifiant du tronçon de route initial concerné par la communication restreinte
+            type: number
+          id_tro_fin:
+            title: Identifiant du tronçon de route final concerné par la communication restreinte
+            type: number
+          interdit:
+            title: Restriction de circulation
+            description: |
+              Attribut indiquant si la restriction de circulation s'applique à tout véhicule ou si elle ne concerne
+              que les véhicules dépassant un certain poids et/ou une certaine hauteur.
+            enum:
+              Partielle:
+                label: Communication restreinte à une hauteur et/ou un poids maximaux.
+              Totale:
+                label: Communication interdite à tout véhicule.
+          rest_poids:
+            title: Restriction de poids
+            description: |
+              Poids maximal autorisé en tonnes.
+              La valeur 0 signifie communication interdite à tout véhicule ou absence de restriction de poids.
+            type: number
+            unit: tonne
+            specificValues:
+              0: communication interdite à tout véhicule ou absence de restriction de poids.
+          rest_haut:
+            title: Restriction de hauteur
+            description: |
+              Hauteur maximale autorisée en mètres.
+              La valeur 0 signifie Communication interdite à tout véhicule ou absence de restriction de hauteur.
+            type: number
+            unit: meter
+            specificValues:
+              0: Communication interdite à tout véhicule ou absence de restriction de hauteur.
+      noeud_commune:
+        title: Commune représentée par un point
+        description: Chaque commune de France métropolitaine correspond à un noeud.
+        geometryType: Point2D
+        properties:
+          id_rte500:
+            title: Identifiant de la commune
+            description: Cet identifiant fait le lien avec la classe Commune.
+            type: integer
+          nom_comm:
+            title: Nom de la commune en majuscules non accentuées (source INSEE).
+            type: string
+          insee_comm:
+            title: Numéro INSEE de la commune
+            description: |
+              Une commune nouvelle résultant d'un regroupement de communes préexistantes se voit attribuer le code INSEE
+              de l'ancienne commune désignée comme chef-lieu par l'arrêté préfectoral qui l'institue. En conséquence
+              une commune change de code INSEE si un arrêté préfectoral modifie son chef-lieu.
+          population:
+            title: Population de la commune en milliers d'habitants
+            description: |
+              Population de la commune en milliers d'habitants avec un chiffre après la virgule (source INSEE).
+              Le concept de population municipale est défini par le décret n°2003-485 publié au Journal Officiel le 8 juin
+              2003, relatif au recensement de la population. La population municipale comprend les personnes ayant leur
+              résidence habituelle (au sens du décret) sur le territoire de la commune, dans un logement ou une communauté,
+              les personnes détenues dans les établissements pénitentiaires de la commune, les personnes sans-abri recensées
+              sur le territoire de la commune et les personnes résidant habituellement dans une habitation mobile recensée
+              sur le territoire de la commune.
+              Actualité : La population au 1er janvier de l'année « n » correspond à la population légale millésimée de
+              l'année « n-3 ». Elles ont été calculées conformément aux concepts définis dans le décret n° 2003-485 signé
+              le 5 juin 2003. Leur date de référence statistique est le 1er janvier de l'année « n-3 ». Pour les communes
+              ayant changé de statut (fusion, scission,...) depuis le 1er janvier, la population de la commune correspond
+              aux informations portées à la connaissance de l'IGN par les différents décrets et arrêtés publiés au Journal
+              Officiel.
+            type: number
+          superficie:
+            title: Superficie de la commune en hectares
+            type: number
+          statut:
+            title: Statut administratif de la commune
+            enum:
+              - Capitale d'état
+              - Commune simple
+              - Préfecture
+              - Préfecture de région
+              - Sous-préfecture
+          id_nd_rte:
+            title: Identifiant du nœud routier auquel la commune est rattachée.
+            type: number
+      noeud_routier:
+        title: Nœud du réseau routier.
+        description: |
+          Extrémité de tronçon de route. Ce peut être une intersection (carrefour, échangeur, ...), une modification des
+          conditions de circulation (changement du nombre de chaussées, de voies, ...), un obstacle ou le lieu représentant
+          un chef- lieu de commune.
+        geometryType: Point2D
+        properties:
+          id_rte500:
+            title: Identifiant du nœud routier
+            type: number
+          nature:
+            title: Nature du nœud routier
+            enum:
+              Barrière:
+                label: Barrière
+                description: |
+                  Barrière interdisant la communication libre entre deux portions de route régulièrement ou irrégulièrement
+                  entretenues.
+              "Barrière de douane":
+                label: Barrière de douane
+              "Carrefour aménagé":
+                label: Intersection appartenant à un carrefour aménagé.
+              "Carrefour aménagé à niveau":
+                label: Intersection appartenant à un carrefour aménagé.
+                description: |
+                  Intersection représentant un carrefour aménagé d'une extension supérieure à 100 m sans toboggan ni passage
+                  inférieur.
+              "Carrefour avec toboggan ou passage inférieur":
+                label: Intersection appartenant à un carrefour aménagé.
+                description: |
+                  Intersection représentant un carrefour aménagé d'une extension supérieure à 100 m avec toboggan ou passage
+                  inférieur.
+              "Carrefour simple":
+                label: Carrefours simples, culs-de-sac.
+              "Changement d'attribut":
+                label: Changement d'attribut
+              "Coupure arbitraire":
+                label: Nœud artificiel
+              "Echangeur complet":
+                label: Intersection représentant un échangeur complet.
+              "Echangeur partiel":
+                label: Echangeur partiel
+                description: |
+                  Intersection appartenant à un échangeur partiel. À la différence d'un échangeur complet, un échangeur
+                  partiel est un échangeur où la communication est impossible entre au moins deux des tronçons y aboutissant.
+              Embarcadère:
+                label: Embarcadère de bac ou de liaison maritime.
+              "Grand rond-point":
+                label: Grand rond-point
+                description: |
+                  Intersection représentant un rond-point (giratoire) d'un diamètre supérieur à 100 m d'axe à axe.
+              "Noeud de communication restreinte":
+                label: Noeud de communication restreinte
+                description: Nœud où au moins 2 tronçons entrants/sortants ne peuvent communiquer.
+              "Noeud représentatif d'une commune":
+                label: Noeud représentatif d'une commune
+                description: |
+                  Nœud artificiel de rattachement de commune, créé par projection du chef-lieu sur un tronçon de route,
+                  quand il n'existe pas de nœud routier dans un rayon de 500 m.
+              "Petit rond-point":
+                label: Petit rond-point
+                description: Rond-point (giratoire) d'un diamètre compris entre 50 et 100 m.
+      troncon_route:
+        title: Tronçon de route
+        description: |
+          Définition:
+            Portion de voie de communication destinée aux automobiles, aux piétons, aux cycles ou aux animaux, homogène pour
+            l'ensemble des attributs qui la caractérisent.
+          Sélection: Les tronçons de route retenus vérifient un des critères suivants :
+            - appartenance au réseau classé ;
+            - appartenance au réseau vert ;
+            - appartenance au réseau européen ;
+            - vocation de type autoroutier, liaison principale ou liaison régionale ;
+            - tronçons permettant de desservir des infrastructures de transport (gare ou aérodrome)
+              ou des chefs-lieux de commune.
+          Modélisation géométrique:
+            À l'axe, au sol. Les routes à chaussées séparées sont représentées par un seul axe,
+            sauf si ces chaussées sont éloignées de plus de 100 mètres sur au moins un kilomètre.
+        geometryType: LineString2D
+        properties:
+          id_rte500:
+            title: identifiant
+            type: number
+            mandatory: yes
+          vocation:
+            title: Vocation de la liaison
+            description: |
+              Cet attribut matérialise une hiérarchisation du réseau routier basée, non pas sur un critère administratif,
+              mais sur l'importance des tronçons de route pour le trafic routier. Ainsi, les valeurs ci-dessous
+              permettent un maillage de plus en plus dense du territoire.
+            enum:
+              - Bretelle
+              - Liaison locale
+              - Liaison principale
+              - Liaison régionale
+              - Type autoroutier
+          nb_chausse:
+            title: Nombre de chaussées
+            description: |
+              Les voies à chaussées séparées contiguës sont représentées par un seul tronçon à deux chaussées. Les voies
+              à chaussées séparées éloignées de plus de 100 mètres sur au moins 1 kilomètre sont décrites par deux tronçons
+              à une chaussée possédant un sens unique de circulation.
+            enum:
+              "1 chaussée":
+                label: 1 chaussée
+              "2 chaussées":
+                label: Deux chaussées et plus.
+          nb_voies:
+            title: Nombre de voies
+            comment: |
+              La spécification définit les valeurs possibles '1 voie' et '2 voies étroites'.
+              Un certain JD utilise la valeur '1 voie ou 2 voies étroites'
+            enum:
+              "1 voie":
+                label: 1 voie
+              "2 voies étroites":
+                label: 2 voies étroites
+              "1 voie ou 2 voies étroites":
+                label: 1 voie ou 2 voies étroites
+              "2 voies larges":
+                label: 2 voies larges
+              "3 voies":
+                label: 3 voies
+              "4 voies":
+                label: 4 voies
+              "Plus de 4 voies":
+                label: Plus de 4 voies
+              "Sans objet":
+                label: Sans objet
+                description: Tronçons à deux chaussées et plus et bretelles d'échangeur.
+          etat:
+            title: État du tronçon
+            enum:
+              - Non revêtu
+              - Revêtu
+          acces:
+            title: Accès au tronçon
+            enum:
+              - A péage
+              - Libre
+          res_vert:
+            title: Appartenance du tronçon au réseau vert
+            enum:
+              - Appartient
+              - N'appartient pas
+          sens:
+            title: Sens de circulation
+            enum:
+              "Double sens":
+                label: Double sens
+                description: La circulation s'effectue dans les deux sens.
+              "Sens direct":
+                label: Sens direct
+                description: La circulation s'effectue dans le sens des arcs qui composent le tronçon.
+              "Sens inverse":
+                label: Sens inverse
+                description: La circulation s'effectue dans le sens inverse des arcs qui composent le tronçon.
+          res_europe:
+            title: Appartenance au réseau européen
+            description: |
+              Concaténation des numéros des éventuels itinéraires européens empruntant le tronçon.
+              Les numéros, de la forme Ennn, sont séparés par des tirets.
+              La valeur vide indique que le tronçon n'appartient pas au réseau européen.
+            type: string
+          num_route:
+            title: Numéro de route
+            description: |
+              Numéro de la route à laquelle appartient le tronçon.
+              La valeur vide indique que le tronçon n'appartient pas au réseau classé (Autoroutier, National, Départemental).
+            type: string
+          class_adm:
+            title: Classement administratif
+            description: Classement administratif attribué à la route empruntant le tronçon routier
+            enum:
+              Autoroute:
+                label: Autoroute
+                description: |
+                  Voie de communication routière à chaussées séparées, réservée à la circulation rapide des véhicules motorisés.
+              Nationale:
+                label: Nationale
+                description: Route principale gérée par l'État.
+              Départementale:
+                label: Départementale
+                description: |
+                  Route correspondant généralement à une liaison au niveau local ou régional gérée par les départements.
+              "Sans objet":
+                label: Sans objet
+                description: Tronçons de route situés à l'étranger ou n'appartenant pas au réseau routier classé.
+          longueur:
+            title: Longueur du tronçon
+            description: Longueur du tronçon en kilomètres.
+            type: number
+  ignf-route500v2.1:
+    title: ROUTE 500, Descritif de contenu, version 2.1, juillet 2001 (ROUTE500_2-1)
+    issued: '2001-07'
+    identifier: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/DC_ROUTE500_2-1.pdf
+    metadata: https://geoservices.ign.fr/ressources_documentaires/Espace_documentaire/BASES_VECTORIELLES/ROUTE500/IGNF_ROUTE500r_2-1.xml
+

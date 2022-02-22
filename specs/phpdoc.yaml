@@ -1,0 +1,18 @@
+title: specs - registre de spécifications
+path: /geovect/specs
+doc: |
+  L'idée est de formaliser et de gérer les spécifications de bases de données vectorielles comme Route 500, ...
+  La notion de spécification correspond à un document formel de spécification.
+  Ce document est interprété et structuré en Yaml conformément au schéma specs.schema.yaml
+  Les spécifications sont réparties dans différents fichiers Yaml conformes au même schéma.
+  Le fichier racine est specs.yaml
+  Ce registre est partage entre ../features et ../../geoapi/igngp/fts.php
+journal: |
+  22/2/2022:
+    - création à partir des travaux effectués dans ../features
+phpScripts:
+  - /geovect/specs/index.php
+phpIncludes:
+htmlFiles:
+  - /geovect/specs/specs.yaml
+  - /geovect/specs/r500.yaml

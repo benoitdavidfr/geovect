@@ -1,0 +1,19 @@
+title: Registre des specs
+abstract: |
+  Ce registre contient des références vers les spécifications stockées dans différents fichiers Yaml
+$schema: specs
+specifications:
+  ne110m_cultural:
+    $ref: ./ne.yaml#/specifications/ne110m_cultural
+  ne110m_physical:
+    $ref: ./ne.yaml#/specifications/ne110m_physical
+  ne10m_cultural:
+    $ref: ./ne.yaml#/specifications/ne10m_cultural
+  ne10m_physical:
+    $ref: ./ne.yaml#/specifications/ne10m_physical
+  ignf-route500v3:
+    $ref: ./r500.yaml#/specifications/ignf-route500v3
+  ignf-route500v2.1:
+    $ref: ./r500.yaml#/specifications/ignf-route500v2.1
+  comhisto:
+    $ref: ./comhisto.yaml#/specifications/comhisto
