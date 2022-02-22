@@ -17,6 +17,8 @@ doc: |
     - gérer correctement une explosion mémoire (?)
 
 journal: |
+  22/2/2022:
+    - migration aux specifications gérées dans ../specs/specs.inc.php
   16/2/2022:
     - traitement des col. geography comme les colonnes geometry sous le nom geo
   21/3/2021:
@@ -66,10 +68,10 @@ use Symfony\Component\Yaml\Exception\ParseException;
 
 /*PhpDoc: classes
 name: CollOnSql
-title: class CollOnSql - gestion du mapping entre une collection du FeatureServer et la table de stockage correspondante
+title: class CollOnSql - correspond aux collections du FeatureServer, référence la table de stockage correspondante
 doc: |
-  Un objet CollOnSql est initialisé par un \Sql\Schema et un collId.
-  Ne gère pas le cas de collision entre le nom généré et un nom existant de table
+  Un objet CollOnSql correspond à une collection d'un FeatureServer.
+  Ne gère pas le cas de collision entre le nom généré et un nom existant de table.
 */
 class CollOnSql {
   const SEP = '__'; // séparateur entre nom de table et nom de colonne pour créer le nom de collection
@@ -126,10 +128,13 @@ class CollOnSql {
       return [];
     elseif (Sql::software()=='PgSql') { // calcul en PgSql 
       $sql = "select ST_Extent(".$this->geoCol->name."::geometry) as table_extent FROM ".$this->table->name;
+      //print_r(Sql::getTuples($sql));
       $extent = Sql::getTuples($sql)[0]['table_extent'];
-      //echo "$extent\n";
+      //echo "extent=$extent for ",$this->table->name,"\n";
+      if (!$extent)
+        return []; // cas notamment d'une table vide
       if (!preg_match('!^BOX\(([-\d\.]+) ([-\d\.]+),([-\d\.]+) ([-\d\.]+)\)$!', $extent, $matches))
-        throw new Exception("no match on '$extent'");
+        throw new Exception("no match on '$extent' pour table ".$this->table->name);
       return [[round($matches[1], 4), round($matches[2], 4), round($matches[3], 4), round($matches[4], 4)]];
     }
     elseif (Sql::software()=='MySql') { // en MySql, appel de la méthode adhoc 
@@ -678,18 +683,21 @@ links to support paging (link relation `next`).",
 
   // structuration d'une collection utilisée pour les réponses à /collections et à /collections/{collId}
   private function collection_structuration(string $collUrl, string $collId, string $f): array {
-    $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
+    //echo get_class($this),"::collection_structuration($collUrl, $collId, $f)<br>\n";
+    //echo '$this->datasetDoc->collections='; print_r($this->datasetDoc->collections());
+    $collDoc = $this->datasetDoc->collections()[$collId] ?? null; // doc de la collection
+    //echo 'collDoc='; if ($collDoc) print_r($collDoc); else echo "null\n";
     $collSql = new CollOnSql($this->sqlSchema, $collId);
     $spatialExtentBboxes = $collSql->spatialExtentBboxes();
-    if ($collDoc && $collDoc->temporalExtent)
+    if ($collDoc && $collDoc->temporalExtent())
       $temporalExtent = $collSql->temporalExtent($collDoc->temporalExtent);
     else
       $temporalExtent = null;
     return [
       'id'=> $collId,
-      'title'=> $collDoc ? $collDoc->title : $collId,
+      'title'=> $collDoc ? $collDoc->title() : $collId,
     ]
-    + ($collDoc && $collDoc->description ? ['description'=> $collDoc->description] : [])
+    + ($collDoc && $collDoc->description() ? ['description'=> $collDoc->description()] : [])
     + ($spatialExtentBboxes || $temporalExtent ?
       ['extent'=>
         ($spatialExtentBboxes ? ['spatial'=> ['bbox'=> $spatialExtentBboxes]] : [])
@@ -882,6 +890,7 @@ links to support paging (link relation `next`).",
   }
   
   function collections(string $f): array { // retourne la description des collections
+    //echo get_class($this),"::collections()<br>\n";
     $selfurl = self::selfUrl();
     $colls = [];
     foreach (CollOnSql::collNames($this->sqlSchema) as $collName) {

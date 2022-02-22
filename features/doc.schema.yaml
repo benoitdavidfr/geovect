@@ -4,8 +4,8 @@ abstract: |
   et permettant de générer facilement un schéma JSON.
   
   Cette doc distingue les concepts de:
-    - jeu de données (dataset) (réf. dcat:Dataset ), ex: Route 500 éd. 2020, Route 500, éd. 2019
-    - spécification d'un jeu de données (réf. dct:Standard), ex: Route 500 v3, 2020
+    - jeu de données (dataset) (réf. dcat:Dataset ), ex: 'Route 500 éd. 2020', 'Route 500, éd. 2019'
+    - spécification d'un jeu de données (réf. dct:Standard), ex: 'Route 500 v3, 2020''
   
   Un service de Features correspond à un jeu de données.
   La liste des jeux de données du fichier doc.yaml correspond aux serveurs bien connus de fts.php/ftsonsql.php.
@@ -21,6 +21,10 @@ abstract: |
   Par exemple, le code Insee d'une commune ou une adresse, définit un tel géoréférencement
 
   journal:
+    22/2/2022:
+      - restrciction du fichier aux jeux de données
+      - les spécifications sont transférées dans ../specs
+      - ajout d'une propriété 'abstract' à dataset
     21/3/2021:
       - ajout de la possibilité de définir une extension temporelle, utilisée pour comhisto
     3/2/2021:
@@ -284,6 +288,9 @@ definitions:
       title:
         description: titre du jeu de données
         type: string
+      abstract:
+        description: résumé du document
+        type: string
       identifier:
         description: URI de référence du jeu de données
         type: string
@@ -298,18 +305,12 @@ definitions:
         type: string
         format: uri
       conformsTo:
-        description: |
-          pointeur JSON vers la spécification du jeu de données défini dans le dictionnaire specifications
-          soit du même document soit d'un autre document
-        type: object
-        additionalProperties: false
-        required: [$ref]
-        properties:
-          $ref:
-            type: string
+        description: URI d'une spécification 
+        type: string
+        format: uri
 type: object
 additionalProperties: false
-required: [title, abstract, $schema]
+required: [title, $schema]
 properties:
   title:
     description: titre du document
@@ -322,13 +323,6 @@ properties:
     oneOf:
       - type: string
       - $ref: http://json-schema.org/schema#
-  specifications:
-    description: dictionnaire des spécifications des jeux de données indexés par leur id
-    type: object
-    additionalProperties: false
-    patternProperties:
-      ^[-a-zA-Z0-9_@\.]*$:
-        $ref: '#/definitions/specification'
   datasets:
     description: dictionnaire des jeux de données documentés indexés par leur id
     type: object

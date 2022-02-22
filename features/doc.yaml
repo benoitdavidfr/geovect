@@ -3,24 +3,19 @@ abstract: |
   Tester une doc des données indexée par nom de raccourci, ex ignf-route500
   L'objectif est de définir une doc des jeux de données exposés en s'inspirant des schema JSON
   et en permettant de générer facilement un schéma JSON.
-  Cette doc définit:
+  Cette doc peut référence des spécifications qui définissent :
     - la structuration des données
     - la définition des jeux de données, de leurs collections, de leurs propriétés, des valeurs en cas de type énuméré.
     - la définition du type de géométrie de chaque collection
-  La documentation peut être partielle.
+  Cette documentation peut être partielle.
 $schema: doc
-specifications:
-  ignf-route500v3:
-    title: ROUTE 500, Descritif de contenu, version 3.0, avril 2020 (ROUTE500_3-0)
 
 datasets:
   ignf-route500: # version courante de ROUTE 500
     title: ROUTE 500 2020
     identifier: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2020-08-04.7z.001
     path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2020
-    conformsTo:
-      $ref: 'doc/r500.yaml#/specifications/ignf-route500v3'
-      #$ref: '#/specifications/ignf-route500v3'
+    conformsTo: https://specs.georef.eu/ignf-route500v3
     licence:
       href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
       title: licence ouverte Etalab.
@@ -28,9 +23,7 @@ datasets:
     title: ROUTE 500 2020 avec display_json
     identifier: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2020-08-04.7z.001
     path: /mysqlIt/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2020
-    conformsTo:
-      $ref: 'doc/r500.yaml#/specifications/ignf-route500v3'
-      #$ref: '#/specifications/ignf-route500v3'
+    conformsTo: https://specs.georef.eu/ignf-route500v3
     licence:
       href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
       title: licence ouverte Etalab.
@@ -38,53 +31,74 @@ datasets:
     title: ROUTE 500 2019
     identifier: ftp://ROUTE_500_ext:UqueemievaiDah3k@ftp3.ign.fr/ROUTE500_3-0__SHP_LAMB93_FXX_2019-10-30.7z.001
     path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2019
-    conformsTo:
-      $ref: 'doc/r500.yaml#/specifications/ignf-route500v3'
+    conformsTo: https://specs.georef.eu/ignf-route500v3
     licence:
       href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
       title: licence ouverte Etalab.
 
   ne110m_cultural:
     title: Natural Earth, 1:110m scale, Cultural Vector Data Themes
+    abstract: |
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales.
+      Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing,
+      well-crafted maps with cartography or GIS software.  
+      This dataset corresponds to the small scale data, 1:110m. Suitable for schematic maps of the world on a postcard
+      or as a small locator globe and includes data of the Cultural Vector Data Theme.  
     #path: /mysql/root@mysqlserver/ne_110m_cultural
     #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m_cultural
     path: /pgsql/benoit@db207552-001.dbaas.ovh.net:35250/ne110m_cultural/public
     identifier: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/
-    conformsTo:
-      $ref: 'doc/ne.yaml#/specifications/ne_110m_cultural'
+    conformsTo: https://specs.georef.eu/ne110m_cultural
     licence:
       href: http://www.naturalearthdata.com/about/terms-of-use/
       title: Public domain
   ne110m_physical:
     title: Natural Earth, 1:110m scale, Physical Vector Data Themes
+    abstract: |
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales.
+      Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing,
+      well-crafted maps with cartography or GIS software.  
+      This dataset corresponds to the small scale data, 1:110m. Suitable for schematic maps of the world on a postcard
+      or as a small locator globe and includes data of the Physical Vector Data Themes.  
     #path: /mysql/root@mysqlserver/ne_110m_physical
     #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne110m_physical
     path: /pgsql/benoit@db207552-001.dbaas.ovh.net:35250/ne110m_physical/public
     identifier: https://www.naturalearthdata.com/downloads/110m-physical-vectors/
-    conformsTo:
-      $ref: 'doc/ne.yaml#/specifications/ne_110m_physical'
+    conformsTo: https://specs.georef.eu/ne110m_physical
     licence:
       href: http://www.naturalearthdata.com/about/terms-of-use/
       title: Public domain
   ne10m_cultural:
     title: Natural Earth, 1:10m scale, Cultural Vector Data Themes
+    abstract: |
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales.
+      Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing,
+      well-crafted maps with cartography or GIS software.  
+      This dataset corresponds to the large scale data, 1:10m. The most detailed.
+      Suitable for making zoomed-in maps of countries and regions. Show the world on a large wall poster.
+      This dataset includes Cultural Vector Data Themes.  
     #path: /mysql/root@172.17.0.3/ne_10m_cultural
     #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m_cultural
     path: /pgsql/benoit@db207552-001.dbaas.ovh.net:35250/ne10m_cultural/public
     identifier: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/
-    conformsTo:
-      $ref: 'doc/ne.yaml#/specifications/ne_10m_cultural'
+    conformsTo: https://specs.georef.eu/ne10m_cultural
     licence:
       href: http://www.naturalearthdata.com/about/terms-of-use/
       title: Public domain
   ne10m_physical:
     title: Natural Earth, 1:10m scale, Physical Vector Data Themes
+    abstract: |
+      Natural Earth is a public domain map dataset available at 1:10m, 1:50m, and 1:110 million scales.
+      Featuring tightly integrated vector and raster data, with Natural Earth you can make a variety of visually pleasing,
+      well-crafted maps with cartography or GIS software.  
+      This dataset corresponds to the large scale data, 1:10m. The most detailed.
+      Suitable for making zoomed-in maps of countries and regions. Show the world on a large wall poster.
+      This dataset includes Physical Vector Data Themes.  
     #path: /mysql/root@172.17.0.3/ne_10m_physical
     #path: /mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_10m_physical
     path: /pgsql/benoit@db207552-001.dbaas.ovh.net:35250/ne10m_physical/public
     identifier: https://www.naturalearthdata.com/downloads/10m-physical-vectors/
-    conformsTo:
-      $ref: 'doc/ne.yaml#/specifications/ne_10m_physical'
+    conformsTo: https://specs.georef.eu/ne10m_physical
     licence:
       href: http://www.naturalearthdata.com/about/terms-of-use/
       title: Public domain
@@ -121,16 +135,14 @@ datasets:
   localgis:
     title: Serveur PgSql sur Docker, base gis, schema public
     path: /pgsql/docker@pgsqlserver/gis/public
-    conformsTo:
-      $ref: 'doc/comhisto.yaml#/specifications/comhisto'
+    conformsTo: https://specs.georef.eu/comhisto
     licence:
       href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
       title: licence ouverte Etalab.
   comhisto:
     title: Référentiel de l'historique des communes
     path: /pgsql/benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public
-    conformsTo:
-      $ref: 'doc/comhisto.yaml#/specifications/comhisto'
+    conformsTo: https://specs.georef.eu/comhisto
     licence:
       href: https://www.etalab.gouv.fr/licence-ouverte-open-licence
       title: licence ouverte Etalab.

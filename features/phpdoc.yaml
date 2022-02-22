@@ -4,7 +4,7 @@ doc: |
   Mise en oeuvre du protocole API Features pour accéder à différentes sources de données.
   Peuvent être vus comme des serveurs API Features:
     - un répertoire local ou distant contenant des fichiers GeoJSON ou GeoJSON adapté
-    - un schéma PostGis contenant des tables défini par l'URI pgsql://{user}:{passwd}@{host}/{database}/{schema}
+    - un schéma PostGis contenant des tables, défini par l'URI pgsql://{user}:{passwd}@{host}/{database}/{schema}
       exemple: pgsql://benoit@db207552-001.dbaas.ovh.net:35250/comhisto/public
     - une base MySql contenant des tables définie par l'URI mysql://{user}:{passwd}@{host}/{database}
       exemple: mysql://bdavid@mysql-bdavid.alwaysdata.net/bdavid_route500_2020

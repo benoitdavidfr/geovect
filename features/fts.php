@@ -17,6 +17,8 @@ doc: |
   
   Un appel sans paramètre liste les serveurs bien connus et des exemples d'appel.
 
+  Ce fichier peut être inclus dans un script pour utiliser le code du serveur OGC API Features
+
   Utilisation avec QGis:
     - les dernières versions de QGis (3.16) peuvent utiliser les serveurs OGC API Features
     - a priori elles n'exploitent pas ni n'affichent la doc, notamment les schemas
@@ -53,6 +55,8 @@ doc: |
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
 journal: |
+  18/2/2022:
+    - adaptation à la mise en oeuvre de ftsopg.php
   6/2/2021:
     - réduction de l'empreinte mémoire dans items par l'utilisation de display_json() et display_fmt()
   27/1/2021:
@@ -67,6 +71,7 @@ journal: |
 includes:
   - doc.php
   - ftrserver.inc.php
+  - displayjson.inc.php
 */
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/doc.php';
@@ -126,7 +131,7 @@ define('HTTP_ERROR_LABELS', [
 // Définit le fuseau horaire par défaut à utiliser
 date_default_timezone_set('UTC');
 
-//if (0)
+if (1)
 FeatureServer::log([
   'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
   'Headers'=> getallheaders(),
@@ -238,14 +243,14 @@ function shutDownFunction() {
 register_shutdown_function('shutDownFunction');*/
 }
 
-// si _GET[f] est défini alors il est utilisé, sinon si appel navigateur (header Accept) alors 'html' sinon 'json'
+// si _GET[f] est défini alors il est utilisé, sinon essaie d'utiliser le header Accept
 // si ni 'yaml', ni 'json', ni 'geojson' alors 'html'
 switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')) ? 'html' : 'json')) {
-  case 'html': echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n"; break;
   case 'yaml': break;
   case 'json':
   // si $f vaut geojson alors  transformation en 'json'. A l'affichage si geo alors geojson
   case 'geojson': $f = 'json'; break;
+  case 'html':
   // $f doit valoir 'html', 'yaml' ou 'json' sinon 'html'
   default: {
     $f = 'html';
@@ -255,8 +260,10 @@ switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['
 }
 
 //print_r($_SERVER);
-  
-$doc = new Doc; // documentation des serveurs biens connus 
+
+if (!isset($doc)) { // $doc peut être défini par un script incluant le présent fichier 
+  $doc = new Doc; // documentation des serveurs biens connus 
+}
 
 if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) { // appel sans paramètre 
   echo "</pre><h2>Bouquet de serveurs OGC API Features</h2>
@@ -279,21 +286,6 @@ Les sources exposées sont les suivantes :<ul>\n";
 Ces serveurs peuvent notamment être utilisés avec les dernières versions
 de <a href='https://www.qgis.org/fr/site/' target='_blank'>QGis (3.16)</a>
 ou être consultés en Html.<br>\n";
-  /*echo "Exemples:\n";
-  foreach (EXEMPLES_DAPPELS as $ex => $colls) {
-    echo "  - <a href='fts.php/$ex'>$ex</a>\n";
-    echo "    - <a href='fts.php/$ex/collections'>collections</a>,";
-    echo " <a href='fts.php/$ex/check'>check</a>\n";
-    foreach ($colls as $collid => $params) {
-      if (is_int($collid)) {
-        $collid = $params;
-        $params = '';
-      }
-      echo "    - <a href='fts.php/$ex/collections/$collid/describedBy'>collections/$collid/describedBy</a>\n";
-      $url = "collections/$collid/items".($params ? "?$params" : '');
-      echo "      - <a href='fts.php/$ex/$url'>$url</a>\n";
-    }
-  }*/
   die();
 }
 
@@ -330,13 +322,13 @@ if (preg_match('!^/([^/]+)/?$!', $fserverId, $matches)) {
   if (!isset($doc->datasets[$datasetId]))
     error("Erreur, $datasetId n'est pas l'identifiant d'un serveur prédéfini", 400);
   $datasetDoc = $doc->datasets[$datasetId];
-  $fserverId = $datasetDoc->path;
+  $fserverId = $datasetDoc->path();
   //echo "fserverId=$fserverId<br>\n";
 }
 
 // identification du type de serveur et de son path
 if (!preg_match('!^/(wfs|pgsql|mysql|mysqlIt|file)(/.*)$!', $fserverId, $matches)) {
-  error("Erreur, type de serveur non détecté dans '$_SERVER[PATH_INFO]'", 400);
+  error("Erreur, type de serveur non détecté dans '$fserverId'", 400);
 }
 //echo 'matches3='; print_r($matches);
 $type = $matches[1];
@@ -420,6 +412,7 @@ try {
     $fServer->checkParams("/$action/{collectionId}/items/{featureId}");
     output(($f == 'json' ? 'geojson' : $f), $fServer->item($f, $collId, $itemId), 6);
   }
-} catch (Exception|TypeError $e) {
+// } catch (Exception|TypeError $e) {
+} catch(XX $e) { // Permet de rien attraper en changeant le code un minimum 
   error($e->getMessage(), $e->getCode());
 }

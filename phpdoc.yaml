@@ -86,6 +86,7 @@ journal: |
     - regroupement des modules dans geovect
 submodules:
   - /geovect/dcat
+  - /geovect/specs
   - /geovect/features
   - /geovect/schema
   - /geovect/gegeom

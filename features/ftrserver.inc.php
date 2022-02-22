@@ -3,7 +3,7 @@
 name: ftrserver.inc.php
 title: ftrserver.inc.php - code générique d'un serveur de Feature conforme au standard API Features
 doc: |
-  Gère aussi l'aguillage vers les différents types de serveur par la méthode new()
+  Gère aussi l'aiguillage vers les différents types de serveur par la méthode new()
 classes:
 journal: |
   27/1/2021:
@@ -49,7 +49,8 @@ abstract class FeatureServer {
   
   static function selfUrl(): string { // Url d'appel sans les paramètres GET
     $url = ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
-          ."://$_SERVER[HTTP_HOST]$_SERVER[SCRIPT_NAME]$_SERVER[PATH_INFO]";
+          ."://$_SERVER[HTTP_HOST]$_SERVER[SCRIPT_NAME]"
+          .($_SERVER['PATH_INFO'] ?? '');
     //echo "selfUrl=$url\n";
     return $url;
   }
@@ -69,9 +70,9 @@ abstract class FeatureServer {
   function landingPage(string $f): array { // retourne l'info de la landing page
     $selfurl = self::selfUrl();
     $dataId = substr($_SERVER['REQUEST_URI'], strlen($_SERVER['SCRIPT_NAME']));
-    $title = $this->datasetDoc->title ?? null;
+    $title = $this->datasetDoc->title();
     //echo "title=$title\n";
-    $abstract = $this->datasetDoc->abstract ?? null;
+    $abstract = $this->datasetDoc->abstract();
     //echo "abstract=$abstract\n";
     return [
       'title'=> $title ?? "Access to $dataId data using OGC API Features specification",
