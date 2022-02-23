@@ -279,7 +279,7 @@ Les 3 types de sources de données exposées sont:<ul>
 Les sources exposées sont les suivantes :<ul>\n";
   foreach ($doc->datasets as $dsid => $dsDoc) {
     if (($_SERVER['HTTP_HOST']=='localhost') || !preg_match('!@172\.17\.0\.!', $dsDoc->path))
-    echo "<li><a href='$_SERVER[SCRIPT_NAME]/$dsid'>$dsDoc->title</a></li>\n";
+    echo "<li><a href='$_SERVER[SCRIPT_NAME]/$dsid'>",$dsDoc->title(),"</a></li>\n";
   }
 
   echo "</ul>

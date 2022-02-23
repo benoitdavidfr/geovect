@@ -38,15 +38,17 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   
   // structuration d'une collection utilisée pour les réponses à /collections et à /collections/{collId}
   private function collection_structuration(string $collUrl, string $collId, string $f): array {
-    $collDoc = $this->datasetDoc->collections[$collId] ?? null; // doc de la collection
+    //echo get_class($this),"::collection_structuration($collUrl, $collId, $f)<br>\n";
+    $collDoc = $this->datasetDoc->collections()[$collId] ?? null; // doc de la collection
+    //echo 'collDoc='; if ($collDoc) print_r($collDoc); else echo "null\n";
     //$spatialExtentBboxes = (new CollOnSql($this->sqlSchema, $collId))->spatialExtentBboxes();
     $spatialExtentBboxes = $this->wfsServer->featureTypeList()[$this->prefix.$collId]['LonLatBoundingBox'];
     $temporalExtent = null;
     return [
       'id'=> $collId,
-      'title'=> $collDoc ? $collDoc->title : $collId,
+      'title'=> $collDoc ? $collDoc->title() : $collId,
     ]
-    + ($collDoc && $collDoc->description ? ['description'=> $collDoc->description] : [])
+    + ($collDoc && $collDoc->description() ? ['description'=> $collDoc->description()] : [])
     + ($spatialExtentBboxes || $temporalExtent ?
       ['extent'=>
         ($spatialExtentBboxes ? ['spatial'=> ['bbox'=> $spatialExtentBboxes]] : [])
@@ -239,6 +241,7 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   }
   
   function collections(string $f): array { // retourne la description des collections
+    //echo get_class($this),"::collections()<br>\n";
     $selfurl = self::selfUrl();
     $colls = [];
     foreach ($this->wfsServer->featureTypeList() as $fTypeId => $fType) {

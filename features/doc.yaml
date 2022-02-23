@@ -113,9 +113,15 @@ datasets:
     title: Serveur WFS du Shom
     path: /wfs/services.data.shom.fr/INSPIRE/wfs
 
-  ignf-bdtopo:
-    title: BDTOPO IGN
-    path: '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr&prefix=BDTOPO_BDD_WLD_WGS84G:'
+  ignf-administratif:
+    title: Thème Admnistratif du Géoportail
+    abstract: |
+      Le thème "administratif" comprend des données Admin Express et Admin Express COG
+      décrits dans https://geoservices.ign.fr/adminexpress  
+    #doc: https://geoservices.ign.fr/services-web-experts-administratif
+    conformsTo: https://specs.georef.eu/admin-expresv3.1
+    path: '/wfs/wxs.ign.fr/administratif/geoportail/wfs'
+  
   ignf-bdadresse:
     title: BDADRESSE IGN
     path: '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr&prefix=BDADRESSE_BDD_WLD_WGS84G:'
