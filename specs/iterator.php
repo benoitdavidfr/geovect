@@ -42,6 +42,10 @@ function iterator(array $array): array {
   }
 }
 
+
+if (basename(__FILE__)<>basename($_SERVER['PHP_SELF'])) return;
+
+
 $array = Yaml::parseFile(__DIR__.'/adminexpress.yaml');
 $expanded = iterator($array);
 $expanded['title'] = "$expanded[title] (généré automatiquement par iterator.php le ".date('Y-m-d\TH:i').")";

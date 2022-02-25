@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__.'/../vendor/autoload.php';
+require_once __DIR__.'/iterator.php';
 
 use Symfony\Component\Yaml\Yaml;
 
@@ -402,6 +403,7 @@ class Spec { // Spécification
     if (!($spec = $yaml['specifications'][$specid] ?? null))
       throw new Exception("Spécification '$uri' non définie");
     $yaml = JsonRef::deref($spec, dirname(self::YAML_FILE));
+    $yaml = iterator($yaml); // Si les specs contiennent un mécanisme d'itération alors il est activé
     $this->title = $yaml['title'];
     $this->abstract = $yaml['abstract'] ?? null;
     foreach ($yaml['collections'] ?? [] as $collId => $collection) {
@@ -425,19 +427,6 @@ class Spec { // Spécification
     ;
   }
 };
-
-/*
-class SpecDoc { // Spec d'un dataset
-    
-  
-  
-  function __get(string $name) {
-    //echo "SpecDoc::__get($name)\n";
-    return isset($this->$name) ? $this->$name : null;
-  }
-  
-};
-*/
 
 
 if (basename(__FILE__)<>basename($_SERVER['PHP_SELF'])) return;
