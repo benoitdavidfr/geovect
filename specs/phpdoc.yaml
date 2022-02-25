@@ -6,13 +6,23 @@ doc: |
   Ce document est interprété et structuré en Yaml conformément au schéma specs.schema.yaml
   Les spécifications sont réparties dans différents fichiers Yaml conformes au même schéma.
   Le fichier racine est specs.yaml
-  Ce registre est partage entre ../features et ../../geoapi/igngp/fts.php
+  Ce registre est utilisé par ../features et ../../geoapi/igngp/fts.php
+  L'interface est définie dans spec.inc.php
+  
+  Réfléchir à la définition d'opérations sur les specs
+  Ex
+    - générer les specs d'un service WFS à partir de celle d'une BD en appliquant des règles de nommage du WFS
+    - dupliquer les specs pour différents jeux de données, ex AE -> WFS
+    
 journal: |
   22/2/2022:
     - création à partir des travaux effectués dans ../features
 phpScripts:
   - /geovect/specs/index.php
+  - /geovect/specs/iterator.php
 phpIncludes:
+  - /geovect/specs/spec.inc.php
 htmlFiles:
+  - /geovect/specs/specs.schema.yaml
   - /geovect/specs/specs.yaml
   - /geovect/specs/r500.yaml

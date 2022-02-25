@@ -1,0 +1,418 @@
+title: Spécification d'Admin-Express
+abstract: |
+  Ce fichier contient une formalisation des spécifications d'Admin-Express en particulier de ses différentes collections.
+  Il intègre un mécanisme d'itération pour générer les noms des types d'objets utilisés dans le service WFS IGN
+  qui contient 3 types d'objets pour chaque classe d'objets définie dans Admin-Express, un pour chacun des produits:
+    - ADMIN EXPRESS,
+    - ADMIN EXPRESS COG,
+    - ADMIN EXPRESS COG CARTO.
+  Le fichier source doit être traité par iterator.php pour réaliser ces itérations.
+  Si le titre de ce fichier contient la mention "(généré automatiquement par iterator.php le ...)" alors il s'agit
+  de la version traitée par iterator.php
+  
+  journal:
+    25/2/2022: génération des 3 produits
+    23/2/2022: création
+modified: '2022-02-25'
+creator: Benoit DAVID
+$schema: specs
+specifications:
+  admin-expresv3.1:
+    title: Descriptif de contenu de ADMIN EXPRESS, Version 3.1, rév. Novembre 2021, adaptée WFS
+    abstract: |
+      ADMIN EXPRESS correspond à 3 produits distincts:
+        - ADMIN EXPRESS qui comprend les unités administratives avec édition mensuelle et géométrie issue de la base
+          de données unifiée de l'IGN,
+        - ADMIN EXPRESS COG qui est une édition annuelle avec la même géométrie,
+        - ADMIN EXPRESS COG CARTO dont la géométrie est simplifiée pour un usage cartographique à moyenne échelle.
+      
+      Ces trois produits couvrent l’ensemble des départements français, y compris les Départements
+      et Régions d’Outre-Mer (DROM). Les Collectivités d’Outre-Mer (COM) ne sont pas couvertes par les produits.
+      
+      Cette spécification est adaptée pour correspondre aux noms utilisés dans le service WFS du Géoportail.
+      Chaque classe d'ADMIN EXPRESS correspond dans WFS à 3 collections, une pour chaque produit.
+      Chaque produit correspond dans WFS à un espace de nom WFS:
+        - LIMITES_ADMINISTRATIVES_EXPRESS.LATEST pour ADMIN EXPRESS
+        - ADMINEXPRESS-COG.LATEST pour ADMIN EXPRESS COG
+        - ADMINEXPRESS-COG-CARTO.LATEST pour ADMIN EXPRESS COG CARTO
+      De plus, les données exposées correspond à la dernière version connue par l'IGN.
+    source: https://geoservices.ign.fr/sites/default/files/2021-11/DC_DL_ADMIN_EXPRESS_3-1_0.pdf
+    collections:
+      forEach: # exprime que le fragment 'body' doit être itéré pour chaque itération définie dans 'iterables'
+        iterables: # liste des itérations, chacune comme [{key}: {value}]
+          - spaceName: 'ADMINEXPRESS-COG-CARTO.LATEST:'
+            productTitle: AE-COG-Carto
+            productLabel: édition annuelle (COG) avec géométrie simplifiée
+          - spaceName: 'ADMINEXPRESS-COG.LATEST:'
+            productTitle: AE-COG
+            productLabel: édition annuelle (COG)
+          - spaceName: 'LIMITES_ADMINISTRATIVES_EXPRESS.LATEST:'
+            productTitle: AE
+            productLabel: édition mensuelle
+        body: # fragment à étendre en remplacant dans les chaines les variables exprimées entre {} par leur valeur pour l'itération
+          '{spaceName}region':
+            title: "{productTitle}-Région"
+            description: |
+              Région de l'{productLabel}.
+            geometryType: [Polygon2D, MultiPolygon2D],
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom_m:
+                title: Nom de la région en majuscules non accentuées
+                type: string
+              nom:
+                title: Nom de la région en majuscules et minuscules accentuées
+                type: string
+              insee_reg:
+                title: Code INSEE de la région
+                type: string
+          '{spaceName}departement':
+            title: "{productTitle}-Département"
+            description: |
+              Département de l'{productLabel}.
+            geometryType: [Polygon2D, MultiPolygon2D],
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom_m:
+                title: Nom du département en majuscules non accentuées
+                type: string
+              nom:
+                title: Nom du département en majuscules et minuscules accentuées
+                type: string
+              insee_dep:
+                title: code INSEE du département
+                type: string
+              insee_reg:
+                title: Code INSEE de la région à laquelle appartient le département
+                type: string
+          '{spaceName}arrondissement':
+            title: "{productTitle}-Arrondissement"
+            description: |
+              Arrondissement de l'{productLabel}.  
+              L'arrondissement est une subdivision du département. Depuis le redécoupage cantonal lié aux élections
+              départementales de mars 2015, l’arrondissement n’est plus un regroupement de cantons mais de communes.
+              Il ne faut pas confondre l'Arrondissement, subdivision du département, avec l'Arrondissement_municipal,
+              subdivision de Paris, de Lyon et de Marseille.
+            geometryType: [Polygon2D, MultiPolygon2D],
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom_m:
+                title: nom de l’arrondissement en majuscules non accentuées
+                type: string
+              nom:
+                title: nom de l’arrondissement en majuscules et minuscules accentuées
+                type: string
+              insee_arr:
+                title: code INSEE de l’arrondissement
+                type: string
+              insee_dep:
+                title: code INSEE du département auquel appartient l'arrondissement
+                type: string
+              insee_reg:
+                title: code INSEE de la région à laquelle appartient l'arrondissement
+                type: string
+          '{spaceName}epci':
+            title: "{productTitle}-EPCI"
+            description: |
+              Etablissement public de coopération intercommunale (EPCI) à fiscalité propre, {productLabel}.
+          
+              La liste des EPCI s’appuie sur les fichiers publiés par la Direction Générale des Collectivités Locales (DGCL)
+              du Ministère de l’intérieur complétés d’informations recueillies auprès des acteurs locaux (EPCI, préfectures,
+              ...). La loi NOTRe du 7 août 2015 a prévu la mise en œuvre de nouveaux schémas départementaux de coopération
+              intercommunale (SDCI) pour le 1er janvier 2017.  
+              À compter de cette date, la géographie des EPCI à fiscalité propre retenue dans ADMIN EXPRESS résulte
+              de cette mise en œuvre à la date du 15 novembre 2016 et ne tient pas compte des évolutions marginales
+              réalisées en dehors des SDCI, notamment dans le cas de la création de certaines communes nouvelles.
+            geometryType: [Polygon2D, MultiPolygon2D],
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              code_siren:
+                title: Code SIREN de l’établissement public de coopération intercommunale
+                description: |
+                  Dans l’attente de la publication des codes SIREN attribués aux EPCI constitués le 1er janvier 2017,
+                  ces codes sont provisoires et garantissent l’unicité d’identification de chaque EPCI.
+                type: string
+              nom:
+                title: Nom de l'EPCI
+                type: string
+              nature:
+                title: Nature de l'EPCI
+                enum:
+                  - Communauté d’agglomération
+                  - Communauté de communes
+                  - Communauté urbaine
+                  - Etablissement public territorial
+                  - Métropole
+          '{spaceName}canton':
+            title: "{productTitle}-Canton"
+            description: |
+              Canton de l'{productLabel}.  
+              Il s'agit de cantons au sens INSEE (appelés également pseudo-cantons) et non les cantons électoraux. 
+            geometryType: [Polygon2D, MultiPolygon2D],
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              insee_can:
+                title: code INSEE du canton
+                type: string
+                specificValues:
+                  NR: Non renseigné. Le code du canton n’est pas connu.
+              insee_dep:
+                title: code INSEE du département auquel appartient le canton
+                type: string
+              insee_reg:
+                title: code INSEE de la région à laquelle appartient le canton
+                type: string
+          '{spaceName}commune':
+            title: "{productTitle}-Commune"
+            description: |
+              Commune de l'{productLabel}.
+            geometryType: [Polygon2D, MultiPolygon2D],
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom:
+                title: Nom de la commune en majuscules et minuscules accentuées
+                description: |
+                  L’article a été intégré au nom de la commune alors que le COG fournit les deux informations de façon séparée.  
+                  Dans certains cas, le nom officiel comporte une mention entre parenthèse pour exemple :
+                    - Château-Chinon (Ville)
+                    - Château-Chinon (Campagne)
+                type: string
+              nom_m:
+                title: Nom de la commune en majuscules non accentuées
+                description: |
+                  L’article initial (« LE », « LA », « LES », « L’ »...) est écrit en majuscules en cohérence avec les
+                  publications officielles de l’INSEE.  
+                  Dans certains cas, le nom officiel comporte une mention entre parenthèse pour exemple :
+                    - CHATEAU-CHINON (VILLE)
+                    - CHATEAU-CHINON (CAMPAGNE)
+                type: string
+              insee_com:
+                title: code INSEE de la commune
+                description: |
+                  Une commune nouvelle résultant d’un regroupement de communes préexistantes se voit attribuer le code INSEE
+                  de l’ancienne commune désignée comme chef-lieu par l’arrêté préfectoral qui l’institue.
+                  En conséquence une commune change de code INSEE si un arrêté préfectoral modifie son chef-lieu.
+                type: string
+              statut:
+                title: statut administratif de la commune
+                enum:
+                  - Capitale d’état
+                  - Préfecture de région
+                  - Préfecture
+                  - Sous-préfecture
+                  - Commune simple
+              population:
+                title: population
+                description: |
+                  Définition : Population municipale de la commune en nombre d’habitants (au sens de l’INSEE).
+              
+                  INSEE : Le concept de population municipale est défini par le décret n°2003-485 publié au Journal Officiel
+                  du 8 juin 2003, relatif au recensement de la population. La population municipale comprend les personnes
+                  ayant leur résidence habituelle (au sens du décret) sur le territoire de la commune, dans un logement
+                  ou une communauté, les personnes détenues dans les établissements pénitentiaires de la commune,
+                  les personnes sans-abri recensées sur le territoire de la commune et les personnes résidant habituellement
+                  dans une habitation mobile recensée sur le territoire de la commune.
+              
+                  Actualité : La population au 1er janvier de l’année « n » correspond à la population légale millésimée de
+                  l’année « n-3 ». Elles ont été calculées conformément aux concepts définis dans le décret n° 2003-485 du
+                  5 juin 2003. Leur date de référence statistique est le 1er janvier de l’année « n-3 ». Pour les communes
+                  ayant changé de statut (fusion, scission, ...) depuis le 1er janvier, la population de la commune correspond
+                  aux informations portées à la connaissance de l’IGN par les différents décrets et arrêtés publiés au Journal
+                  Officiel.
+              insee_can:
+                title: code INSEE du canton auquel appartient la commune
+                description: |
+                  Il s'agit en fait du code du pseudo-canton et pas du canton électoral.
+                type: string
+              insee_arr:
+                title: Code INSEE de l’arrondissement contenant la commune
+                type: string
+                specificValues:
+                  NC: Il n’y a pas de code arrondissement sur Mayotte (976).
+              insee_dep:
+                title: Code INSEE du département auquel appartient la commune.
+                type: string
+              insee_reg:
+                title: Code INSEE de la région à laquelle appartient la commune.
+                type: string
+              siren_epci:
+                title: Code SIREN des EPCI à fiscalité propre auxquels appartient la commune.
+                type: string
+                specificValues:
+                  NC: La commune n’appartient pas à un EPCI.
+          '{spaceName}chflieu_commune':
+            title: "{productTitle}-Chef-lieu de Commune"
+            description: |
+              Emplacement de la mairie de la commune de l'{productLabel}.
+              Dans certains cas, le chef-lieu n’est pas dans la commune.
+            geometryType: Point2D
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom:
+                title: Dénomination du chef-lieu de commune
+                description: |
+                   Nom de la commune précédé de « Mairie de ».
+                type: string
+              id_com:
+                title: identifiant de la commune à laquelle se rapporte le chef-lieu
+                description: |
+                  Il permet d’établir un lien entre le ponctuel de la classe CHFLIEU_COMMUNE et l’objet surfacique de la classe
+                  COMMUNE.
+          '{spaceName}commune_associee_ou_deleguee':
+            title: "{productTitle}-Commune associée ou déleguée"
+            description: |
+              Commune associée ou déléguée de l'{productLabel}.
+            geometryType: [Polygon2D, MultiPolygon2D],
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom:
+                title: Nom de la commune associée ou déléguée en majuscules et minuscules accentuées
+                type: string
+              nom_m:
+                title: Nom de la commune associée ou déléguée en majuscules non accentuées
+                type: string
+              insee_cad:
+                title: Code INSEE de la commune associée ou déléguée
+                type: string
+              insee_com:
+                title: Code INSEE de la commune de rattachement
+                comment: Dans le document de spécification le nom de la propriété est 'INSEE_RATT'
+                type: string
+              nature:
+                title: nature de la commune associée ou déléguée
+                enum:
+                  COMA: {label: Commune associée}
+                  COMD: {label: Commune déléguée}
+              population:
+                title: population
+                description: |
+                  Définition : Population municipale de la commune en nombre d’habitants (au sens de l’INSEE).
+              
+                  INSEE : Le concept de population municipale est défini par le décret n°2003-485 publié au Journal Officiel
+                  du 8 juin 2003, relatif au recensement de la population. La population municipale comprend les personnes
+                  ayant leur résidence habituelle (au sens du décret) sur le territoire de la commune, dans un logement
+                  ou une communauté, les personnes détenues dans les établissements pénitentiaires de la commune,
+                  les personnes sans-abri recensées sur le territoire de la commune et les personnes résidant habituellement
+                  dans une habitation mobile recensée sur le territoire de la commune.
+              
+                  Actualité : La population au 1er janvier de l’année « n » correspond à la population légale millésimée de
+                  l’année « n-3 ». Elles ont été calculées conformément aux concepts définis dans le décret n° 2003-485 du
+                  5 juin 2003. Leur date de référence statistique est le 1er janvier de l’année « n-3 ». Pour les communes
+                  ayant changé de statut (fusion, scission, ...) depuis le 1er janvier, la population de la commune correspond
+                  aux informations portées à la connaissance de l’IGN par les différents décrets et arrêtés publiés au Journal
+                  Officiel.
+          '{spaceName}chflieu_commune_associee_ou_deleguee':
+            title: "{productTitle}-Chef-lieu de Commune associée ou déléguée"
+            description: |
+              Emplacement de la mairie de la commune associée ou déléguée de l'{productLabel}..
+              Dans certains cas, le chef-lieu n’est pas dans l’entité rattachée.
+            geometryType: Point2D
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom:
+                title: Dénomination du chef-lieu de commune associée ou déléguée
+                description: |
+                   Nom de la commune associée ou déléguée précédé de « Mairie de la Commune Associée de »
+                   ou « Mairie de la Commune Déléguée de ».
+                type: string
+              id_com:
+                title: identifiant de la commune associée ou déléguée à laquelle se rapporte le chef-lieu
+                description: |
+                  Il permet d’établir un lien entre le ponctuel de la classe CHFLIEU_COMMUNE_ASSOCIEE_OU_DELEGUEE
+                  et l’objet surfacique de la classe COMMUNE_ASSOCIEE_OU_DELEGUEE.
+          '{spaceName}arrondissement_municipal':
+            title: "{productTitle}-Arrondissement municipal"
+            description: |
+              Subdivision territoriale des communes de Lyon, Marseille et Paris de l'{productLabel}.
+              Il ne faut pas confondre l'ARRONDISSEMENT_MUNICIPAL, subdivision de Paris, de Lyon et de Marseille,
+              avec l'ARRONDISSEMENT, subdivision du département.
+            geometryType: [Polygon2D, MultiPolygon2D],
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom:
+                title: Nom de l’arrondissement municipal en majuscules et minuscules accentuées
+                type: string
+              nom_m:
+                title: Nom de l’arrondissement municipal en majuscules non accentuées
+                type: string
+              insee_arm:
+                title: Code INSEE de l’arrondissement municipal
+                type: string
+              insee_com:
+                title: Code INSEE de la commune de rattachement
+                type: string
+              population:
+                title: population
+                description: |
+                  Définition : Population municipale de la commune en nombre d’habitants (au sens de l’INSEE).
+              
+                  INSEE : Le concept de population municipale est défini par le décret n°2003-485 publié au Journal Officiel
+                  du 8 juin 2003, relatif au recensement de la population. La population municipale comprend les personnes
+                  ayant leur résidence habituelle (au sens du décret) sur le territoire de la commune, dans un logement
+                  ou une communauté, les personnes détenues dans les établissements pénitentiaires de la commune,
+                  les personnes sans-abri recensées sur le territoire de la commune et les personnes résidant habituellement
+                  dans une habitation mobile recensée sur le territoire de la commune.
+              
+                  Actualité : La population au 1er janvier de l’année « n » correspond à la population légale millésimée de
+                  l’année « n-3 ». Elles ont été calculées conformément aux concepts définis dans le décret n° 2003-485 du
+                  5 juin 2003. Leur date de référence statistique est le 1er janvier de l’année « n-3 ». Pour les communes
+                  ayant changé de statut (fusion, scission, ...) depuis le 1er janvier, la population de la commune correspond
+                  aux informations portées à la connaissance de l’IGN par les différents décrets et arrêtés publiés au Journal
+                  Officiel.
+          '{spaceName}chflieu_arrondissement_municipal':
+            title: "{productTitle}-Chef-lieu d'arrondissement municipal"
+            description: |
+              Emplacement de la mairie de l’arrondissement municipal de l'{productLabel}.
+              Dans certains cas, le chef-lieu n’est pas dans l’arrondissement municipal.
+            geometryType: Point2D
+            properties:
+              id:
+                title: identifiant IGN
+                identifier: yes
+                type: string
+              nom:
+                title: Dénomination du chef-lieu de l’arrondissement municipal
+                description: |
+                   Nom de l’arrondissement municipal précédé de « Mairie de ».
+                type: string
+              id_com:
+                title: identifiant de l’arrondissement municipal auquel se rapporte le chef-lieu
+                description: |
+                  Il permet d’établir un lien entre le ponctuel de la classe CHFLIEU_ARRONDISSEMENT_MUNICIPAL
+                  et l’objet surfacique de la classe ARRONDISSEMENT_MUNICIPAL.
+          '{spaceName}collectivite_territoriale':
+            title: "{productTitle}-Collectivité territoriale"
+            description: |
+              Concept pas clair. {productLabel}.
+            geometryType: [Polygon2D, MultiPolygon2D],
+eof:

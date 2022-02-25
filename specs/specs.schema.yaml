@@ -26,6 +26,8 @@ abstract: |
     Par exemple, le code Insee d'une commune ou une adresse, définit un tel géoréférencement
 
   journal:
+    24/2/2022:
+      - ajout de la possibilité d'itérer les collections
     22/2/2022:
       - transfert d'une partie de ../features/doc.schema.yaml dans specs.schema.yaml
     21/3/2021:
@@ -89,7 +91,7 @@ definitions:
         type: string
         enum: [yes, no]
       identifier:
-        description: Propriété identifiant l'objet (clé primaire)
+        description: Propriété identifiant l'objet (clé primaire). Par défaut no
         type: string
         enum: [yes, no]
       type:
@@ -223,8 +225,15 @@ definitions:
         type: object
         additionalProperties: false
         patternProperties:
-          ^[-a-zA-Z0-9_]*$:
+          ^[-a-zA-Z0-9_]+$:
             $ref: '#/definitions/property'
+  collDict:
+    description: dictionnaire des collections indexées sur l'id de la collection
+    type: object
+    additionalProperties: false
+    patternProperties:
+      ^[-a-zA-Z0-9_:.{}]+$:
+        $ref: '#/definitions/collection'
   specification:
     description: |
       Spécification d'un jeu de données.
@@ -259,20 +268,54 @@ definitions:
           ex: 4 => résolution de de 1e-4 degrés soit 1e-4° * 40 km / 360° = 11 m
         type: integer
       collections:
-        description: dictionnaire des collections indexées sur l'id de la collection
-        type: object
-        patternProperties:
-          ^[-a-zA-Z0-9_]*$:
-            $ref: '#/definitions/collection'
+        oneOf:
+          - description: dictionnaire des collections indexées sur l'id de la collection
+            $ref: '#/definitions/collDict'
+          - description: dictionnaire de collections paramétrées itérables
+            type: object
+            additionalProperties: false
+            required: [forEach]
+            properties:
+              forEach:
+                description: exprime que le fragment 'body' doit être itéré pour chaque itération définie dans 'iterables'
+                type: object
+                additionalProperties: false
+                required: [iterables, body]
+                properties:
+                  iterables:
+                    description: liste des itérations
+                    type: array
+                    items:
+                      description: |
+                        chaque itération est définie par un ensemble de [{key}: {value}] exprimant
+                        que dans le body les sous-chaines '{key}' doivent être remplacées par la valeur définie
+                      type: object
+                      additionalProperties: false
+                      patternProperties:
+                        ^[-a-zA-Z0-9_]+$:
+                          type: string
+                  body:
+                    description: |
+                      fragment à étendre en remplacant dans les chaines les variables exprimées entre {} par leur valeur
+                      pour l'itération
+                      Ce fragment est un dictionnaire des collections indexées sur l'id de la collection
+                    $ref: '#/definitions/collDict'
+                
 type: object
 additionalProperties: false
-required: [title, $schema]
+required: [title, $schema, specifications]
 properties:
   title:
     description: titre du document
     type: string
   abstract:
     description: résumé du document
+    type: string
+  modified:
+    description: date de dernière modification du fichier source
+    type: string
+  creator:
+    description: auteur
     type: string
   $schema:
     description: schéma JSON du document défini soit par une référence, soit inline
