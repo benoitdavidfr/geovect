@@ -28,6 +28,8 @@ doc: |
   synchro:
     http://localhost/synchro.php?remote=http://bdavid.alwaysdata.net/&dir=geovect/features
 journal:
+  25/2/2022:
+    - synchro sur alwaysdata
   15-16/2/2022:
     - evols pour passer NE sur OVH
   20-21/3/2021:

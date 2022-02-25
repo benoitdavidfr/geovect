@@ -55,6 +55,9 @@ doc: |
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
 journal: |
+  25/2/2022:
+    - bug corrigé sur Alwaysdata
+    - synchro sur alwaysdata
   18/2/2022:
     - adaptation à la mise en oeuvre de ftsopg.php
   6/2/2021:
@@ -278,7 +281,7 @@ Les 3 types de sources de données exposées sont:<ul>
 
 Les sources exposées sont les suivantes :<ul>\n";
   foreach ($doc->datasets as $dsid => $dsDoc) {
-    if (($_SERVER['HTTP_HOST']=='localhost') || !preg_match('!@172\.17\.0\.!', $dsDoc->path))
+    if (($_SERVER['HTTP_HOST']=='localhost') || !preg_match('!@172\.17\.0\.!', $dsDoc->path()))
     echo "<li><a href='$_SERVER[SCRIPT_NAME]/$dsid'>",$dsDoc->title(),"</a></li>\n";
   }
 
