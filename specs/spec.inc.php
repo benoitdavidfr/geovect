@@ -1,4 +1,12 @@
 <?php
+/*PhpDoc:
+title: spec.inc.php - interface d'accès aux specs
+name: spec.inc.php
+doc: |
+journal: |
+  25/2/2022:
+    - ajout mise des specs en cache dans fichier pser
+*/
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/iterator.php';
 
@@ -6,15 +14,11 @@ use Symfony\Component\Yaml\Yaml;
 
 class JsonRef { // Déréférencement d'une référence JSON ()
   static function deref(array $ref, string $cdirpath): array { // déréférence une référence JSON
+    $filepath = self::filepath($ref, $cdirpath);
+    $yaml = Yaml::parseFile($filepath);
     $ref = $ref['$ref'];
     //echo "ref=$ref<br>\n";
     $pos = strpos($ref, '#');
-    $filename = substr($ref, 0, $pos);
-    //echo "filename=$filename\n";
-    if (substr($filename, 0, 2) == './')
-      $filename = $cdirpath.substr($filename, 1);
-    //echo "filename=$filename\n";
-    $yaml = Yaml::parseFile($filename);
     $jsonPtr = explode('/', substr($ref, $pos+2));
     foreach ($jsonPtr as $elt) {
       if (!isset($yaml[$elt]))
@@ -22,6 +26,15 @@ class JsonRef { // Déréférencement d'une référence JSON ()
       $yaml = $yaml[$elt];
     }
     return $yaml;
+  }
+  
+  static function filepath(array $ref, string $cdirpath): string {
+    $ref = $ref['$ref'];
+    $pos = strpos($ref, '#');
+    $filepath = substr($ref, 0, $pos);
+    if (substr($filepath, 0, 2) == './')
+      $filepath = $cdirpath.substr($filepath, 1);
+    return $filepath;
   }
 };
 
@@ -402,8 +415,15 @@ class Spec { // Spécification
     $yaml = Yaml::parseFile(self::YAML_FILE);
     if (!($spec = $yaml['specifications'][$specid] ?? null))
       throw new Exception("Spécification '$uri' non définie");
-    $yaml = JsonRef::deref($spec, dirname(self::YAML_FILE));
-    $yaml = iterator($yaml); // Si les specs contiennent un mécanisme d'itération alors il est activé
+    if (is_file(__DIR__."/$specid.pser")
+      && (filemtime(__DIR__."/$specid.pser") > filemtime(JsonRef::filepath($spec, dirname(self::YAML_FILE))))) {
+        $yaml = unserialize(file_get_contents(__DIR__."/$specid.pser"));
+    }
+    else {
+      $yaml = JsonRef::deref($spec, dirname(self::YAML_FILE));
+      $yaml = iterator($yaml); // Si les specs contiennent un mécanisme d'itération alors il est activé
+      file_put_contents(__DIR__."/$specid.pser", serialize($yaml));
+    }
     $this->title = $yaml['title'];
     $this->abstract = $yaml['abstract'] ?? null;
     foreach ($yaml['collections'] ?? [] as $collId => $collection) {
