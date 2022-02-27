@@ -300,7 +300,7 @@ definitions:
                       pour l'itération
                       Ce fragment est un dictionnaire des collections indexées sur l'id de la collection
                     $ref: '#/definitions/collDict'
-                
+
 type: object
 additionalProperties: false
 required: [title, $schema, specifications]

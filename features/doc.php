@@ -29,6 +29,7 @@ includes: [../../schema/jsonschema.inc.php]
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/../../schema/jsonschema.inc.php';
 require_once __DIR__.'/../specs/spec.inc.php';
+require_once __DIR__.'/sexcept.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Yaml\Exception\ParseException;
@@ -108,24 +109,17 @@ class DatasetDoc { // Doc d'un Dataset
   }
   
   function asArray(): array {
-    $array = ['title'=> $this->title, 'path'=> $this->path];
-    if ($this->licence)
-      $array['licence'] = $this->licence;
-    if ($this->conformsTo) {
-      if (get_class($this->conformsTo)=='SpecDoc') {
-        //echo '$this->conformsTo='; print_r($this->conformsTo);
-        $array['conformsTo'] = $this->conformsTo->asArray();
-      }
-      else {
-        $this->conformsTo = self::deref($this->conformsTo);
-        $array['conformsTo'] = $this->conformsTo->asArray();
-      }
-    }
-    return $array;
+    return [
+      'title'=> $this->title,
+      'path'=> $this->path
+    ]
+    + ($this->licence ? ['licence'=> $this->licence] : [])
+    + ($this->conformsTo ? ['conformsTo'=> $this->conformsTo->uri()] : []);
   }
 };
 
 class Doc { // Doc globale 
+  const ERROR_ON_DOC = 'Doc::ERROR_ON_DOC';
   const PATH = __DIR__.'/doc.'; // chemin des fichiers stockant la doc en pser ou en yaml, lui ajouter l'extension
   const PATH_PSER = self::PATH.'pser'; // chemin du fichier stockant la doc en pser
   const PATH_YAML = self::PATH.'yaml'; // chemin du fichier stockant la doc en Yaml
@@ -171,7 +165,7 @@ class Doc { // Doc globale
     }
     if ($errors = self::checkYamlConformity($yaml)) {
       print_r($errors);
-      throw new Exception("Erreur document Yaml non conforme");
+      throw new SExcept("Erreur document Yaml non conforme", self::ERROR_ON_DOC);
     }
     foreach ($yaml['datasets'] ?? [] as $dsid => $dataset) {
       //echo "dataset=$dsid\n";
@@ -225,13 +219,13 @@ else { // sapi <> cli
   }
 }
 
-if ($a == 'menu') {
+if (!$a) {
   if (php_sapi_name() <> 'cli') {
     echo "doc.php - Actions proposées:<ul>\n";
     echo "<li><a href='?a=checkYaml'>Vérifie le Yaml</a></li>\n";
-    echo "<li>Affiche la doc <a href='?f=yaml'>en Yaml</a>, ";
-    echo "<a href='?f=geojson'>en JSON</a>, ";
-    echo "<a href='?f=html'>en Html</a></li>\n";
+    echo "<li>Affiche la doc <a href='?a=display&amp;f=yaml'>en Yaml</a>, ";
+    echo "<a href='?a=display&amp;f=geojson'>en JSON</a>, ";
+    echo "<a href='?a=display&amp;f=html'>en Html</a></li>\n";
     echo "<li><a href='?a=schema&amp;f=yaml'>Génère un schéma</a></li>\n";
     echo "</ul>\n";
   }
@@ -297,12 +291,12 @@ if ($a == 'schema') {
     }
   }
   elseif (!($coll = $_GET['coll'] ?? null)) {
-    foreach ($doc->datasets[$_GET['ds']]->collections as $id => $coll) {
+    foreach ($doc->datasets[$_GET['ds']]->collections() as $id => $coll) {
       echo "<a href='?a=schema&amp;ds=$_GET[ds]&amp;coll=$id'>$id</a><br>\n"; 
     }
   }
   else {
-    $schema = $doc->datasets[$_GET['ds']]->collections[$_GET['coll']]->featureSchema();
+    $schema = $doc->datasets[$_GET['ds']]->collections()[$_GET['coll']]->featureSchema();
     echo '<pre>',Yaml::dump($schema, 7, 2);
     $check = JsonSchema::autoCheck($schema);
     if (!($ok = $check->ok()))
@@ -391,16 +385,20 @@ if ($a == 'checkDataset') {
   die();
 }
 
-if ($f == 'html') { // affichage html
-  if (php_sapi_name() <> 'cli')
-    echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>doc</title></head><body><pre>\n";
-  $doc = new Doc;
-  print_r($doc);
-}
+if ($a == 'display') {
+  if ($f == 'html') { // affichage html
+    if (php_sapi_name() <> 'cli')
+      echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>doc</title></head><body><pre>\n";
+    $doc = new Doc;
+    //print_r($doc);
+    echo preg_replace("!(https?://[^' ]+)!", "<a href='$1'>$1</a>",
+      Yaml::dump($doc->asArray(), 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
+  }
 
-if ($f == 'yaml') {
-  if (php_sapi_name() <> 'cli')
-    echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>doc</title></head><body><pre>\n";
-  $doc = new Doc;
-  echo Yaml::dump($doc->asArray(), 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+  if ($f == 'yaml') {
+    if (php_sapi_name() <> 'cli')
+      echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>doc</title></head><body><pre>\n";
+    $doc = new Doc;
+    echo Yaml::dump($doc->asArray(), 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+  }
 }

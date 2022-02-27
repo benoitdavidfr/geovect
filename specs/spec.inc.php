@@ -412,6 +412,11 @@ class Spec { // Spécification
     */
   }
   
+  static function list(): array {
+    $yaml = Yaml::parseFile(self::YAML_FILE);
+    return array_keys($yaml['specifications']);
+  }
+  
   function __construct(string $uri) {
     $this->uri = $uri;
     $specid = basename($uri);
@@ -435,6 +440,7 @@ class Spec { // Spécification
   }
   
   function __toString(): string { return $this->title; }
+  function uri(): string { return $this->uri; }
   function title(): string { return $this->title; }
   function abstract(): ?string { return $this->abstract; }
   function collections(): array { return $this->collections; }

@@ -8,7 +8,7 @@ doc: |
   Gestion des erreurs:
     - chaque classe définit la liste des codes d'erreurs correspondant aux cas d'erreurs possibles
     - lorsqu'une erreur est détectée une Exception SExcept est levée avec un message et le code d'erreur ci-dessus
-    - les exceptions doivent être traitées dans le script appelant
+    - les exceptions doivent être traitées par le script appelant
     - pour assurer l'unicité des codes d'erreur, ils sont définis comme constante chaine de la forme
       '{classe}::{nom_constante}'
 classes:

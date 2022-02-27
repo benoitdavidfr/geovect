@@ -13,8 +13,6 @@ specifications:
     $ref: ./ne.yaml#/specifications/ne10m_physical
   admin-expresv3.1:
     $ref: ./adminexpress.yaml#/specifications/admin-expresv3.1
-  admin-expresv3.1-ign-wfs-admin:
-    $ref: ./ign-wfs-admin.yaml#/specifications/admin-expresv3.1
   ignf-route500v3:
     $ref: ./r500.yaml#/specifications/ignf-route500v3
   ignf-route500v2.1:
