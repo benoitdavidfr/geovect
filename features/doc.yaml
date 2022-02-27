@@ -133,7 +133,7 @@ datasets:
     path: '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr&prefix=CADASTRALPARCELS.PARCELLAIRE_EXPRESS:'
   ignf-bdcarto:
     title: BDCARTO IGN
-    path: '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr&prefix=BDCARTO_BDD_WLD_WGS84G:'
+    path: '/wfs/wxs.ign.fr/cartovecto/geoportail/wfs?referer=gexplor.fr&prefix=BDCARTO_BDD_WLD_WGS84G:'
   igngpwfs:
     title: Serveur WFS du Géoportail IGN
     path: /wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr

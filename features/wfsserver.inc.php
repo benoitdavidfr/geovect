@@ -1,9 +1,11 @@
 <?php
 /*PhpDoc:
 name: wfsserver.inc.php
-title: wfsserver.inc.php - interroge un serveur WFS
+title: wfsserver.inc.php - classes pour interroger un serveur WFS générant du GeoJSON
 functions:
 doc: |
+  Définition de la classe abstraite WfsServer et la classe concrète WfsGeoJson pour interroger un serveur WFS générant
+  du GeoJSON.
 journal: |
   27/2/2022:
     - récriture de WfsServer::query()
@@ -19,6 +21,9 @@ use gegeom\GBox;
 use gegeom\Polygon;
 
 abstract class WfsServer {
+  const ERROR_WFS_QUERY = 'WfsServer::ERROR_WFS_QUERY';
+  const ERROR_CACHE = 'WfsServer::ERROR_CACHE';
+  const ERROR_BAD_CRS = 'WfsServer::ERROR_BAD_CRS';
   const LOG = __DIR__.'/wfsserver.log.yaml'; // nom du fichier de log ou false pour pas de log
   const CAP_CACHE = __DIR__.'/wfscapcache'; // nom du répertoire dans lequel sont stockés les fichiers XML
                                             // de capacités ainsi que les DescribeFeatureType en json
@@ -55,54 +60,6 @@ abstract class WfsServer {
     return $url;
   }
   
-  // envoi une requête et récupère la réponse sous la forme d'un texte - code PERIME 27/2/2022
-  protected function queryBack(array $params): string {
-    $url = $this->url($params);
-    $context = null;
-    if ($this->options) {
-      $httpOptions = [];
-      if ($referer = ($this->options['referer'] ?? null)) {
-        $httpOptions['header'] = "referer: $referer\r\n";
-      }
-      if ($proxy = ($this->options['proxy'] ?? null)) {
-        $httpOptions['proxy'] = $proxy;
-      }
-      if ($httpOptions) {
-        if (self::LOG) { // log
-          file_put_contents(
-              self::LOG,
-              Yaml::dump([
-                'appel'=> 'WfsServer::query',
-                'httpOptions'=> $httpOptions,
-              ]),
-              FILE_APPEND
-          );
-        }
-        $httpOptions['method'] = 'GET';
-        $context = stream_context_create(['http'=> $httpOptions]);
-      }
-    }
-    if (($result = @file_get_contents($url, false, $context)) === false) {
-      if (isset($http_response_header)) {
-        echo "http_response_header="; var_dump($http_response_header);
-      }
-      throw new Exception("Erreur dans WfsServer::query() : sur url=$url");
-    }
-    //die($result);
-    //if (substr($result, 0, 17) == '<ExceptionReport>') {
-    if (preg_match('!ExceptionReport!', $result)) {
-      if (preg_match('!<ExceptionReport><[^>]*>([^<]*)!', $result, $matches)) {
-        throw new Exception ("Erreur dans WfsServer::query() : $matches[1]");
-      }
-      if (preg_match('!<ows:ExceptionText>([^<]*)!', $result, $matches)) {
-        throw new Exception ("Erreur dans WfsServer::query() : $matches[1]");
-      }
-      echo $result;
-      throw new Exception("Erreur dans WfsServer::query() : message d'erreur non détecté");
-    }
-    return $result;
-  }
-  
   // envoi une requête et récupère la réponse sous la forme d'un texte - réécriture 27/2/2022
   // Certaines requêtes du WFS IGN nécessitent un User-Agent pour ne pas générer une erreur
   protected function query(array $params): string {
@@ -135,21 +92,22 @@ abstract class WfsServer {
       return $data;
     
     elseif (preg_match('!<ExceptionReport><[^>]*>([^<]*)!', $data, $matches)) {
-      throw new Exception ("Erreur dans WfsServer::query() : $matches[1], erreur http=$errorCode");
+      throw new SExcept ("Erreur dans WfsServer::query() : $matches[1], erreur http=$errorCode", self::ERROR_WFS_QUERY);
     }
     elseif (preg_match('!<ows:ExceptionText>([^<]*)!', $data, $matches)) {
-      throw new Exception ("Erreur dans WfsServer::query() : $matches[1], erreur http=$errorCode");
+      throw new SExcept ("Erreur dans WfsServer::query() : $matches[1], erreur http=$errorCode", self::ERROR_WFS_QUERY);
     }
     else {
       echo $data;
-      throw new Exception("Erreur dans WfsServer::query() : erreur Http=$errorCode, message d'erreur non interprété");
+      throw new SExcept("Erreur dans WfsServer::query() : erreur Http=$errorCode, message d'erreur non interprété",
+        self::ERROR_WFS_QUERY);
     }
   }
   
   // effectue un GetCapabities et retourne le XML. Utilise le cache sauf si force=true
   function getCapabilities(bool $force=false): string {
     if (!is_dir(self::CAP_CACHE) && !mkdir(self::CAP_CACHE))
-      throw new Exception("Erreur de création du répertoire ".self::CAP_CACHE);
+      throw new SExcept("Erreur de création du répertoire ".self::CAP_CACHE, self::ERROR_CACHE);
     $wfsVersion = $this->options['version'] ?? '2.0.0';
     $filepath = self::CAP_CACHE.'/wfs'.md5($this->serverUrl.$wfsVersion).'-cap.xml';
     if (!$force && file_exists($filepath))
@@ -163,6 +121,7 @@ abstract class WfsServer {
  
   // retourne un polygon WKT dans le CRS crs à partir d'un bbox [lngMin, latMin, lngMax, latMax]
   static function bboxWktCrs(array $bbox, string $crs): string {
+    // Dictionnaire [code EPSG => nom de la classe correspondante dans ../coordsys/light.inc.php]
     static $epsg = [
       'EPSG:2154' => 'L93',
       'EPSG:3857' => 'WebMercator',
@@ -175,7 +134,7 @@ abstract class WfsServer {
     elseif ($crs == 'EPSG:4326')
       return "POLYGON(($bbox[1] $bbox[0],$bbox[1] $bbox[2],$bbox[3] $bbox[2],$bbox[3] $bbox[0],$bbox[1] $bbox[0]))";
     elseif (!isset($epsg[$crs]))
-      throw new Exception("Erreur dans WfsServer::bboxWktCrs(), CRS $crs inconnu");
+      throw new SExcept("Erreur dans WfsServer::bboxWktCrs(), CRS $crs inconnu", self::ERROR_BAD_CRS);
     $gbox = new GBox($bbox);
     $proj = $epsg[$crs].'::proj';
     $ebox = $gbox->proj($proj);
@@ -221,14 +180,16 @@ abstract class WfsServer {
   
   abstract function geomPropertyName(string $typeName): ?string;
   
-  abstract function getNumberMatched(string $typename, array $bbox=[], string $where=''): int;
+  //abstract function getNumberMatched(string $typename, array $bbox=[], string $where=''): int;
   
   abstract function getFeature(string $typename, array $bbox=[], string $where='', int $count=100, int $startindex=0): string;
 
-  abstract function printAllFeatures(string $typename, array $bbox=[], int $zoom=-1, string $where=''): void;
+  //abstract function printAllFeatures(string $typename, array $bbox=[], int $zoom=-1, string $where=''): void;
 };
 
 class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur WFS retournant du GeoJSON
+  const ERROR_CACHE = 'WfsGeoJson::ERROR_CACHE';
+  //const ERROR_BAD_NUM_MATCHED = 'WfsGeoJson::ERROR_BAD_NUM_MATCHED';
 
   function describeFeatureType(string $typeName): array { // retourne le JSON comme array
     $filepath = self::CAP_CACHE.'/wfs'.md5($this->serverUrl."/$typeName").'-ft.json';
@@ -243,7 +204,7 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
         'TYPENAME'=> $typeName,
       ]);
       if (!is_dir(self::CAP_CACHE) && !mkdir(self::CAP_CACHE))
-        throw new Exception("Erreur de création du répertoire ".self::CAP_CACHE);
+        throw new SExcept("Erreur de création du répertoire ".self::CAP_CACHE, self::ERROR_CACHE);
       file_put_contents($filepath, $featureType);
     }
     return json_decode($featureType, true);
@@ -263,7 +224,8 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
   }
     
   // retourne le nbre d'objets correspondant au résultat de la requête
-  function getNumberMatched(string $typename, array $bbox=[], string $where=''): int {
+  /*function getNumberMatched(string $typename, array $bbox=[], string $where=''): int {
+    echo "getNumberMatched\n";
     $request = [
       'VERSION'=> '2.0.0',
       'REQUEST'=> 'GetFeature',
@@ -288,10 +250,11 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
     $result = $this->query($request);
     if (!preg_match('! numberMatched="(\d+)" !', $result, $matches)) {
       //echo "result=",$result,"\n";
-      throw new Exception("Erreur dans WfsServerJson::getNumberMatched() : no match on result $result");
+      throw new SExcept("Erreur dans WfsServerJson::getNumberMatched() : no match on result $result",
+        self::ERROR_BAD_NUM_MATCHED);
     }
     return (int)$matches[1];
-  }
+  }*/
   
   // retourne le résultat de la requête comme string GeoJSON
   function getFeature(string $typename, array $bbox=[], string $where='', int $count=100, int $startindex=0): string {
@@ -329,8 +292,8 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
   }
   
   // affiche le résultat de la requête en GeoJSON
-  function printAllFeatures(string $typename, array $bbox=[], int $zoom=-1, string $where=''): void {
-    //echo "WfsServerJson::printAllFeatures()<br>\n";
+  /*function printAllFeatures(string $typename, array $bbox=[], int $zoom=-1, string $where=''): void {
+    echo "WfsServerJson::printAllFeatures()<br>\n";
     $numberMatched = $this->getNumberMatched($typename, $bbox, $where);
     if ($numberMatched <= 100) {
       echo $this->getFeature($typename, $bbox, $where);
@@ -351,7 +314,7 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
       $startindex += $count;
     }
     echo "\n]}\n";
-  }
+  }*/
   
   // retourne le résultat de la requête comme string GeoJSON
   function getFeatureById(string $typename, string $id): string {

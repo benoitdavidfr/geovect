@@ -55,6 +55,8 @@ doc: |
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
 journal: |
+  27/2/2022:
+    - amélioration de la gestion des erreurs, utilisation de SExcept
   25/2/2022:
     - bug corrigé sur Alwaysdata
     - synchro sur alwaysdata
@@ -72,11 +74,13 @@ journal: |
   30/12/2020:
     - création
 includes:
+  - sexcept.inc.php
   - doc.php
   - ftrserver.inc.php
   - displayjson.inc.php
 */
 require_once __DIR__.'/../vendor/autoload.php';
+require_once __DIR__.'/sexcept.inc.php';
 require_once __DIR__.'/doc.php';
 require_once __DIR__.'/ftrserver.inc.php';
 require_once __DIR__.'/displayjson.inc.php';
@@ -382,7 +386,7 @@ try {
   elseif ($action2 == '/createPrimaryKey') { // /collections/{collectionId}/createPrimaryKey
     $fServer->repairTable('createPrimaryKey', $collId);
   }
-  elseif (!$itemId) { // /collections/{collectionId}/items
+  elseif ($itemId === null) { // /collections/{collectionId}/items
     $fServer->checkParams("/$action/$collId/items");
     // dans ftsOnSql, le paramètre limit vaut au max 10000 et le résultat n'est pas construit en mémoire
     if (in_array($type, ['mysqlIt','pgsqlIt'])) {
@@ -415,7 +419,27 @@ try {
     $fServer->checkParams("/$action/{collectionId}/items/{featureId}");
     output(($f == 'json' ? 'geojson' : $f), $fServer->item($f, $collId, $itemId), 6);
   }
-// } catch (Exception|TypeError $e) {
-} catch(XX $e) { // Permet de rien attraper en changeant le code un minimum 
-  error($e->getMessage(), $e->getCode());
+  //} catch(XX $e) { // Permet de rien attraper en changeant le code un minimum 
+} catch (SExcept $e) { // Transformation des codes d'erreur SExcept en code d'erreur Http
+  switch ($e->getSCode()) {
+    case FeatureServer::ERROR_BAD_BBOX:
+    case FeatureServer::ERROR_BAD_PARAMS: {
+      error($e->getMessage(), 400);
+    }
+    case CollOnSql::ERROR_UNKNOWN_COLLECTION:
+    case FeatureServerOnSql::ERROR_ITEM_NOT_FOUND: {
+      error($e->getMessage(), 404);
+    }
+    case WfsServer::ERROR_WFS_QUERY:
+    case WfsServer::ERROR_BAD_CRS:
+    case WfsServer::ERROR_CACHE:
+    case WfsGeoJson::ERROR_CACHE:
+    case CollOnSql::ERROR_BAD_EXTENT:
+    //case WfsGeoJson::ERROR_BAD_NUM_MATCHED:
+    default: {
+      error($e->getMessage(), 500);
+    }
+  }
+} catch (Exception|TypeError $e) {
+  error($e->getMessage(), 500);
 }

@@ -4,8 +4,17 @@ name: ftrserver.inc.php
 title: ftrserver.inc.php - code générique d'un serveur de Feature conforme au standard API Features
 doc: |
   Gère aussi l'aiguillage vers les différents types de serveur par la méthode new()
+
+  Gestion des erreurs:
+    - chaque classe définit la liste des codes d'erreurs correspondant aux cas d'erreurs possibles
+    - lorsqu'une erreur est détectée une Exception SExcept est levée avec un message et le code d'erreur ci-dessus
+    - les exceptions doivent être traitées dans le script appelant
+    - pour assurer l'unicité des codes d'erreur, ils sont définis comme constante chaine de la forme
+      '{classe}::{nom_constante}'
 classes:
 journal: |
+  27/2/2022:
+    - amélioration de la gestion des erreurs, utilisation de SExcept
   27/1/2021:
     - ajout FeatureServer::checkParams() pour détecter les paramètres non prévus
     - test CITE ok pour /ignf-route500
@@ -27,6 +36,8 @@ methods:
 doc: |
 */
 abstract class FeatureServer {
+  const ERROR_BAD_BBOX = 'FeatureServer::ERROR_BAD_BBOX';
+  const ERROR_BAD_PARAMS = 'FeatureServer::ERROR_BAD_PARAMS';
   const LOG_FILENAME = __DIR__.'/fts.log.yml'; // chemin du fichier Yaml de log, si vide alors pas de log
   const MAX_LIMIT = 1000; // valeur max de limit par défaut, redéfinie evt. par le driver
                           // constante utilisée dans la définition de l'API et dans la vérification du paramètre
@@ -182,23 +193,24 @@ abstract class FeatureServer {
     return $apidef;
   }
   
-  static function checkBbox(array $bbox): void { // vérifie que la bbox est correcte, sinon lève une exception 
+  // vérifie que la bbox est correcte, sinon lève une SExcept self::ERROR_BAD_BBOX
+  static function checkBbox(array $bbox): void {
     if (count($bbox) <> 4)
-      throw new Exception("Erreur sur bbox qui ne correspond pas à 4 coordonnées", 400);
+      throw new SExcept("Erreur sur bbox qui ne correspond pas à 4 coordonnées", self::ERROR_BAD_BBOX);
     if (!is_numeric($bbox[0]) || !is_numeric($bbox[1]) || !is_numeric($bbox[2]) || !is_numeric($bbox[3]))
-      throw new Exception("Erreur sur bbox qui ne correspond pas à 4 coordonnées", 400);
+      throw new SExcept("Erreur sur bbox qui ne correspond pas à 4 coordonnées", self::ERROR_BAD_BBOX);
     if ($bbox[0] >= $bbox[2])
-      throw new Exception("Erreur sur bbox bbox[0] >= bbox[2]");
+      throw new SExcept("Erreur sur bbox bbox[0] >= bbox[2]", self::ERROR_BAD_BBOX);
     if ($bbox[1] >= $bbox[3])
-      throw new Exception("Erreur sur bbox bbox[1] >= bbox[3]");
+      throw new SExcept("Erreur sur bbox bbox[1] >= bbox[3]", self::ERROR_BAD_BBOX);
     if (($bbox[0] > 180) || ($bbox[0] < -180))
-      throw new Exception("Erreur sur bbox[0] > 180 ou < -180");
+      throw new SExcept("Erreur sur bbox[0] > 180 ou < -180", self::ERROR_BAD_BBOX);
     if (($bbox[2] > 180) || ($bbox[2] < -180))
-      throw new Exception("Erreur sur bbox[2] > 180 ou < -180");
+      throw new SExcept("Erreur sur bbox[2] > 180 ou < -180", self::ERROR_BAD_BBOX);
     if (($bbox[1] > 90) || ($bbox[1] < -90))
-      throw new Exception("Erreur sur bbox[1] > 90 ou < -90");
+      throw new SExcept("Erreur sur bbox[1] > 90 ou < -90", self::ERROR_BAD_BBOX);
     if (($bbox[3] > 90) || ($bbox[3] < -90))
-      throw new Exception("Erreur sur bbox[3] > 90 ou < -90");
+      throw new SExcept("Erreur sur bbox[3] > 90 ou < -90", self::ERROR_BAD_BBOX);
   }
   
   function checkParams(string $path): void { // détecte les paramètres non prévus et lève alors une exception 
@@ -213,27 +225,27 @@ abstract class FeatureServer {
     ];
     if (isset($params[$path])) {
       if ($adiff = array_diff(array_keys($_GET), array_keys($params[$path])))
-        error("Paramètre(s) ".implode(',', $adiff)." interdit(s) pour $path", 400);
+        throw new SExcept("Paramètre(s) ".implode(',', $adiff)." interdit(s) pour $path", self::ERROR_BAD_PARAMS);
       foreach ($_GET as $k => $v) {
         if (!in_array($v, $params[$path][$k]))
-          error("Valeur '$v' interdite pour le paramètre '$k'", 400);
+          throw new SExcept("Valeur '$v' interdite pour le paramètre '$k'", self::ERROR_BAD_PARAMS);
       }
     }
     elseif (preg_match('!^/collections/[^/]+/items$!', $path)) {
       $params = ['f','limit','startindex','bbox','datetime'];
       if (isset($_GET['f']) && !in_array($_GET['f'], ['json','html','yaml']))
-        error("Valeur '$_GET[f]' interdite pour le paramètre 'f'", 400);
+        throw new SExcept("Valeur '$_GET[f]' interdite pour le paramètre 'f'", self::ERROR_BAD_PARAMS);
       if (isset($_GET['limit'])) {
         if (!ctype_digit($_GET['limit']))
-          error("Valeur '$_GET[limit]' non entière interdite pour le paramètre 'limit'", 400);
+          throw new SExcept("Valeur '$_GET[limit]' non entière interdite pour le paramètre 'limit'", self::ERROR_BAD_PARAMS);
         if (((int)$_GET['limit'] > get_class($this)::MAX_LIMIT) || ((int)$_GET['limit'] < 1))
-          error("Valeur du paramètre 'limit'='$_GET[limit]' hors intervalle [1, ".get_class($this)::MAX_LIMIT."]", 400);
+          throw new SExcept("Valeur du paramètre 'limit'='$_GET[limit]' hors intervalle [1, ".get_class($this)::MAX_LIMIT."]", 400);
       }
       if (isset($_GET['startindex'])) {
         if (!ctype_digit($_GET['startindex']))
-          error("Valeur '$_GET[startindex]' non entière interdite pour le paramètre 'startindex'", 400);
+          throw new SExcept("Valeur '$_GET[startindex]' non entière interdite pour le paramètre 'startindex'", self::ERROR_BAD_PARAMS);
         if ((int)$_GET['startindex'] < 0)
-          error("Valeur '$_GET[startindex]' < 0 pour le paramètre 'startindex'", 400);
+          throw new SExcept("Valeur '$_GET[startindex]' < 0 pour le paramètre 'startindex'", self::ERROR_BAD_PARAMS);
       }
       $apidef = $this->api();
       $apidef = $apidef['paths'][$path]['get']['parameters'] ?? [];
@@ -241,10 +253,10 @@ abstract class FeatureServer {
         if (isset($parameterdef['name']))
           $params[] = $parameterdef['name'];
       if ($adiff = array_diff(array_keys($_GET), $params))
-        error("Paramètre(s) ".implode(',', $adiff)." interdit(s) pour $path", 400);
+        throw new SExcept("Paramètre(s) ".implode(',', $adiff)." interdit(s) pour $path", self::ERROR_BAD_PARAMS);
     }
     else {
-      error("path $path non prévu dans FeatureServer::checkParams()");
+      throw new SExcept("path $path non prévu dans FeatureServer::checkParams()", self::ERROR_BAD_PARAMS);
     }
   }
   

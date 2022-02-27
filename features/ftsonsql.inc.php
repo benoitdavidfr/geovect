@@ -17,6 +17,8 @@ doc: |
     - gérer correctement une explosion mémoire (?)
 
 journal: |
+  27/2/2022:
+    - amélioration de la gestion des erreurs
   22/2/2022:
     - migration aux specifications gérées dans ../specs/specs.inc.php
   16/2/2022:
@@ -74,6 +76,8 @@ doc: |
   Ne gère pas le cas de collision entre le nom généré et un nom existant de table.
 */
 class CollOnSql {
+  const ERROR_UNKNOWN_COLLECTION = 'CollOnSql::ERROR_UNKNOWN_COLLECTION'; 
+  const ERROR_BAD_EXTENT = 'CollOnSql::ERROR_BAD_EXTENT';
   const SEP = '__'; // séparateur entre nom de table et nom de colonne pour créer le nom de collection
   
   protected \Sql\Table $table; // Table correspondant à la collection
@@ -110,7 +114,7 @@ class CollOnSql {
     else { // cas où {collId} est la concaténation des noms de la table et de la colonne géométrique
       $this->geoCol = $schema->concatTableGeomNames($collId, self::SEP);
       if (!$this->geoCol)
-        throw new Exception("collection $collId inconnue", 404);
+        throw new SExcept("collection $collId inconnue", self::ERROR_UNKNOWN_COLLECTION);
       $this->table = $this->geoCol->table;
     }
   }
@@ -122,6 +126,7 @@ class CollOnSql {
   function columns(): array { return $this->table->columns; } // [ {name}=> \Sql\Column]
   
   function spatialExtentBboxes(): array { // retourne une liste de BBox, chacune comme [lonmin, latmin, lonmax, latmax]
+    //echo "CollOnSql::spatialExtentBboxes()\n";
     // pas très satisfaisant, pour la France il faudrait un bbox par DOM !
     // les mettre dans la doc ?
     if (!$this->geoCol)
@@ -134,7 +139,7 @@ class CollOnSql {
       if (!$extent)
         return []; // cas notamment d'une table vide
       if (!preg_match('!^BOX\(([-\d\.]+) ([-\d\.]+),([-\d\.]+) ([-\d\.]+)\)$!', $extent, $matches))
-        throw new Exception("no match on '$extent' pour table ".$this->table->name);
+        throw new SExcept("no match on '$extent' pour table ".$this->table->name, self::ERROR_BAD_EXTENT);
       return [[round($matches[1], 4), round($matches[2], 4), round($matches[3], 4), round($matches[4], 4)]];
     }
     elseif (Sql::software()=='MySql') { // en MySql, appel de la méthode adhoc 
@@ -200,6 +205,8 @@ doc: |
     3) dans les schémas des réponses /items et /items/{id} exposés pour chaque collection dans la définition de l'API (/api)
 */
 class FeatureServerOnSql extends FeatureServer {
+  const ERROR_APIDEF = 'FeatureServerOnSql::ERROR_APIDEF';
+  const ERROR_ITEM_NOT_FOUND = 'FeatureServerOnSql::ERROR_ITEM_NOT_FOUND';
   // URI du schéma toolbox défini par l'OGC
   const OGC_SCHEMA_URI = 'http://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml';
   const IDPKEY_NAME = '_idpkey'; // nom du champ ajouté pour s'assurer de disposer d'une clé primaire
@@ -331,13 +338,13 @@ class FeatureServerOnSql extends FeatureServer {
     $urlLandingPage = ($_SERVER['REQUEST_SCHEME'] ?? $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'http')
           ."://$_SERVER[HTTP_HOST]".dirname($_SERVER['REQUEST_URI']);
     if (!is_file(__DIR__.'/apidef.yaml'))
-      throw new Exception("Erreur fichier apidef.yaml absent");
+      throw new SExcept("Erreur fichier apidef.yaml absent", self::ERROR_APIDEF);
     if (($apideftxt = @file_get_contents(__DIR__.'/apidef.yaml')) === false)
-      throw new Exception("Erreur de lecture du fichier apidef.yaml");
+      throw new SExcept("Erreur de lecture du fichier apidef.yaml", self::ERROR_APIDEF);
     try {
       $apidef = Yaml::parse($apideftxt);
     } catch (ParseException $exception) {
-      throw new Exception ("Unable to parse apidef.yaml :".$exception->getMessage());
+      throw new SExcept("Unable to parse apidef.yaml :".$exception->getMessage(), self::ERROR_APIDEF);
     }
     // intégration dans la déf. de l'API de la valeur max de limit
     $apidef['components']['parameters']['limit']['schema']['maximum'] = self::MAX_LIMIT;
@@ -1370,7 +1377,7 @@ links to support paging (link relation `next`).",
     //echo "sql=$sql\n";
     $tuples = Sql::getTuples($sql);
     if (!$tuples)
-      throw new Exception("Erreur aucun item ne correspond à cet id", 404);
+      throw new SExcept("Erreur aucun item ne correspond à cet id", self::ERROR_ITEM_NOT_FOUND);
     $tuple = $tuples[0];
     if (isset($tuple['st_asgeojson'])) {
       $geom = json_decode($tuple['st_asgeojson'], true);
