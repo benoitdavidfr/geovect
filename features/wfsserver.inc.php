@@ -5,6 +5,8 @@ title: wfsserver.inc.php - interroge un serveur WFS
 functions:
 doc: |
 journal: |
+  27/2/2022:
+    - récriture de WfsServer::query()
   2/2/2021:
     - création par extraction de ftsonwfs.inc.php
 */
@@ -53,8 +55,8 @@ abstract class WfsServer {
     return $url;
   }
   
-  // envoi une requête et récupère la réponse sous la forme d'un texte
-  protected function query(array $params): string {
+  // envoi une requête et récupère la réponse sous la forme d'un texte - code PERIME 27/2/2022
+  protected function queryBack(array $params): string {
     $url = $this->url($params);
     $context = null;
     if ($this->options) {
@@ -99,6 +101,49 @@ abstract class WfsServer {
       throw new Exception("Erreur dans WfsServer::query() : message d'erreur non détecté");
     }
     return $result;
+  }
+  
+  // envoi une requête et récupère la réponse sous la forme d'un texte - réécriture 27/2/2022
+  // Certaines requêtes du WFS IGN nécessitent un User-Agent pour ne pas générer une erreur
+  protected function query(array $params): string {
+    $url = $this->url($params);
+    $referer = $this->options['referer'] ?? null;
+    $httpOptions = [
+      'method'=> 'GET',
+      'ignore_errors'=> true,
+      'header'=>"Accept-language: en\r\n"
+               .($referer ? "referer: $referer\r\n" : '')
+               ."User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:97.0) Gecko/20100101 Firefox/97.0\r\n",
+    ];
+    if ($proxy = ($this->options['proxy'] ?? null)) {
+      $httpOptions['proxy'] = $proxy;
+    }
+    if (self::LOG) { // log
+      file_put_contents(
+          self::LOG,
+          Yaml::dump([
+            'appel'=> 'WfsServer::query',
+            'httpOptions'=> $httpOptions,
+          ]),
+          FILE_APPEND
+      );
+    }
+    $context = stream_context_create(['http'=> $httpOptions]);
+    $data = @file_get_contents($url, false, $context);
+    $errorCode = substr($http_response_header[0], 9, 3);
+    if ($errorCode == 200)
+      return $data;
+    
+    elseif (preg_match('!<ExceptionReport><[^>]*>([^<]*)!', $data, $matches)) {
+      throw new Exception ("Erreur dans WfsServer::query() : $matches[1], erreur http=$errorCode");
+    }
+    elseif (preg_match('!<ows:ExceptionText>([^<]*)!', $data, $matches)) {
+      throw new Exception ("Erreur dans WfsServer::query() : $matches[1], erreur http=$errorCode");
+    }
+    else {
+      echo $data;
+      throw new Exception("Erreur dans WfsServer::query() : erreur Http=$errorCode, message d'erreur non interprété");
+    }
   }
   
   // effectue un GetCapabities et retourne le XML. Utilise le cache sauf si force=true

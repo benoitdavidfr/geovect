@@ -3,6 +3,9 @@
 title: spec.inc.php - interface d'accès aux specs
 name: spec.inc.php
 doc: |
+  Le principe est d'accéder aux specs depuis l'extérieur de ce module
+  au travers de new Spec($uri)
+  puis des méthodes publiques sur les différentes classes.
 journal: |
   25/2/2022:
     - ajout mise des specs en cache dans fichier pser
@@ -50,7 +53,7 @@ class Property { // Propriété d'une collection
   protected string $type;
   protected array $enum;
 
-  function schemaJSON() { /* Schema JSON
+  private function schemaJSON() { /* Schema JSON
     property:
       description: |
         description d'une propriété d'une collection.
@@ -143,7 +146,7 @@ class Property { // Propriété d'une collection
   }
 };
 
-class Collection { // Collection d'une spécification 
+class Collection { // Collection dédinie dans une spécification 
   const COORDS_TYPE = [
     'pos'=> [
       'type'=> 'array',
