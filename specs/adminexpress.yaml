@@ -54,7 +54,7 @@ specifications:
             title: "{productTitle}-Région"
             description: |
               Région de l'{productLabel}.
-            geometryType: [Polygon2D, MultiPolygon2D],
+            geometryType: [Polygon2D, MultiPolygon2D]
             properties:
               id:
                 title: identifiant IGN
@@ -73,7 +73,7 @@ specifications:
             title: "{productTitle}-Département"
             description: |
               Département de l'{productLabel}.
-            geometryType: [Polygon2D, MultiPolygon2D],
+            geometryType: [Polygon2D, MultiPolygon2D]
             properties:
               id:
                 title: identifiant IGN
@@ -99,7 +99,7 @@ specifications:
               départementales de mars 2015, l’arrondissement n’est plus un regroupement de cantons mais de communes.
               Il ne faut pas confondre l'Arrondissement, subdivision du département, avec l'Arrondissement_municipal,
               subdivision de Paris, de Lyon et de Marseille.
-            geometryType: [Polygon2D, MultiPolygon2D],
+            geometryType: [Polygon2D, MultiPolygon2D]
             properties:
               id:
                 title: identifiant IGN
@@ -132,7 +132,7 @@ specifications:
               À compter de cette date, la géographie des EPCI à fiscalité propre retenue dans ADMIN EXPRESS résulte
               de cette mise en œuvre à la date du 15 novembre 2016 et ne tient pas compte des évolutions marginales
               réalisées en dehors des SDCI, notamment dans le cas de la création de certaines communes nouvelles.
-            geometryType: [Polygon2D, MultiPolygon2D],
+            geometryType: [Polygon2D, MultiPolygon2D]
             properties:
               id:
                 title: identifiant IGN
@@ -160,7 +160,7 @@ specifications:
             description: |
               Canton de l'{productLabel}.  
               Il s'agit de cantons au sens INSEE (appelés également pseudo-cantons) et non les cantons électoraux. 
-            geometryType: [Polygon2D, MultiPolygon2D],
+            geometryType: [Polygon2D, MultiPolygon2D]
             properties:
               id:
                 title: identifiant IGN
@@ -181,7 +181,7 @@ specifications:
             title: "{productTitle}-Commune"
             description: |
               Commune de l'{productLabel}.
-            geometryType: [Polygon2D, MultiPolygon2D],
+            geometryType: [Polygon2D, MultiPolygon2D]
             properties:
               id:
                 title: identifiant IGN
@@ -277,13 +277,13 @@ specifications:
               id_com:
                 title: identifiant de la commune à laquelle se rapporte le chef-lieu
                 description: |
-                  Il permet d’établir un lien entre le ponctuel de la classe CHFLIEU_COMMUNE et l’objet surfacique de la classe
-                  COMMUNE.
+                  Il permet d’établir un lien entre le ponctuel de la classe CHFLIEU_COMMUNE
+                  et l’objet surfacique de la classe COMMUNE.
           '{spaceName}commune_associee_ou_deleguee':
             title: "{productTitle}-Commune associée ou déleguée"
             description: |
               Commune associée ou déléguée de l'{productLabel}.
-            geometryType: [Polygon2D, MultiPolygon2D],
+            geometryType: [Polygon2D, MultiPolygon2D]
             properties:
               id:
                 title: identifiant IGN
@@ -353,7 +353,7 @@ specifications:
               Subdivision territoriale des communes de Lyon, Marseille et Paris de l'{productLabel}.
               Il ne faut pas confondre l'ARRONDISSEMENT_MUNICIPAL, subdivision de Paris, de Lyon et de Marseille,
               avec l'ARRONDISSEMENT, subdivision du département.
-            geometryType: [Polygon2D, MultiPolygon2D],
+            geometryType: [Polygon2D, MultiPolygon2D]
             properties:
               id:
                 title: identifiant IGN

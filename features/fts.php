@@ -426,8 +426,10 @@ try {
     case FeatureServer::ERROR_BAD_PARAMS: {
       error($e->getMessage(), 400);
     }
-    case CollOnSql::ERROR_UNKNOWN_COLLECTION:
-    case FeatureServerOnSql::ERROR_ITEM_NOT_FOUND: {
+    case CollOnSql::ERROR_COLL_NOT_FOUND:
+    case FeatureServerOnWfs::ERROR_COLL_NOT_FOUND:
+    case FeatureServerOnSql::ERROR_ITEM_NOT_FOUND:
+    case FeatureServerOnWfs::ERROR_ITEM_NOT_FOUND: {
       error($e->getMessage(), 404);
     }
     case WfsServer::ERROR_WFS_QUERY:

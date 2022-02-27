@@ -19,6 +19,8 @@ require_once __DIR__.'/wfsserver.inc.php';
 use Symfony\Component\Yaml\Yaml;
 
 class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Features d'un serveur WFS
+  const ERROR_COLL_NOT_FOUND = 'FeatureServerOnWfs::ERROR_COLL_NOT_FOUND';
+  const ERROR_ITEM_NOT_FOUND = 'FeatureServerOnWfs::ERROR_ITEM_NOT_FOUND';
   protected WfsGeoJson $wfsServer;
   protected string $prefix; // chaine filtrant $fTypeId
   
@@ -42,7 +44,9 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
     $collDoc = $this->datasetDoc->collections()[$collId] ?? null; // doc de la collection
     //echo 'collDoc='; if ($collDoc) print_r($collDoc); else echo "null\n";
     //$spatialExtentBboxes = (new CollOnSql($this->sqlSchema, $collId))->spatialExtentBboxes();
-    $spatialExtentBboxes = $this->wfsServer->featureTypeList()[$this->prefix.$collId]['LonLatBoundingBox'];
+    if (!($featureType = $this->wfsServer->featureTypeList()[$this->prefix.$collId] ?? null))
+      throw new Sexcept("Erreur, collection \"$collId\" inconnue", self::ERROR_COLL_NOT_FOUND);
+    $spatialExtentBboxes = $featureType['LonLatBoundingBox'];
     $temporalExtent = null;
     return [
       'id'=> $collId,
@@ -370,7 +374,8 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   function item(string $f, string $collId, string $featureId): array {
     $item = $this->wfsServer->getFeatureById($this->prefix.$collId, $featureId);
     $item = json_decode($item, true);
-    $item = $item['features'][0];
+    if (!($item = $item['features'][0] ?? null))
+      throw new SExcept("Erreur, FeatureId \"$featureId\" inconnu", self::ERROR_ITEM_NOT_FOUND);
     return [
       'type'=> 'Feature',
       'id'=> $featureId,

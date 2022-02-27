@@ -76,7 +76,7 @@ doc: |
   Ne gère pas le cas de collision entre le nom généré et un nom existant de table.
 */
 class CollOnSql {
-  const ERROR_UNKNOWN_COLLECTION = 'CollOnSql::ERROR_UNKNOWN_COLLECTION'; 
+  const ERROR_COLL_NOT_FOUND = 'CollOnSql::ERROR_COLL_NOT_FOUND'; 
   const ERROR_BAD_EXTENT = 'CollOnSql::ERROR_BAD_EXTENT';
   const SEP = '__'; // séparateur entre nom de table et nom de colonne pour créer le nom de collection
   
@@ -114,7 +114,7 @@ class CollOnSql {
     else { // cas où {collId} est la concaténation des noms de la table et de la colonne géométrique
       $this->geoCol = $schema->concatTableGeomNames($collId, self::SEP);
       if (!$this->geoCol)
-        throw new SExcept("collection $collId inconnue", self::ERROR_UNKNOWN_COLLECTION);
+        throw new SExcept("collection $collId inconnue", self::ERROR_COLL_NOT_FOUND);
       $this->table = $this->geoCol->table;
     }
   }

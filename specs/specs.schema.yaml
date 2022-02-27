@@ -26,6 +26,9 @@ abstract: |
     Par exemple, le code Insee d'une commune ou une adresse, définit un tel géoréférencement
 
   journal:
+    27/2/2022:
+      - correction d'une erreur
+      - création de la définition collDictIterable
     24/2/2022:
       - ajout de la possibilité d'itérer les collections
     22/2/2022:
@@ -177,27 +180,6 @@ definitions:
           - type: array
             items:
               $ref: '#/definitions/geometryType'
-        enum:
-          - Point
-          - Point2D
-          - Point3D
-          - MultiPoint
-          - MultiPoint2D
-          - MultiPoint3D
-          - LineString
-          - LineString2D
-          - LineString3D
-          - MultiLineString
-          - MultiLineString2D
-          - MultiLineString3D
-          - Polygon
-          - Polygon2D
-          - Polygon3D
-          - MultiPolygon
-          - MultiPolygon2D
-          - MultiPolygon3D
-          - GeometryCollection
-          - none
       temporalExtent:
         description: Définition des propriétés définissant l'extension temporelle de la collection
         oneOf:
@@ -234,6 +216,36 @@ definitions:
     patternProperties:
       ^[-a-zA-Z0-9_:.{}]+$:
         $ref: '#/definitions/collection'
+  collDictIterable:
+    description: dictionnaire de collections paramétrées itérables
+    type: object
+    additionalProperties: false
+    required: [forEach]
+    properties:
+      forEach:
+        description: exprime que le fragment 'body' doit être itéré pour chaque itération définie dans 'iterables'
+        type: object
+        additionalProperties: false
+        required: [iterables, body]
+        properties:
+          iterables:
+            description: liste des itérations
+            type: array
+            items:
+              description: |
+                chaque itération est définie par un ensemble de [{key}: {value}] exprimant
+                que dans le body les sous-chaines '{key}' doivent être remplacées par la valeur définie
+              type: object
+              additionalProperties: false
+              patternProperties:
+                ^[-a-zA-Z0-9_]+$:
+                  type: string
+          body:
+            description: |
+              fragment à étendre en remplacant dans les chaines les variables exprimées entre {} par leur valeur
+              pour l'itération
+              Ce fragment est un dictionnaire des collections indexées sur l'id de la collection
+            $ref: '#/definitions/collDict'
   specification:
     description: |
       Spécification d'un jeu de données.
@@ -272,34 +284,7 @@ definitions:
           - description: dictionnaire des collections indexées sur l'id de la collection
             $ref: '#/definitions/collDict'
           - description: dictionnaire de collections paramétrées itérables
-            type: object
-            additionalProperties: false
-            required: [forEach]
-            properties:
-              forEach:
-                description: exprime que le fragment 'body' doit être itéré pour chaque itération définie dans 'iterables'
-                type: object
-                additionalProperties: false
-                required: [iterables, body]
-                properties:
-                  iterables:
-                    description: liste des itérations
-                    type: array
-                    items:
-                      description: |
-                        chaque itération est définie par un ensemble de [{key}: {value}] exprimant
-                        que dans le body les sous-chaines '{key}' doivent être remplacées par la valeur définie
-                      type: object
-                      additionalProperties: false
-                      patternProperties:
-                        ^[-a-zA-Z0-9_]+$:
-                          type: string
-                  body:
-                    description: |
-                      fragment à étendre en remplacant dans les chaines les variables exprimées entre {} par leur valeur
-                      pour l'itération
-                      Ce fragment est un dictionnaire des collections indexées sur l'id de la collection
-                    $ref: '#/definitions/collDict'
+            $ref: '#/definitions/collDictIterable'
 
 type: object
 additionalProperties: false

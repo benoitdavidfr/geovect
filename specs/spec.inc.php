@@ -365,8 +365,7 @@ class Spec { // Spécification
   const YAML_FILE = __DIR__.'/specs.yaml';
 
   protected string $uri;
-  protected string $title;
-  protected ?string $abstract;
+  protected array $yaml;
   protected array $collections=[];  // [Collection]
   
   function schema() { /* Schema JSON
@@ -432,25 +431,24 @@ class Spec { // Spécification
       $yaml = iterator($yaml); // Si les specs contiennent un mécanisme d'itération alors il est activé
       file_put_contents(__DIR__."/$specid.pser", serialize($yaml));
     }
-    $this->title = $yaml['title'];
-    $this->abstract = $yaml['abstract'] ?? null;
     foreach ($yaml['collections'] ?? [] as $collId => $collection) {
       $this->collections[$collId] = new Collection($collId, $collection);
     }
+    unset($yaml['collections']);
+    $this->yaml = $yaml;
   }
   
   function __toString(): string { return $this->title; }
   function uri(): string { return $this->uri; }
-  function title(): string { return $this->title; }
-  function abstract(): ?string { return $this->abstract; }
+  function title(): string { return $this->yaml['title']; }
+  function abstract(): ?string { return $this->yaml['abstract'] ?? null; }
   function collections(): array { return $this->collections; }
   
   function asArray(): array {
     return 
-      ['title'=> $this->title]
-      + ($this->abstract ? ['abstract'=> $this->abstract] : [])
+      $this->yaml
       + ($this->collections ?
-          ['collections'=> array_map(function($coll) { return $coll->asArray(); }, $this->collections)]
+          ['collections'=> array_map(function(Collection $coll): array { return $coll->asArray(); }, $this->collections)]
           : []
         )
     ;

@@ -77,7 +77,7 @@ specifications:
               - De 0 à 15 mètres
           toponyme:
             title: Nom du cours d'eau.
-            description: 5à caractères au plus en minuscules accentuées
+            description: 50 caractères au plus en minuscules accentuées
             type: string
       zone_occupation_sol:
         title: Zone d'occupation du sol

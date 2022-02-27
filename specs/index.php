@@ -15,12 +15,52 @@ require_once __DIR__.'/spec.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+// Labels des erreurs Http
+define('HTTP_ERROR_LABELS', [
+  400 => 'Bad Request', // La syntaxe de la requête est erronée.
+  404 => 'Not Found', // Ressource non trouvée. 
+  500 => 'Internal Server Error', // Erreur interne du serveur. 
+  501 => 'Not Implemented', // Fonctionnalité réclamée non supportée par le serveur.
+]
+);
+
 //echo '<pre>$_SERVER='; print_r($_SERVER); echo "</pre>\n";
 
 $baseUrl = 'https://specs.georef.eu';
 
 // format de sortie demandé
 $f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')) ? 'html' : 'json');
+
+// Génère une erreur Http avec le code $code et affiche le message d'erreur
+function error(string $message, int $code, string $f): void {
+  $exception = [
+    'Exception'=> [
+      'message'=> $message,
+      'code'=> $code,
+    ]
+  ];
+  header("HTTP/1.1 $code ".(HTTP_ERROR_LABELS[$code] ?? "Undefined httpCode $code"));
+  if ($f == 'json') {
+    header('Content-type: application/json; charset="utf8"');
+    die(json_encode($exception));
+  }
+  else {
+    header('Content-type: text/plain');
+    die (Yaml::dump($exception));
+  }
+}
+
+// génère la sortie en JSON ou en Yaml
+function output(string $f, array $data, int $level=2): void {
+  if ($f == 'json') {
+    header('Content-type: application/json; charset="utf8"');
+    die(json_encode($data));
+  }
+  else {
+    echo '<pre>',Yaml::dump($data, $level, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
+    die();
+  }
+}
 
 function specSchema(): array { // fabrique le schéma JSON d'une spécification
   $schema = Yaml::parseFile(__DIR__.'/specs.schema.yaml');
@@ -34,7 +74,7 @@ function specSchema(): array { // fabrique le schéma JSON d'une spécification
   ];
 }
 
-if (in_array($_SERVER['PATH_INFO'] ?? null, [null, '/'])) {
+if (in_array($_SERVER['PATH_INFO'] ?? null, [null, '/'])) { // page d'accueil
   $baseUrl2 = ($_SERVER['HTTP_HOST']=='localhost') ? "http://localhost$_SERVER[SCRIPT_NAME]" : $baseUrl;
   if ($f == 'json') {
     header('Content-type: application/json; charset="utf8"');
@@ -84,59 +124,44 @@ if (in_array($_SERVER['PATH_INFO'] ?? null, [null, '/'])) {
   }
 }
 
-elseif ($_SERVER['PATH_INFO'] == '/spec.schema') {
+elseif ($_SERVER['PATH_INFO'] == '/spec.schema') { // affichage du schéma JSON d'une spec
   if ($f == 'json') {
     header('Content-type: application/json; charset="utf8"');
     die(json_encode(specSchema()));
   }
   else {
-    echo '<pre>',Yaml::dump(specSchema(), 6, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
+    echo '<pre>',Yaml::dump(specSchema(), 9, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
     die();
   }
 }
 
-elseif (preg_match('!^/([^/]+)$!', $_SERVER['PATH_INFO'], $matches)) {
-  $spec = new Spec("$baseUrl/$matches[1]");
-  if ($f == 'json') {
-    header('Content-type: application/json; charset="utf8"');
-    die(json_encode($spec->asArray()));
-  }
-  else {
-    echo '<pre>',Yaml::dump($spec->asArray(), 6, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
-    die();
-  }
+elseif (!preg_match('!^/([^/]+)(/([^/]+)(/schema)?)?$!', $_SERVER['PATH_INFO'], $matches)) {
+  error("Erreur, url incorrecte", 400, $f);
 }
 
-elseif (preg_match('!^/([^/]+)/([^/]+)$!', $_SERVER['PATH_INFO'], $matches)) {
-  $spec = new Spec("$baseUrl/$matches[1]");
-  if (isset($spec->collections()[$matches[2]])) {
-    $coll = $spec->collections()[$matches[2]];
-    if ($f == 'json') {
-      header('Content-type: application/json; charset="utf8"');
-      die(json_encode($coll->asArray()));
-    }
-    else {
-      echo '<pre>',Yaml::dump($coll->asArray(), 6, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
-      die();
-    }
-  }
+$specId = $matches[1];
+$collId = $matches[3] ?? null;
+$schema = $matches[4] ?? null;
+
+try {
+  $spec = new Spec("$baseUrl/$specId");
+}
+catch (Exception $e) {
+  error("Erreur, specId \"$specId\" inconnue", 404, $f);
 }
 
-elseif (preg_match('!^/([^/]+)/([^/]+)/schema$!', $_SERVER['PATH_INFO'], $matches)) {
-  $spec = new Spec("$baseUrl/$matches[1]");
-  if (isset($spec->collections()[$matches[2]])) {
-    $coll = $spec->collections()[$matches[2]];
-    if ($f == 'json') {
-      die(json_encode($coll->featureSchema()));
-    }
-    else {
-      echo '<pre>',Yaml::dump($coll->featureSchema(), 6, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK),"</pre>\n";
-      die();
-    }
-  }
+if (!$collId) { // /{specId}
+  output($f, $spec->asArray(), 6);
 }
 
-else {
-  header('HTTP/1.1 400 Bad Request');
-  die("No match");
+if (!($coll = $spec->collections()[$collId] ?? null)) {
+  error("Erreur, collection \"$collId\" inconnue", 404, $f);
+}
+
+if (!$schema) { // /{specId}/{collId}
+  output($f, $coll->asArray(), 6);
+}
+
+else { // /{specId}/{collId}/schema
+  output($f, $coll->featureSchema(), 6);
 }
