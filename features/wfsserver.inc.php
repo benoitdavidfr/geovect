@@ -292,9 +292,9 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
       $cql_filter .= ($cql_filter ? ' AND ':'').$where;
     }
     if ($cql_filter) {
-      echo "cql_filter=$cql_filter\n";
+      //echo "cql_filter=$cql_filter\n";
       $request['CQL_FILTER'] = urlencode($cql_filter);
-      echo "CQL_FILTER=$request[CQL_FILTER]\n";
+      //echo "CQL_FILTER=$request[CQL_FILTER]\n";
     }
     return $this->query($request);
   }
