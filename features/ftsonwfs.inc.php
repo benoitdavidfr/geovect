@@ -6,6 +6,11 @@ functions:
 doc: |
   Définition de la classe FeatureServerOnWfs - interface Feature API d'un serveur WfsGeoJson
 journal: |
+  28/2/2022:
+    - transfert du champ bbox des propriétés d'un Feature hors des propriétés
+    - modif signature de FeatureServerOnWfs::items()
+    - ajout gestion des paramètres filters et properties dans FeatureServerOnWfs::items()
+    - ajout méthode FeatureServerOnWfs::itemsIterable() pour permettre 
   2/2/2021:
     - première version lisible dans QGis
   30/12/2020:
@@ -21,6 +26,7 @@ use Symfony\Component\Yaml\Yaml;
 class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Features d'un serveur WFS
   const ERROR_COLL_NOT_FOUND = 'FeatureServerOnWfs::ERROR_COLL_NOT_FOUND';
   const ERROR_ITEM_NOT_FOUND = 'FeatureServerOnWfs::ERROR_ITEM_NOT_FOUND';
+  const ERROR_NOT_IMPLEMENTED = 'FeatureServerOnWfs::ERROR_NOT_IMPLEMENTED';
   protected WfsGeoJson $wfsServer;
   protected string $prefix; // chaine filtrant $fTypeId
   
@@ -300,18 +306,27 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   }
   
   // retourne les items de la collection comme array Php
-  function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
+  function items(string $f, string $collId, array $bbox=[], array $filters=[], array $properties=[], int $limit=10, int $startindex=0): array {
     //echo "FeatureServerOnWfs::items()\n";
     if ($bbox)
       self::checkBbox($bbox);
-    $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
-    $filters = []; // filtres sous la forme [{columnName} => {value}]
+    $where = '';
+    foreach ($filters as $k => $v)
+      $where .= ($where ? ' AND ' : '')."$k='$v'";
     $items = $this->wfsServer->getFeatureAsArray(
       typename: $this->prefix.$collId,
+      properties: $properties,
       bbox: $bbox,
+      where: $where,
       count: $limit,
       startindex: $startindex
     );
+    foreach ($items['features'] as &$feature) {
+      if (isset($feature['properties']['bbox'])) {
+        $feature['bbox'] = $feature['properties']['bbox'];
+        unset($feature['properties']['bbox']);
+      }
+    }
     $selfurl = self::selfUrl()."?limit=$limit"
         .($bbox ? "&bbox=".implode(',', $bbox) : '')
         .($properties ? "&properties=".implode(',', $properties) : '');
@@ -368,6 +383,11 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
       'numberMatched'=> $items['numberMatched'],
       'numberReturned'=> count($items['features']),
     ];
+  }
+  
+  // fonction bidon pour permettre l'héritage
+  function itemsIterable(string $f, string $collId, array $bbox=[], array $filters=[], array $properties=[], int $limit=10, int $startindex=0): array {
+                   throw new SExcept("Not implemented", self::ERROR_NOT_IMPLEMENTED);
   }
   
   // retourne l'item $id de la collection comme array Php

@@ -1032,8 +1032,8 @@ links to support paging (link relation `next`).",
   
   // retourne les items de la collection comme FeatureCollection en array Php
   // REMPLACEE dans certains cas par itemsIterable()
-  function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
-    $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
+  function items(string $f, string $collId, array $bbox=[], array $filters=[], array $properties=[],
+                 int $limit=10, int $startindex=0): array {
     $jsonColNames = []; // liste des noms des colonnes de type JSON
     $columns = []; // liste des noms des colonnes pour la requête Sql
     $filters = []; // filtres sous la forme [{columnName} => {value}]
@@ -1211,11 +1211,10 @@ links to support paging (link relation `next`).",
   
   // retourne les items de la collection comme FeatureCollection en array Php
   // Retourne un array ['enveloppe', 'tokens', 'iterable', 'filter']
-  function itemsIterable(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array {
-    $properties = isset($_GET['properties']) ? explode(',', $_GET['properties']) : null; // liste des prop. à retourner
+  function itemsIterable(string $f, string $collId, array $bbox=[], array $filters=[], array $properties=[],
+                 int $limit=10, int $startindex=0): array {
     $jsonColNames = []; // liste des noms des colonnes de type JSON
     $columns = []; // liste des noms des colonnes pour la requête Sql
-    $filters = []; // filtres sous la forme [{columnName} => {value}]
     $collection = new CollOnSql($this->sqlSchema, $collId);
     foreach ($collection->columns() as $column) {
       if ($column->hasGeometryType()) {

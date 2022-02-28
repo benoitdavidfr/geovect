@@ -55,6 +55,9 @@ doc: |
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
 journal: |
+  28/2/2022:
+    - gestion du bbox en POST pour satisfaire aux besoins de L.UGeoJSONLayer dans Leaflet
+    - gestion properties et filters dans l'appel de items()
   27/2/2022:
     - amélioration de la gestion des erreurs, utilisation de SExcept
   25/2/2022:
@@ -387,15 +390,24 @@ try {
     $fServer->repairTable('createPrimaryKey', $collId);
   }
   elseif ($itemId === null) { // /collections/{collectionId}/items
-    $fServer->checkParams("/$action/$collId/items");
+    //$fServer->checkParams("/$action/$collId/items");
     // dans ftsOnSql, le paramètre limit vaut au max 10000 et le résultat n'est pas construit en mémoire
+    $filters = [];
+    foreach ($_GET as $k => $v) {
+      if (!in_array($k, ['bbox','properties','limit','startindex']))
+        $filters[$k] = $v;
+    }
+    $bbox = isset($_GET['bbox']) ? $_GET['bbox'] : (isset($_POST['bbox']) ? $_POST['bbox'] : '');
+    $bbox = $bbox ? explode(',', $bbox) : [];
     if (in_array($type, ['mysqlIt','pgsqlIt'])) {
       outputIterable(
         ($f == 'json' ? 'geojson' : $f),
         $fServer->itemsIterable(
           f: $f,
           collId: $collId,
-          bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
+          bbox: $bbox,
+          filters: $filters,
+          properties: isset($_GET['properties']) ? explode(',', $_GET['properties']) : [], // liste des prop. à retourner
           limit: $_GET['limit'] ?? 10,
           startindex: $_GET['startindex'] ?? 0
         )
@@ -408,7 +420,9 @@ try {
         $fServer->items(
           f: $f,
           collId: $collId,
-          bbox: isset($_GET['bbox']) ? explode(',',$_GET['bbox']) : [],
+          bbox: $bbox,
+          filters: $filters,
+          properties: isset($_GET['properties']) ? explode(',', $_GET['properties']) : [], // liste des prop. à retourner
           limit: $_GET['limit'] ?? 10,
           startindex: $_GET['startindex'] ?? 0
         )

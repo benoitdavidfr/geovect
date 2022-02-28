@@ -232,18 +232,21 @@ abstract class FeatureServer {
       }
     }
     elseif (preg_match('!^/collections/[^/]+/items$!', $path)) {
-      $params = ['f','limit','startindex','bbox','datetime'];
+      $params = ['f','limit','startindex','bbox','datetime','properties'];
       if (isset($_GET['f']) && !in_array($_GET['f'], ['json','html','yaml']))
         throw new SExcept("Valeur '$_GET[f]' interdite pour le paramètre 'f'", self::ERROR_BAD_PARAMS);
       if (isset($_GET['limit'])) {
         if (!ctype_digit($_GET['limit']))
           throw new SExcept("Valeur '$_GET[limit]' non entière interdite pour le paramètre 'limit'", self::ERROR_BAD_PARAMS);
         if (((int)$_GET['limit'] > get_class($this)::MAX_LIMIT) || ((int)$_GET['limit'] < 1))
-          throw new SExcept("Valeur du paramètre 'limit'='$_GET[limit]' hors intervalle [1, ".get_class($this)::MAX_LIMIT."]", 400);
+          throw new SExcept(
+            "Valeur du paramètre 'limit'='$_GET[limit]' hors intervalle [1, ".get_class($this)::MAX_LIMIT."]",
+            self::ERROR_BAD_PARAMS);
       }
       if (isset($_GET['startindex'])) {
         if (!ctype_digit($_GET['startindex']))
-          throw new SExcept("Valeur '$_GET[startindex]' non entière interdite pour le paramètre 'startindex'", self::ERROR_BAD_PARAMS);
+          throw new SExcept("Valeur '$_GET[startindex]' non entière interdite pour le paramètre 'startindex'",
+            self::ERROR_BAD_PARAMS);
         if ((int)$_GET['startindex'] < 0)
           throw new SExcept("Valeur '$_GET[startindex]' < 0 pour le paramètre 'startindex'", self::ERROR_BAD_PARAMS);
       }
@@ -276,8 +279,10 @@ abstract class FeatureServer {
   abstract function collDescribedBy(string $collId): array; // retourne le schéma d'un Feature de la collection
   
   // retourne les items de la collection comme array Php, soit sous la forme itérable soit comme array
-  //abstract function itemsIterable(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array;
-  //abstract function items(string $f, string $collId, array $bbox=[], int $limit=10, int $startindex=0): array;
+  abstract function itemsIterable(string $f, string $collId, array $bbox=[], array $filters=[], array $properties=[],
+                                  int $limit=10, int $startindex=0): array;
+  abstract function items(string $f, string $collId, array $bbox=[], array $filters=[], array $properties=[],
+                          int $limit=10, int $startindex=0): array;
   
   // retourne l'item $featureId de la collection comme array Php
   abstract function item(string $f, string $collId, string $featureId): array;

@@ -122,21 +122,15 @@ datasets:
     conformsTo: https://specs.georef.eu/admin-expresv3.1
     path: '/wfs/wxs.ign.fr/administratif/geoportail/wfs'
   
-  ignf-bdadresse:
-    title: BDADRESSE IGN
-    path: '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr&prefix=BDADRESSE_BDD_WLD_WGS84G:'
-  ignf-bdparcellaire-vecteur:
-    title: BDPARCELLAIRE VECTEUR IGN
-    path: '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr&prefix=BDPARCELLAIRE-VECTEUR_WLD_BDD_WGS84G:'
-  ignf-bdparcellaire-express:
-    title: BDPARCELLAIRE EXPRESS IGN
-    path: '/wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr&prefix=CADASTRALPARCELS.PARCELLAIRE_EXPRESS:'
+  #ignf-adresse:
+  #  title: ADRESSE PREMIUM IGN
+  #  path: '/wfs/wxs.ign.fr/adresse/geoportail/wfs?referer=gexplor.fr&prefix=ADRESSE-PREMIUM.LIEN.'
+  ignf-parcellaire-vecteur:
+    title: Parcellaire Express (PCI) IGN
+    path: '/wfs/wxs.ign.fr/parcellaire/geoportail/wfs?referer=gexplor.fr&prefix=CADASTRALPARCELS.PARCELLAIRE_EXPRESS:'
   ignf-bdcarto:
     title: BDCARTO IGN
-    path: '/wfs/wxs.ign.fr/cartovecto/geoportail/wfs?referer=gexplor.fr&prefix=BDCARTO_BDD_WLD_WGS84G:'
-  igngpwfs:
-    title: Serveur WFS du Géoportail IGN
-    path: /wfs/wxs.ign.fr/3j980d2491vfvr7pigjqdwqw/geoportail/wfs?referer=gexplor.fr
+    path: '/wfs/wxs.ign.fr/cartovecto/geoportail/wfs?prefix=BDCARTO_BDD_WLD_WGS84G:'
 
   localgis:
     title: Serveur PgSql sur Docker, base gis, schema public

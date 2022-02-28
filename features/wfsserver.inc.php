@@ -7,6 +7,9 @@ doc: |
   Définition de la classe abstraite WfsServer et la classe concrète WfsGeoJson pour interroger un serveur WFS générant
   du GeoJSON.
 journal: |
+  28/2/2022:
+    - ajout paramètre properties dans getFeature()
+    - chgt encodage CQL_FILTER
   27/2/2022:
     - récriture de WfsServer::query()
   2/2/2021:
@@ -87,6 +90,9 @@ abstract class WfsServer {
     }
     $context = stream_context_create(['http'=> $httpOptions]);
     $data = @file_get_contents($url, false, $context);
+    if (($data === false) || !isset($http_response_header))
+      throw new SExcept ("Erreur dans WfsServer::query() : erreur de file_get_contents() sur url=$url",
+        self::ERROR_WFS_QUERY);
     $errorCode = substr($http_response_header[0], 9, 3);
     if ($errorCode == 200)
       return $data;
@@ -182,7 +188,9 @@ abstract class WfsServer {
   
   //abstract function getNumberMatched(string $typename, array $bbox=[], string $where=''): int;
   
-  abstract function getFeature(string $typename, array $bbox=[], string $where='', int $count=100, int $startindex=0): string;
+  abstract function getFeature(
+    string $typename, array $properties=[], array $bbox=[], string $where='',
+    int $count=100, int $startindex=0): string;
 
   //abstract function printAllFeatures(string $typename, array $bbox=[], int $zoom=-1, string $where=''): void;
 };
@@ -257,7 +265,8 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
   }*/
   
   // retourne le résultat de la requête comme string GeoJSON
-  function getFeature(string $typename, array $bbox=[], string $where='', int $count=100, int $startindex=0): string {
+  function getFeature(string $typename, array $properties=[], array $bbox=[], string $where='',
+                      int $count=100, int $startindex=0): string {
     $request = [
       'VERSION'=> '2.0.0',
       'REQUEST'=> 'GetFeature',
@@ -267,6 +276,8 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
       'COUNT'=> $count,
       'STARTINDEX'=> $startindex,
     ];
+    if ($properties)
+      $request['PROPERTYNAME'] = implode(',', $properties);
     $cql_filter = '';
     if ($bbox) {
       $featureTypeList = $this->featureTypeList();
@@ -276,18 +287,22 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
       $cql_filter = "Intersects($geomPropertyName,$bboxwkt)";
     }
     if ($where) {
-      $where = utf8_decode($where); // expérimentalement les requêtes doivent être encodées en ISO-8859-1
+      //$where = utf8_decode($where); // expérimentalement les requêtes doivent être encodées en ISO-8859-1
+      // Le 28/2/2022 - l'encodage UTF-8 fonctionne
       $cql_filter .= ($cql_filter ? ' AND ':'').$where;
     }
-    if ($cql_filter)
+    if ($cql_filter) {
+      echo "cql_filter=$cql_filter\n";
       $request['CQL_FILTER'] = urlencode($cql_filter);
-    
+      echo "CQL_FILTER=$request[CQL_FILTER]\n";
+    }
     return $this->query($request);
   }
   
   // retourne le résultat de la requête en GeoJSON encodé en array Php
-  function getFeatureAsArray(string $typename, array $bbox=[], string $where='', int $count=100, int $startindex=0): array {
-    $result = $this->getFeature($typename, $bbox, $where, $count, $startindex);
+  function getFeatureAsArray(string $typename, array $properties=[], array $bbox=[], string $where='',
+                             int $count=100, int $startindex=0): array {
+    $result = $this->getFeature($typename, $properties, $bbox, $where, $count, $startindex);
     return json_decode($result, true);
   }
   
