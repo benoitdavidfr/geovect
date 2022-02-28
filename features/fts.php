@@ -394,7 +394,7 @@ try {
     // dans ftsOnSql, le paramètre limit vaut au max 10000 et le résultat n'est pas construit en mémoire
     $filters = [];
     foreach ($_GET as $k => $v) {
-      if (!in_array($k, ['bbox','properties','limit','startindex']))
+      if (!in_array($k, ['f','bbox','properties','limit','startindex']))
         $filters[$k] = $v;
     }
     $bbox = isset($_GET['bbox']) ? $_GET['bbox'] : (isset($_POST['bbox']) ? $_POST['bbox'] : '');
