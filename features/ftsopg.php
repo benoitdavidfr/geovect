@@ -10,19 +10,17 @@ doc: |
     - de stocker des informations annexes dans la base, comme un titre pour la table
     - de réutiliser les docs lorsque la table est documentée
 journal: |
+  1/3/2022:
+    - appel par la fonction fts()
   18/2/2022:
     - création
 includes:
   - fts.php
-  - ftrserver.inc.php
-  - doc.php
-  - ../../phplib/sqlschema.inc.php
 */
 define ('SERVER_URI', 'pgsql://benoit@db207552-001.dbaas.ovh.net:35250');
 
-require_once __DIR__.'/../../phplib/sqlschema.inc.php';
-require_once __DIR__.'/ftrserver.inc.php';
-require_once __DIR__.'/doc.php';
+//require_once __DIR__.'/../../phplib/sqlschema.inc.php';
+require_once __DIR__.'/fts.php';
 
 if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) { // appel sans paramètre 
   echo "</pre><h2>Bouquet de serveurs OGC API Features</h2>
@@ -77,4 +75,4 @@ $doc = new Doc([
   ],
 ]);
 
-require __DIR__.'/fts.php';
+fts($_SERVER['PATH_INFO'], $doc);

@@ -40,10 +40,10 @@ doc: |
       un lien {type: text/html, rel: canonical, title: information, href= ...}
       vers la doc quand il y a au moins soit une description, soit la définition de propriétés
     - rajouter dans les liens au niveau de chaque collection, un lien de téléchargement simple quand j'en dispose d'un,
-      ex: {
-          "href": "http://download.example.org/buildings.gpkg",
-          "rel": "enclosure", "type": "application/geopackage+sqlite3",
-          "title": "Bulk download (GeoPackage)", "length": 472546 }
+      ex: { "href": "http://download.example.org/buildings.gpkg",
+            "rel": "enclosure", "type": "application/geopackage+sqlite3",
+            "title": "Bulk download (GeoPackage)", "length": 472546
+          }
     - gérer correctement les types non string dans les données comme les nombres
   Réflexions (à mûrir):
     - distinguer un outil d'admin différent de l'outil fts.php de consultation
@@ -55,6 +55,8 @@ doc: |
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
 journal: |
+  1/3/2022:
+    - définition de la fonction fts pour clarifier la réutilisation du code
   28/2/2022:
     - gestion du bbox en POST pour satisfaire aux besoins de L.UGeoJSONLayer dans Leaflet
     - gestion properties et filters dans l'appel de items()
@@ -92,44 +94,6 @@ use Symfony\Component\Yaml\Yaml;
 
 //echo "<pre>"; print_r($_SERVER); die();
 
-ini_set('memory_limit', '10G');
-
-/*define('EXEMPLES_DAPPELS', [
-  'wfs/services.data.shom.fr/INSPIRE/wfs' => [
-    'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary',
-  ],
-  'shomwfs' => [
-    'DELMAR_BDD_WFS:au_maritimeboundary_agreedmaritimeboundary',
-  ],
-  'igngpwfs' => [
-    'BDCARTO_BDD_WLD_WGS84G:region',
-  ],
-  'file/var/www/html/geovect/fcoll/ne_10m' => [
-    'admin_0_countries'=> 'limit=5&startindex=100',
-  ],
-  'mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_ne_110m'=> [],
-  'ne_110m' => [
-    'admin_0_countries' => 'limit=10&startindex=5',
-  ],
-  'ne_10m' => [
-    'admin_0_countries' => 'limit=10&startindex=5',
-  ],
-  'ignf-route500' => [
-    'troncon_voie_ferree' => 'limit=10&startindex=5',
-  ],
-  'mysql/bdavid@mysql-bdavid.alwaysdata.net/bdavid_geovect'=>[],
-  'test@mysql' => [
-    'unchampstretunegeom' => 'limit=10',
-  ],
-  'localgis'=> [
-    'departement_carto' => 'limit=5&startindex=10&f=json',
-  ],
-  'comhisto'=> [
-    'comhistog3',
-  ],
-]
-);*/
-
 define('HTTP_ERROR_LABELS', [
   400 => 'Bad Request', // La syntaxe de la requête est erronée.
   404 => 'Not Found', // Ressource non trouvée. 
@@ -137,16 +101,6 @@ define('HTTP_ERROR_LABELS', [
   501 => 'Not Implemented', // Fonctionnalité réclamée non supportée par le serveur.
 ]
 );
-
-// Définit le fuseau horaire par défaut à utiliser
-date_default_timezone_set('UTC');
-
-if (1)
-FeatureServer::log([
-  'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
-  'Headers'=> getallheaders(),
-]
-); // log de la requête pour deboggage, a supprimer en production
 
 // affiche $array en JSON, GeoJSON, Html ou Yaml en fonction du paramètre $f
 // JSON ou GeoJSON sont utilisés dans les échanges entre programmes, je pourrais ultérieurement supprimer les options
@@ -242,220 +196,227 @@ function error(string $message, int $code=0) {
   ]]));
 }  
 
-{/* Test pour attraper une erreur fatale d'explosion mémoire, ne fonctionne pas (1/2/2021)
-function shutDownFunction() {
-    $error = error_get_last();
-     // Fatal error, E_ERROR === 1
-    if ($error['type'] === E_ERROR) {
-      error("Fatal error", 500);
+// Fonction globale de mis en oeuvre du Feature Service
+function fts(string $pathInfo, Doc $doc=null): void {
+  ini_set('memory_limit', '10G');
+
+  // Définit le fuseau horaire par défaut à utiliser
+  date_default_timezone_set('UTC');
+
+  if (1)
+  FeatureServer::log([
+    'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
+    'Headers'=> getallheaders(),
+  ]
+  ); // log de la requête pour deboggage, a supprimer en production
+
+  // si _GET[f] est défini alors il est utilisé, sinon essaie d'utiliser le header Accept
+  // si ni 'yaml', ni 'json', ni 'geojson' alors 'html'
+  switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')) ? 'html' : 'json')) {
+    case 'yaml': break;
+    case 'json':
+    // si $f vaut geojson alors  transformation en 'json'. A l'affichage si geo alors geojson
+    case 'geojson': $f = 'json'; break;
+    case 'html':
+    // $f doit valoir 'html', 'yaml' ou 'json' sinon 'html'
+    default: {
+      $f = 'html';
+      echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n";
+      break;
     }
-}
-register_shutdown_function('shutDownFunction');*/
-}
-
-// si _GET[f] est défini alors il est utilisé, sinon essaie d'utiliser le header Accept
-// si ni 'yaml', ni 'json', ni 'geojson' alors 'html'
-switch ($f = $_GET['f'] ?? (in_array('text/html', explode(',', getallheaders()['Accept'] ?? '')) ? 'html' : 'json')) {
-  case 'yaml': break;
-  case 'json':
-  // si $f vaut geojson alors  transformation en 'json'. A l'affichage si geo alors geojson
-  case 'geojson': $f = 'json'; break;
-  case 'html':
-  // $f doit valoir 'html', 'yaml' ou 'json' sinon 'html'
-  default: {
-    $f = 'html';
-    echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n";
-    break;
-  }
-}
-
-//print_r($_SERVER);
-
-if (!isset($doc)) { // $doc peut être défini par un script incluant le présent fichier 
-  $doc = new Doc; // documentation des serveurs biens connus 
-}
-
-if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) { // appel sans paramètre 
-  echo "</pre><h2>Bouquet de serveurs OGC API Features</h2>
-Ce site expose un bouquet de serveurs conformes
-à la <a href='http://docs.opengeospatial.org/is/17-069r3/17-069r3.html' target='_blank'>norme OGC API Features</a>.<br>
-Il est en développement et uniquement certains types de serveurs sont conformes à cette norme.<br>
-Les 3 types de sources de données exposées sont:<ul>
-<li>des données d'une base MySql ou PgSql/PostGis (en béta),</li>
-<li>des données exposées par un serveur WFS (en cours),</li>
-<li>des données stockées dans des fichiers GeoJSON (en cours).</li>
-</ul>
-
-Les sources exposées sont les suivantes :<ul>\n";
-  foreach ($doc->datasets as $dsid => $dsDoc) {
-    if (($_SERVER['HTTP_HOST']=='localhost') || !preg_match('!@172\.17\.0\.!', $dsDoc->path()))
-    echo "<li><a href='$_SERVER[SCRIPT_NAME]/$dsid'>",$dsDoc->title(),"</a></li>\n";
   }
 
-  echo "</ul>
-Ces serveurs peuvent notamment être utilisés avec les dernières versions
-de <a href='https://www.qgis.org/fr/site/' target='_blank'>QGis (3.16)</a>
-ou être consultés en Html.<br>\n";
-  die();
-}
-
-if (preg_match('!^((/[^/]+)+)/(conformance|api|check)$!', $_SERVER['PATH_INFO'], $matches)) { // cmde 1er niveau sur fserver
-  $fserverId = $matches[1];
-  $action = $matches[3];
-  $action2 = null;
-}
-
-// détermination de la partie $fserverId
-// détection de /collections
-elseif (preg_match('!^((/[^/]+)+)/collections!', $_SERVER['PATH_INFO'], $matches)) {
-  if (!preg_match('!^((/[^/]+)+)/collections(/([^/]+)(/items(/.*)?|/describedBy|/createPrimaryKey)?)?$!',
-      $_SERVER['PATH_INFO'], $matches))
-    error("Erreur, chemin '$_SERVER[PATH_INFO]' non interprété", 400);
-  //echo 'matches1='; print_r($matches);
-  $fserverId = $matches[1];
-  $action = 'collections'; // liste des collections demandée
-  $collId = $matches[4] ?? null; // collection définie
-  $action2 = $matches[5] ?? null; // /items | /describedBy | /createPrimaryKey
-  $itemId = isset($matches[6]) ? substr($matches[6], 1) : null;
-}
-else { // sinon, c'est l'URL ou un raccourci
-  $fserverId = $_SERVER['PATH_INFO'];
-  $action = null; // aucune action
-}
-
-// détection du cas d'utilisation d'un raccourci et dans ce cas transformation dans le path résolu
-$datasetDoc = null; // la doc du dataset si elle est définie
-if (preg_match('!^/([^/]+)/?$!', $fserverId, $matches)) {
-  //echo 'matches2='; print_r($matches);
-  $datasetId = $matches[1];
-  //echo "raccourci $raccourci<br>\n";
-  if (!isset($doc->datasets[$datasetId]))
-    error("Erreur, $datasetId n'est pas l'identifiant d'un serveur prédéfini", 400);
-  $datasetDoc = $doc->datasets[$datasetId];
-  $fserverId = $datasetDoc->path();
-  //echo "fserverId=$fserverId<br>\n";
-}
-
-// identification du type de serveur et de son path
-if (!preg_match('!^/(wfs|pgsql|mysql|mysqlIt|file)(/.*)$!', $fserverId, $matches)) {
-  error("Erreur, type de serveur non détecté dans '$fserverId'", 400);
-}
-//echo 'matches3='; print_r($matches);
-$type = $matches[1];
-$path = $matches[2];
-$fServer = FeatureServer::new($type, $path, $f, $datasetDoc);
-
-try {
-  if (!$action) { // /
-    $fServer->checkParams('/');
-    output($f, $fServer->landingPage($f));
+  if (!$doc) {
+    $doc = new Doc; // documentation des serveurs biens connus 
   }
-  elseif ($action == 'conformance') { // /conformance
-    $fServer->checkParams("/$action");
-    output($f, $fServer->conformance());
-  }
-  elseif ($action == 'api') { // /api
-    $fServer->checkParams("/$action");
-    output($f, $fServer->api(), 999);
-  }
-  elseif ($action == 'check') { // /check
-    //output($f, $fServer->checkTables());
-    foreach ($fServer->checkTables() as $tableName => $tableProp) {
-      //echo Yaml::dump([$tableName => $tableProp]);
-      echo "$tableName:\n";
-      if ($tableProp['geoColumnNames'])
-        echo "  geo ",implode(', ', $tableProp['geoColumnNames'])," ok\n";
-      else
-        echo "  geo KO\n";
-      if ($tableProp['pkColumnName'])
-        echo "  pk ok\n";
-      else
-        echo "  <a href='$_SERVER[SCRIPT_NAME]$fserverId/collections/$tableName/createPrimaryKey'>Créer une clé primaire</a>\n";
+
+  if (in_array($pathInfo, ['', '/'])) { // appel sans paramètre 
+    echo "</pre><h2>Bouquet de serveurs OGC API Features</h2>
+  Ce site expose un bouquet de serveurs conformes
+  à la <a href='http://docs.opengeospatial.org/is/17-069r3/17-069r3.html' target='_blank'>norme OGC API Features</a>.<br>
+  Il est en développement et uniquement certains types de serveurs sont conformes à cette norme.<br>
+  Les 3 types de sources de données exposées sont:<ul>
+  <li>des données d'une base MySql ou PgSql/PostGis (en béta),</li>
+  <li>des données exposées par un serveur WFS (en cours),</li>
+  <li>des données stockées dans des fichiers GeoJSON (en cours).</li>
+  </ul>
+
+  Les sources exposées sont les suivantes :<ul>\n";
+    foreach ($doc->datasets as $dsid => $dsDoc) {
+      if (($_SERVER['HTTP_HOST']=='localhost') || !preg_match('!@172\.17\.0\.!', $dsDoc->path()))
+      echo "<li><a href='$_SERVER[SCRIPT_NAME]/$dsid'>",$dsDoc->title(),"</a></li>\n";
     }
+
+    echo "</ul>
+  Ces serveurs peuvent notamment être utilisés avec les dernières versions
+  de <a href='https://www.qgis.org/fr/site/' target='_blank'>QGis (3.16)</a>
+  ou être consultés en Html.<br>\n";
     die();
   }
-  elseif (!$collId) { // /collections
-    $fServer->checkParams("/$action");
-    output($f, $fServer->collections($f), 4);
+
+  if (preg_match('!^((/[^/]+)+)/(conformance|api|check)$!', $pathInfo, $matches)) { // cmde 1er niveau sur fserver
+    $fserverId = $matches[1];
+    $action = $matches[3];
+    $action2 = null;
   }
-  elseif (!$action2) { // /collections/{collectionId}
-    $fServer->checkParams("/$action/{collectionId}");
-    output($f, $fServer->collection($f, $collId), 4);
+
+  // détermination de la partie $fserverId
+  // détection de /collections
+  elseif (preg_match('!^((/[^/]+)+)/collections!', $pathInfo, $matches)) {
+    if (!preg_match('!^((/[^/]+)+)/collections(/([^/]+)(/items(/.*)?|/describedBy|/createPrimaryKey)?)?$!',
+        $_SERVER['PATH_INFO'], $matches))
+      error("Erreur, chemin '$_SERVER[PATH_INFO]' non interprété", 400);
+    //echo 'matches1='; print_r($matches);
+    $fserverId = $matches[1];
+    $action = 'collections'; // liste des collections demandée
+    $collId = $matches[4] ?? null; // collection définie
+    $action2 = $matches[5] ?? null; // /items | /describedBy | /createPrimaryKey
+    $itemId = isset($matches[6]) ? substr($matches[6], 1) : null;
   }
-  elseif ($action2 == '/describedBy') { // /collections/{collectionId}/describedBy
-    $fServer->checkParams("/$action/{collectionId}/describedBy");
-    output($f, $fServer->collDescribedBy($collId), 6);
+  else { // sinon, c'est l'URL ou un raccourci
+    $fserverId = $pathInfo;
+    $action = null; // aucune action
   }
-  elseif ($action2 == '/createPrimaryKey') { // /collections/{collectionId}/createPrimaryKey
-    $fServer->repairTable('createPrimaryKey', $collId);
+
+  // détection du cas d'utilisation d'un raccourci et dans ce cas transformation dans le path résolu
+  $datasetDoc = null; // la doc du dataset si elle est définie
+  if (preg_match('!^/([^/]+)/?$!', $fserverId, $matches)) {
+    //echo 'matches2='; print_r($matches);
+    $datasetId = $matches[1];
+    //echo "raccourci $raccourci<br>\n";
+    if (!isset($doc->datasets[$datasetId]))
+      error("Erreur, $datasetId n'est pas l'identifiant d'un serveur prédéfini", 400);
+    $datasetDoc = $doc->datasets[$datasetId];
+    $fserverId = $datasetDoc->path();
+    //echo "fserverId=$fserverId<br>\n";
   }
-  elseif ($itemId === null) { // /collections/{collectionId}/items
-    //$fServer->checkParams("/$action/$collId/items");
-    // dans ftsOnSql, le paramètre limit vaut au max 10000 et le résultat n'est pas construit en mémoire
-    $filters = [];
-    foreach ($_GET as $k => $v) {
-      if (!in_array($k, ['f','bbox','properties','limit','startindex']))
-        $filters[$k] = $v;
+
+  // identification du type de serveur et de son path
+  if (!preg_match('!^/(wfs|pgsql|mysql|mysqlIt|file)(/.*)$!', $fserverId, $matches)) {
+    error("Erreur, type de serveur non détecté dans '$fserverId'", 400);
+  }
+  //echo 'matches3='; print_r($matches);
+  $type = $matches[1];
+  $path = $matches[2];
+  $fServer = FeatureServer::new($type, $path, $f, $datasetDoc);
+
+  try {
+    if (!$action) { // /
+      $fServer->checkParams('/');
+      output($f, $fServer->landingPage($f));
     }
-    $bbox = isset($_GET['bbox']) ? $_GET['bbox'] : (isset($_POST['bbox']) ? $_POST['bbox'] : '');
-    $bbox = $bbox ? explode(',', $bbox) : [];
-    if (in_array($type, ['mysqlIt','pgsqlIt'])) {
-      outputIterable(
-        ($f == 'json' ? 'geojson' : $f),
-        $fServer->itemsIterable(
-          f: $f,
-          collId: $collId,
-          bbox: $bbox,
-          filters: $filters,
-          properties: isset($_GET['properties']) ? explode(',', $_GET['properties']) : [], // liste des prop. à retourner
-          limit: $_GET['limit'] ?? 10,
-          startindex: $_GET['startindex'] ?? 0
-        )
-      );
+    elseif ($action == 'conformance') { // /conformance
+      $fServer->checkParams("/$action");
+      output($f, $fServer->conformance());
     }
-    // dans les autres drivers, le max de limit vaut 1000 et le résultat peut être construit en mémoire
-    else {
-      output(
-        ($f == 'json' ? 'geojson' : $f),
-        $fServer->items(
-          f: $f,
-          collId: $collId,
-          bbox: $bbox,
-          filters: $filters,
-          properties: isset($_GET['properties']) ? explode(',', $_GET['properties']) : [], // liste des prop. à retourner
-          limit: $_GET['limit'] ?? 10,
-          startindex: $_GET['startindex'] ?? 0
-        )
-      );
+    elseif ($action == 'api') { // /api
+      $fServer->checkParams("/$action");
+      output($f, $fServer->api(), 999);
     }
+    elseif ($action == 'check') { // /check
+      //output($f, $fServer->checkTables());
+      foreach ($fServer->checkTables() as $tableName => $tableProp) {
+        //echo Yaml::dump([$tableName => $tableProp]);
+        echo "$tableName:\n";
+        if ($tableProp['geoColumnNames'])
+          echo "  geo ",implode(', ', $tableProp['geoColumnNames'])," ok\n";
+        else
+          echo "  geo KO\n";
+        if ($tableProp['pkColumnName'])
+          echo "  pk ok\n";
+        else
+          echo "  <a href='$_SERVER[SCRIPT_NAME]$fserverId/collections/$tableName/createPrimaryKey'>Créer une clé primaire</a>\n";
+      }
+      die();
+    }
+    elseif (!$collId) { // /collections
+      $fServer->checkParams("/$action");
+      output($f, $fServer->collections($f), 4);
+    }
+    elseif (!$action2) { // /collections/{collectionId}
+      $fServer->checkParams("/$action/{collectionId}");
+      output($f, $fServer->collection($f, $collId), 4);
+    }
+    elseif ($action2 == '/describedBy') { // /collections/{collectionId}/describedBy
+      $fServer->checkParams("/$action/{collectionId}/describedBy");
+      output($f, $fServer->collDescribedBy($collId), 6);
+    }
+    elseif ($action2 == '/createPrimaryKey') { // /collections/{collectionId}/createPrimaryKey
+      $fServer->repairTable('createPrimaryKey', $collId);
+    }
+    elseif ($itemId === null) { // /collections/{collectionId}/items
+      //$fServer->checkParams("/$action/$collId/items");
+      // dans ftsOnSql, le paramètre limit vaut au max 10000 et le résultat n'est pas construit en mémoire
+      $filters = [];
+      foreach ($_GET as $k => $v) {
+        if (!in_array($k, ['f','bbox','properties','limit','startindex']))
+          $filters[$k] = $v;
+      }
+      $bbox = isset($_GET['bbox']) ? $_GET['bbox'] : (isset($_POST['bbox']) ? $_POST['bbox'] : '');
+      $bbox = $bbox ? explode(',', $bbox) : [];
+      if (in_array($type, ['mysqlIt','pgsqlIt'])) {
+        outputIterable(
+          ($f == 'json' ? 'geojson' : $f),
+          $fServer->itemsIterable(
+            f: $f,
+            collId: $collId,
+            bbox: $bbox,
+            filters: $filters,
+            properties: isset($_GET['properties']) ? explode(',', $_GET['properties']) : [], // liste des prop. à retourner
+            limit: $_GET['limit'] ?? 10,
+            startindex: $_GET['startindex'] ?? 0
+          )
+        );
+      }
+      // dans les autres drivers, le max de limit vaut 1000 et le résultat peut être construit en mémoire
+      else {
+        output(
+          ($f == 'json' ? 'geojson' : $f),
+          $fServer->items(
+            f: $f,
+            collId: $collId,
+            bbox: $bbox,
+            filters: $filters,
+            properties: isset($_GET['properties']) ? explode(',', $_GET['properties']) : [], // liste des prop. à retourner
+            limit: $_GET['limit'] ?? 10,
+            startindex: $_GET['startindex'] ?? 0
+          )
+        );
+      }
+    }
+    else { // /collections/{collectionId}/items/{featureId}
+      $fServer->checkParams("/$action/{collectionId}/items/{featureId}");
+      output(($f == 'json' ? 'geojson' : $f), $fServer->item($f, $collId, $itemId), 6);
+    }
+    //} catch(XX $e) { // Permet de rien attraper en changeant le code un minimum 
+  } catch (SExcept $e) { // Transformation des codes d'erreur SExcept en code d'erreur Http
+    switch ($e->getSCode()) {
+      case FeatureServer::ERROR_BAD_BBOX:
+      case FeatureServer::ERROR_BAD_PARAMS: {
+        error($e->getMessage(), 400);
+      }
+      case CollOnSql::ERROR_COLL_NOT_FOUND:
+      case FeatureServerOnWfs::ERROR_COLL_NOT_FOUND:
+      case FeatureServerOnSql::ERROR_ITEM_NOT_FOUND:
+      case FeatureServerOnWfs::ERROR_ITEM_NOT_FOUND: {
+        error($e->getMessage(), 404);
+      }
+      case WfsServer::ERROR_WFS_QUERY:
+      case WfsServer::ERROR_BAD_CRS:
+      case WfsServer::ERROR_CACHE:
+      case WfsGeoJson::ERROR_CACHE:
+      case CollOnSql::ERROR_BAD_EXTENT:
+      //case WfsGeoJson::ERROR_BAD_NUM_MATCHED:
+      default: {
+        error($e->getMessage(), 500);
+      }
+    }
+  } catch (Exception|TypeError $e) {
+    error($e->getMessage(), 500);
   }
-  else { // /collections/{collectionId}/items/{featureId}
-    $fServer->checkParams("/$action/{collectionId}/items/{featureId}");
-    output(($f == 'json' ? 'geojson' : $f), $fServer->item($f, $collId, $itemId), 6);
-  }
-  //} catch(XX $e) { // Permet de rien attraper en changeant le code un minimum 
-} catch (SExcept $e) { // Transformation des codes d'erreur SExcept en code d'erreur Http
-  switch ($e->getSCode()) {
-    case FeatureServer::ERROR_BAD_BBOX:
-    case FeatureServer::ERROR_BAD_PARAMS: {
-      error($e->getMessage(), 400);
-    }
-    case CollOnSql::ERROR_COLL_NOT_FOUND:
-    case FeatureServerOnWfs::ERROR_COLL_NOT_FOUND:
-    case FeatureServerOnSql::ERROR_ITEM_NOT_FOUND:
-    case FeatureServerOnWfs::ERROR_ITEM_NOT_FOUND: {
-      error($e->getMessage(), 404);
-    }
-    case WfsServer::ERROR_WFS_QUERY:
-    case WfsServer::ERROR_BAD_CRS:
-    case WfsServer::ERROR_CACHE:
-    case WfsGeoJson::ERROR_CACHE:
-    case CollOnSql::ERROR_BAD_EXTENT:
-    //case WfsGeoJson::ERROR_BAD_NUM_MATCHED:
-    default: {
-      error($e->getMessage(), 500);
-    }
-  }
-} catch (Exception|TypeError $e) {
-  error($e->getMessage(), 500);
+}
+
+// Appel de la fonction fts() si c'est ce fichier qui est éxécuté
+if (__FILE__ == realpath($_SERVER['DOCUMENT_ROOT'].$_SERVER['SCRIPT_NAME'])) {
+  fts($_SERVER['PATH_INFO'] ?? '');
 }
