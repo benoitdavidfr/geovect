@@ -398,10 +398,16 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
     $item = json_decode($item, true);
     if (!($item = $item['features'][0] ?? null))
       throw new SExcept("Erreur, FeatureId \"$featureId\" inconnu", self::ERROR_ITEM_NOT_FOUND);
+    // les WFS IGN mettent fréquemment le bbox dans les propriétés ce qui ne semble pas adéquate
+    if ($bbox = $item['properties']['bbox'] ?? null)
+      unset($item['properties']['bbox']);
     return [
       'type'=> 'Feature',
       'id'=> $featureId,
       'properties'=> $item['properties'],
+    ]
+    + ($bbox ? ['bbox'=> $bbox] : [])
+    + [
       'geometry'=> $item['geometry'],
       'links'=> [
         [

@@ -92,6 +92,9 @@ require_once __DIR__.'/displayjson.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 
+define('SHOW_WFS_QUERIES', false); // si true et en Html alors affiche les reqêtes WFS effectuées pour traiter la requête
+ 
+// Table utilisée par la fonction error()
 define('HTTP_ERROR_LABELS', [
   400 => 'Bad Request', // La syntaxe de la requête est erronée.
   404 => 'Not Found', // Ressource non trouvée. 
@@ -128,10 +131,16 @@ function output(string $f, array $array, int $levels=3) {
       die(Yaml::dump($array, $levels, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK));
     }
     case 'html': {
+      echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n";
       $yaml = Yaml::dump($array, $levels, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
       // remplace les URL par des liens HTML
       $html = preg_replace("!(https?://[^' ]+)!", "<a href='$1'>$1</a>", $yaml);
-      die($html);
+      echo $html;
+      // affiche en plus les requêtes WFS effectuées pour répondre à la requête
+      if (SHOW_WFS_QUERIES && ($lastQueryUrls = WfsServer::lastQueryUrls())) {
+        echo preg_replace("!(https?://[^' ]+)!", "<a href='$1'>$1</a>", Yaml::dump(['lastQueryUrls'=> $lastQueryUrls]));
+      }
+      die();
     }
   }
 }
@@ -173,25 +182,33 @@ function outputIterable(string $f, array $iterable) {
 
 // Génère une erreur Http avec le code $code si <>0 ou sinon 500 et affiche le message d'erreur
 // effectue aussi un log des erreurs
-function error(string $message, int $code=0) {
-  // log les erreurs
-  FeatureServer::log([
-    'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
-    'Headers'=> getallheaders(),
-    'error'=> [
-      'message'=> $message,
-      'code'=> $code,
-    ],
+function error(string $message, int $code=0, string $sCode='', int $originalHttpCode=0) {
+  $error = [
+    'message'=> $message
   ]
+  + ($code ? ['code'=> $code] : [])
+  + ($sCode ? ['sCode'=> $sCode] : [])
+  + ($originalHttpCode ? ['originalHttpCode'=> $originalHttpCode]: []);
+  $lastQueryUrls = WfsServer::lastQueryUrls();
+  // log les erreurs
+  FeatureServer::log(
+    [
+      'REQUEST_URI'=> $_SERVER['REQUEST_URI'],
+      'Headers'=> getallheaders(),
+    ]
+    + ($lastQueryUrls ? ['lastQueryUrls'=> $lastQueryUrls] : [])
+    + ['error'=> $error]
   );
   if ($code == 0)
     $code = 500;
   header("HTTP/1.1 $code ".(HTTP_ERROR_LABELS[$code] ?? "Undefined httpCode $code"));
   header('Content-type: text/plain');
-  die (Yaml::dump(['Exception'=> [
-    'message'=> $message,
-    'code'=> $code,
-  ]]));
+  echo Yaml::dump(['Exception'=> $error]);
+  // affiche en plus les requêtes WFS effectuées pour répondre à la requête
+  if (SHOW_WFS_QUERIES && $lastQueryUrls) {
+    echo Yaml::dump(['lastQueryUrls'=> $lastQueryUrls]);
+  }
+  die();
 }  
 
 // Fonction globale de mis en oeuvre du Feature Service
@@ -207,7 +224,6 @@ function fts(string $pathInfo, Doc $doc=null): void {
     // $f doit valoir 'html', 'yaml' ou 'json' sinon 'html'
     default: {
       $f = 'html';
-      echo "<!DOCTYPE HTML><html>\n<head><meta charset='UTF-8'><title>fts</title></head><body><pre>\n";
       break;
     }
   }
@@ -352,22 +368,22 @@ function fts(string $pathInfo, Doc $doc=null): void {
     switch ($e->getSCode()) {
       case FeatureServer::ERROR_BAD_BBOX:
       case FeatureServer::ERROR_BAD_PARAMS: {
-        error($e->getMessage(), 400);
+        error($e->getMessage(), 400, $e->getSCode(), $e->getCode());
       }
       case CollOnSql::ERROR_COLL_NOT_FOUND:
       case FeatureServerOnWfs::ERROR_COLL_NOT_FOUND:
       case FeatureServerOnSql::ERROR_ITEM_NOT_FOUND:
       case FeatureServerOnWfs::ERROR_ITEM_NOT_FOUND: {
-        error($e->getMessage(), 404);
+        error($e->getMessage(), 404, $e->getSCode(), $e->getCode());
       }
-      case WfsServer::ERROR_WFS_QUERY:
-      case WfsServer::ERROR_BAD_CRS:
-      case WfsServer::ERROR_CACHE:
-      case WfsGeoJson::ERROR_CACHE:
-      case CollOnSql::ERROR_BAD_EXTENT:
-      //case WfsGeoJson::ERROR_BAD_NUM_MATCHED:
+      case WfsServer::ERROR_WFS_QUERY: {
+        if ($e->getCode()==404)
+          error($e->getMessage(), 404, $e->getSCode(), $e->getCode());
+        else
+          error($e->getMessage(), 500, $e->getSCode(), $e->getCode());
+      }
       default: {
-        error($e->getMessage(), 500);
+        error($e->getMessage(), 500, $e->getSCode(), $e->getCode());
       }
     }
   } catch (Exception|TypeError $e) {

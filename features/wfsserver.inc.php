@@ -9,6 +9,7 @@ doc: |
 journal: |
   2/3/2022:
     - correction d'un bug sur Lambert93
+    - ajout conservation pour affichage ultérieur des urls des requêtes WFS
   28/2/2022:
     - ajout paramètre properties dans getFeature()
     - chgt encodage CQL_FILTER
@@ -27,14 +28,17 @@ use gegeom\Polygon;
 
 abstract class WfsServer {
   const ERROR_WFS_QUERY = 'WfsServer::ERROR_WFS_QUERY';
+  const ERROR_WFS_QUERY_WITH_NO_HTTP_CODE = 'WfsServer::ERROR_WFS_QUERY_WITH_NO_HTTP_CODE';
   const ERROR_CACHE = 'WfsServer::ERROR_CACHE';
   const ERROR_BAD_CRS = 'WfsServer::ERROR_BAD_CRS';
   const LOG = __DIR__.'/wfsserver.log.yaml'; // nom du fichier de log ou false pour pas de log
   const CAP_CACHE = __DIR__.'/wfscapcache'; // nom du répertoire dans lequel sont stockés les fichiers XML
                                             // de capacités ainsi que les DescribeFeatureType en json
-  
+  static array $lastQueryUrls = []; // enregistre les URL appelées
   protected string $serverUrl; // URL du serveur
   protected array $options; // sous la forme ['option'=> valeur] avec option valant referer et/ou proxy
+  
+  static function lastQueryUrls(): array { return self::$lastQueryUrls; }
   
   function __construct(string $serverUrl, array $options=[]) {
     $this->serverUrl = $serverUrl;
@@ -69,6 +73,7 @@ abstract class WfsServer {
   // Certaines requêtes du WFS IGN nécessitent un User-Agent pour ne pas générer une erreur
   protected function query(array $params): string {
     $url = $this->url($params);
+    self::$lastQueryUrls[] = $url;
     $referer = $this->options['referer'] ?? null;
     $httpOptions = [
       'method'=> 'GET',
@@ -95,21 +100,27 @@ abstract class WfsServer {
     $data = @file_get_contents($url, false, $context);
     if (($data === false) || !isset($http_response_header))
       throw new SExcept ("Erreur dans WfsServer::query() : erreur de file_get_contents() sur url=$url",
-        self::ERROR_WFS_QUERY); // probablement erreur de timeout
+        self::ERROR_WFS_QUERY_WITH_NO_HTTP_CODE); // probablement erreur de timeout
     $errorCode = substr($http_response_header[0], 9, 3);
     if ($errorCode == 200)
       return $data;
     
+    elseif (preg_match('!<ExceptionReport><Exception exceptionCode="([^"]*)">([^<]*)!', $data, $matches)) {
+      // j'essaie dé récupérer le code d'erreur fourni par le WFS d'origine
+      throw new SExcept ("Erreur WFS : code=$matches[1], message=\"$matches[2]\"",
+        "WfsServer::ERROR_WFS_QUERY/exceptionCode=$matches[1]", $errorCode);
+    }
     elseif (preg_match('!<ExceptionReport><[^>]*>([^<]*)!', $data, $matches)) {
-      throw new SExcept ("Erreur dans WfsServer::query() : $matches[1], erreur http=$errorCode", self::ERROR_WFS_QUERY);
+      // j'essaie dé récupérer le message d'erreur fourni par le WFS d'origine mais pas le code
+      throw new SExcept ("Erreur dans WfsServer::query() : $matches[1]", self::ERROR_WFS_QUERY, $errorCode);
     }
     elseif (preg_match('!<ows:ExceptionText>([^<]*)!', $data, $matches)) {
-      throw new SExcept ("Erreur dans WfsServer::query() : $matches[1], erreur http=$errorCode", self::ERROR_WFS_QUERY);
+      throw new SExcept ("Erreur dans WfsServer::query() : $matches[1]", self::ERROR_WFS_QUERY, $errorCode);
     }
     else {
-      echo $data;
+      echo "$data\n";
       throw new SExcept("Erreur dans WfsServer::query() : erreur Http=$errorCode, message d'erreur non interprété",
-        self::ERROR_WFS_QUERY);
+        self::ERROR_WFS_QUERY, $errorCode);
     }
   }
   
