@@ -27,6 +27,8 @@ includes:
   - ftsonfile.inc.php
   - ftsonsql.inc.php
 */
+require_once __DIR__.'/sexcept.inc.php';
+
 use Symfony\Component\Yaml\Yaml;
 
 /*PhpDoc: classes
@@ -265,7 +267,7 @@ abstract class FeatureServer {
   
   /*PhpDoc: methods
   name: collections
-  title: "abstract function collections(): array - retourne la liste des collections"
+  title: "abstract function collections(string $f): array - retourne la liste des collections"
   doc: |
     sous la forme: [
       'id'=> id,

@@ -47,7 +47,9 @@ class FeatureServerOnWfs extends FeatureServer { // simule un serveur API Featur
   // structuration d'une collection utilisée pour les réponses à /collections et à /collections/{collId}
   private function collection_structuration(string $collUrl, string $collId, string $f): array {
     //echo get_class($this),"::collection_structuration($collUrl, $collId, $f)<br>\n";
-    $collDoc = $this->datasetDoc->collections()[$collId] ?? null; // doc de la collection
+    $collDoc = null;
+    if ($this->datasetDoc)
+      $collDoc = $this->datasetDoc->collections()[$collId] ?? null; // doc de la collection
     //echo 'collDoc='; if ($collDoc) print_r($collDoc); else echo "null\n";
     //$spatialExtentBboxes = (new CollOnSql($this->sqlSchema, $collId))->spatialExtentBboxes();
     if (!($featureType = $this->wfsServer->featureTypeList()[$this->prefix.$collId] ?? null))

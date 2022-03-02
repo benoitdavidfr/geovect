@@ -15,12 +15,12 @@ journal: |
   18/2/2022:
     - création
 includes:
-  - fts.php
+  - fts.inc.php
 */
 define ('SERVER_URI', 'pgsql://benoit@db207552-001.dbaas.ovh.net:35250');
 
 //require_once __DIR__.'/../../phplib/sqlschema.inc.php';
-require_once __DIR__.'/fts.php';
+require_once __DIR__.'/fts.inc.php';
 
 if (!isset($_SERVER['PATH_INFO']) || ($_SERVER['PATH_INFO'] == '/')) { // appel sans paramètre 
   echo "</pre><h2>Bouquet de serveurs OGC API Features</h2>

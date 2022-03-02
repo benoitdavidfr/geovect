@@ -7,6 +7,8 @@ doc: |
   Définition de la classe abstraite WfsServer et la classe concrète WfsGeoJson pour interroger un serveur WFS générant
   du GeoJSON.
 journal: |
+  2/3/2022:
+    - correction d'un bug sur Lambert93
   28/2/2022:
     - ajout paramètre properties dans getFeature()
     - chgt encodage CQL_FILTER
@@ -129,7 +131,7 @@ abstract class WfsServer {
   static function bboxWktCrs(array $bbox, string $crs): string {
     // Dictionnaire [code EPSG => nom de la classe correspondante dans ../coordsys/light.inc.php]
     static $epsg = [
-      'EPSG:2154' => 'L93',
+      'EPSG:2154' => 'Lambert93',
       'EPSG:3857' => 'WebMercator',
       'EPSG:3395' => 'WorldMercator',
     ];
@@ -141,6 +143,7 @@ abstract class WfsServer {
       return "POLYGON(($bbox[1] $bbox[0],$bbox[1] $bbox[2],$bbox[3] $bbox[2],$bbox[3] $bbox[0],$bbox[1] $bbox[0]))";
     elseif (!isset($epsg[$crs]))
       throw new SExcept("Erreur dans WfsServer::bboxWktCrs(), CRS $crs inconnu", self::ERROR_BAD_CRS);
+    //echo Yaml::dump($bbox);
     $gbox = new GBox($bbox);
     $proj = $epsg[$crs].'::proj';
     $ebox = $gbox->proj($proj);
