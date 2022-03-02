@@ -73,6 +73,7 @@ abstract class WfsServer {
     $httpOptions = [
       'method'=> 'GET',
       'ignore_errors'=> true,
+      'timeout'=> 2*60, // timeout de 2 min.
       'header'=>"Accept-language: en\r\n"
                .($referer ? "referer: $referer\r\n" : '')
                ."User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:97.0) Gecko/20100101 Firefox/97.0\r\n",
@@ -94,7 +95,7 @@ abstract class WfsServer {
     $data = @file_get_contents($url, false, $context);
     if (($data === false) || !isset($http_response_header))
       throw new SExcept ("Erreur dans WfsServer::query() : erreur de file_get_contents() sur url=$url",
-        self::ERROR_WFS_QUERY);
+        self::ERROR_WFS_QUERY); // probablement erreur de timeout
     $errorCode = substr($http_response_header[0], 9, 3);
     if ($errorCode == 200)
       return $data;

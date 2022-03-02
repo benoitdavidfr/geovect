@@ -36,16 +36,17 @@ doc: |
     curl -X GET "http://localhost/geovect/features/fts.php/route500it/collections/aerodrome/items?f=json&limit=10&startindex=0" -H  "accept: application/geo+json"
 
   A faire (court-terme):
+    - revoir les describedBy dans WFS pour fabriquer des schémas JSON prenant si possible en compte les specs
     - rajouter dans les liens au niveau de chaque collection,
       un lien {type: text/html, rel: canonical, title: information, href= ...}
       vers la doc quand il y a au moins soit une description, soit la définition de propriétés
+    - gérer correctement les types non string dans les données comme les nombres
+  Réflexions (à mûrir):
     - rajouter dans les liens au niveau de chaque collection, un lien de téléchargement simple quand j'en dispose d'un,
       ex: { "href": "http://download.example.org/buildings.gpkg",
             "rel": "enclosure", "type": "application/geopackage+sqlite3",
             "title": "Bulk download (GeoPackage)", "length": 472546
           }
-    - gérer correctement les types non string dans les données comme les nombres
-  Réflexions (à mûrir):
     - distinguer un outil d'admin différent de l'outil fts.php de consultation
       - y transférer l'opération check de vérif. de clé primaire et de création éventuelle
       - ajouter une fonction de test de cohérence doc / service déjà écrite dans doc

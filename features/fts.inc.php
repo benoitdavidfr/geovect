@@ -347,8 +347,8 @@ function fts(string $pathInfo, Doc $doc=null): void {
       $fServer->checkParams("/$action/{collectionId}/items/{featureId}");
       output(($f == 'json' ? 'geojson' : $f), $fServer->item($f, $collId, $itemId), 6);
     }
-  } catch(XX $e) { // Permet de rien attraper en changeant le code un minimum 
-    /*} catch (SExcept $e) { // Transformation des codes d'erreur SExcept en code d'erreur Http
+    //} catch(XX $e) { // Permet de rien attraper en changeant le code un minimum 
+  } catch (SExcept $e) { // Transformation des codes d'erreur SExcept en code d'erreur Http
     switch ($e->getSCode()) {
       case FeatureServer::ERROR_BAD_BBOX:
       case FeatureServer::ERROR_BAD_PARAMS: {
@@ -372,5 +372,5 @@ function fts(string $pathInfo, Doc $doc=null): void {
     }
   } catch (Exception|TypeError $e) {
     error($e->getMessage(), 500);
-  */}
+  }
 }
