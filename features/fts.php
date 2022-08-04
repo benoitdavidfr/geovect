@@ -80,10 +80,7 @@ journal: |
   30/12/2020:
     - création
 includes:
-  - sexcept.inc.php
-  - doc.php
-  - ftrserver.inc.php
-  - displayjson.inc.php
+  - fts.inc.php
 */
 //require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/fts.inc.php';

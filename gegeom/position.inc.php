@@ -1,32 +1,34 @@
 <?php
 namespace gegeom;
-{/*PhpDoc:
-name:  position.inc.php
-title: position.inc.php - définition de différentes classes statiques de gestion de positions ou de liste**n de position
-functions:
-classes:
-doc: |
-journal: |
-  9/12/2020:
-    - transfert de méthodes Point dans Pos pour passage Php8
-  8/5/2019:
-    - modif de la méthode de tests unitaires
-  5/5/2019:
-    - création par scission de gegeom.inc.php
-includes: [unittest.inc.php]
-*/}
+/**
+ * position.inc.php - définition de différentes classes statiques de gestion de positions ou de liste**n de position
+ *
+ * journal:
+ *  4/8/2022:
+ *   - transfert méthodes de shomgt3
+ *   - corrections suite à analyse PhpStan level 6
+ *   - structuration de la doc conformément à phpDocumentor
+ *  9/12/2020:
+ *   - transfert de méthodes Point dans Pos pour passage Php8
+ *  8/5/2019:
+ *   - modif de la méthode de tests unitaires
+ *  5/5/2019:
+ *   - création par scission de gegeom.inc.php
+ */
 require_once __DIR__.'/unittest.inc.php';
+require_once __DIR__.'/../lib/sexcept.inc.php';
 use \unittest\UnitTest;
 
-{/*PhpDoc: classes
-name: Pos
-title: class Pos - classe statique de gestion d'une position
-doc: |
-  une position est une liste de 2 ou 3 nombres
-  Peut correspondre à un point ou à un vecteur.
-methods:
-*/}
+/**
+ * class Pos - fonctions s'appliquant à une position
+ *
+ * La classe est une classe statique regroupant les fonctions
+ * une position est une liste de 2 ou 3 nombres
+ * Peut correspondre à un point ou à un vecteur.
+*/
 class Pos {
+  // pattern du format GeoDMd
+  const GEODMD_PATTERN = '!^(\d+)°((\d\d)(,(\d+))?\')?(N|S) - (\d+)°((\d\d)(,(\d+))?\')?(E|W)$!';
   const EXAMPLES = [
     "une position avec 2 coordonnées géographiques"=> [ -59.572094692612, -80.040178725096 ],
     "une position à 3 coordonnées en coordonnées projetées avec une altitude"=> [ 176456.1, 6457879.7, 123 ],
@@ -36,30 +38,34 @@ class Pos {
     "Représentation standard d'une position indéfinie qui n'est pas valide"=> [],
     "non définie par une liste"=> ['x'=>123, 'y'=>456],
   ];
+  const ErrorParamInFromGeoDMd = 'Pos::ErrorParamInFromGeoDMd';
+  const ErrorInDistancePosLine = 'Pos::ErrorInDistancePosLine';
   
-  /*PhpDoc: methods
-  name:  is
-  title: "static function is(array $pos): bool - teste si $pos est une position"
-  doc: is() permet notament de distinguer Pos, LPos, LLPos et LLLPos ; ne vérifie pas la validité de $pos.
-  */
-  static function is($pos): bool { return is_array($pos) && isset($pos[0]) && is_numeric($pos[0]); }
+  /**
+   * is() - teste si $pos est une position
+   *
+   * is() permet notament de distinguer Pos, LPos, LLPos et LLLPos ; ne vérifie pas la validité de $pos.
+   */
+  static function is(mixed $pos): bool { return is_array($pos) && isset($pos[0]) && is_numeric($pos[0]); }
   
-  /*PhpDoc: methods
-  name:  isValid
-  title: "static function isValid($pos): bool - vérifie la validité de $pos comme position"
-  doc: définition la moins contraignante possible
-  */
-  static function isValid($pos): bool {
+  /**
+   * isValid() - vérifie la validité de $pos comme position
+   *
+   * définition la moins contraignante possible
+   */
+  static function isValid(mixed $pos): bool {
     return is_array($pos) && isset($pos[0]) && is_numeric($pos[0]) && isset($pos[1]) && is_numeric($pos[1])
         && (!isset($pos[2]) || is_numeric($pos[2]));
   }
   
-  /*PhpDoc: methods
-  name:  getErrors
-  title: "static function getErrors($pos): array - renvoie les raisons pour lesquelles $pos n'est pas une position"
-  doc: retourne une liste de string
+  /**
+   * getErrors() - renvoie les raisons pour lesquelles $pos n'est pas une position
+   *
+   * retourne une liste de string
+   *
+   * @return array<int, string>
   */
-  static function getErrors($pos): array {
+  static function getErrors(mixed $pos): array {
     $errors = [];
     if (!is_array($pos))
       return ["La position doit être un array"];
@@ -79,10 +85,72 @@ class Pos {
     }
   }
   
-  /*PhpDoc: methods
-  name:  diff
-  title: "static function diff(array $pos, array $v): array - $pos - $v en 2D, $v doit être une position"
-  */
+  /**
+   * fromGeoDMd() - décode une position en coords géographiques en degré minutes décimales
+   *
+   * @return TPos
+   */
+  static function fromGeoDMd(string $geoDMd): array {
+    if (!preg_match(self::GEODMD_PATTERN, $geoDMd, $matches))
+      throw new \SExcept("No match in Pos::fromGeoDMd($geoDMd)", self::ErrorParamInFromGeoDMd);
+    //echo "<pre>matches="; print_r($matches); echo "</pre>\n";
+    $lat = ($matches[6]=='N' ? 1 : -1) * 
+      ($matches[1] + (($matches[3] ? $matches[3] : 0) + ($matches[5] ? ".$matches[5]" : 0))/60);
+    //echo "lat=$lat";
+    $lon = ($matches[12]=='E' ? 1 : -1) * 
+      ($matches[7] + (($matches[9] ? $matches[9] : 0) + ($matches[11] ? ".$matches[11]" : 0))/60);
+    //echo ", lon=$lon";
+    return [$lon, $lat];
+  }
+  
+  // Formatte une coord. lat ou lon
+  static function formatCoordInDMd(float $coord, int $nbposMin): string {
+    $min = number_format(($coord-floor($coord))*60, $nbposMin, ','); // minutes formattées
+    //echo "min=$min<br>\n";
+    if ($nbposMin <> 0) {
+      if (preg_match('!^\d,!', $min)) // si il n'y a qu'un seul chiffre avant la virgule
+        $min = '0'.$min; // alors je rajoute un zéro avant
+    }
+    elseif (preg_match('!^\d$!', $min)) // si il n'y a qu'un seul chiffre avant la virgule
+      $min = '0'.$min; // alors je rajoute un zéro avant
+
+    $string = sprintf("%d°%s'", floor($coord), $min);
+    return $string;
+  }
+  
+  /**
+   * Formate une position (lon,lat) en lat,lon degrés, minutes décimales
+   *
+   * $resolution est la résolution de la position en degrés à conserver
+   *
+   * @param TPos $pos
+   */
+  static function formatInGeoDMd(array $pos, float $resolution): string {
+    //return sprintf("[%f, %f]",$pos[0], $pos[1]);
+    $lat = $pos[1];
+    $lon = $pos[0];
+    if ($lon > 180)
+      $lon -= 360;
+    
+    $resolution *= 60;
+    //echo "resolution=$resolution<br>\n";
+    //echo "log10=",log($resolution,10),"<br>\n";
+    $nbposMin = ceil(-log($resolution,10));
+    if ($nbposMin < 0)
+      $nbposMin = 0;
+    //echo "nbposMin=$nbposMin<br>\n";
+    
+    return self::formatCoordInDMd(abs($lat), $nbposMin).(($lat >= 0) ? 'N' : 'S')
+      .' - '.self::formatCoordInDMd(abs($lon), $nbposMin).(($lon >= 0) ? 'E' : 'W');
+  }
+
+  /**
+   * diff() - $pos - $v en 2D où $v est une position
+   *
+   * @param TPos $pos
+   * @param TPos $v
+   * @return TPos
+   */
   static function diff(array $pos, array $v): array {
     if (!self::is($pos))
       throw new \Exception("Erreur dans Pos:diff(), paramètre pos pas une position");
@@ -92,18 +160,24 @@ class Pos {
       return [$pos[0] - $v[0], $pos[1] - $v[1]];
   }
   
-  /*PhpDoc: methods
-  name:  vectorProduct
-  title: "static function vectorProduct(array $u, array $v): float - produit vectoriel $this par $v en 2D"
-  */
+  /**
+   * vectorProduct() - produit vectoriel $u par $v en 2D
+   *
+   * @param TPos $u
+   * @param TPos $v
+   * @return float
+   */
   static function vectorProduct(array $u, array $v): float { return $u[0] * $v[1] - $u[1] * $v[0]; }
   
-  /*PhpDoc: methods
-  name:  scalarProduct
-  title: "static function scalarProduct(array $u, array $v): float - produit scalaire $u par $v en 2D"
-  */
+  /**
+   * scalarProduct() - produit scalaire $u par $v en 2D
+   *
+   * @param TPos $u
+   * @param TPos $v
+   * @return float
+   */
   static function scalarProduct(array $u, array $v): float { return $u[0] * $v[0] + $u[1] * $v[1]; }
-  static function test_scalarProduct() {
+  static function test_scalarProduct(): void {
     foreach ([
       [[15,20], [20,15]],
       [[1,0], [0,1]],
@@ -117,40 +191,42 @@ class Pos {
     }
   }
   
+  /**
+   * norm() - norme de $u en 2D
+   *
+   * @param TPos $u
+   * @return float
+   */
   static function norm(array $u): float { return sqrt(self::scalarProduct($u, $u)); }
     
-  /*PhpDoc: methods
-  name:  distance
-  title: "static function distance(array $a, array $b): float - distance entre les positions $a et $b"
-  */
+  /**
+   * distance() -  distance entre les positions $a et $b
+   *
+   * @param TPos $a
+   * @param TPos $b
+   * @return float
+   */
   static function distance(array $a, array $b): float { return self::norm(self::diff($a, $b)); }
   
-  /*PhpDoc: methods
-  name:  distancePosLine
-  title: "static function distancePosLine(array $pos, array $a, array $b): float - distance de $pos à la droite $a et $b"
-  doc: |
-    distance signée de la position $pos à la droite définie par les 2 positions $a et $b"
-    La distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
-    # Distance signee d'un point P a une droite orientee definie par 2 points A et B
-    # la distance est positive si P est a gauche de la droite AB et negative si le point est a droite
-    # Les parametres sont les 3 points P, A, B
-    # La fonction retourne cette distance.
-    # --------------------
-    sub DistancePointDroite
-    # --------------------
-    { my @ab = (@_[4] - @_[2], @_[5] - @_[3]); # vecteur B-A
-      my @ap = (@_[0] - @_[2], @_[1] - @_[3]); # vecteur P-A
-      return pvect (@ab, @ap) / Norme(@ab);
-    }
-  */
+  /**
+   * distancePosLine() - distance signée de la position $pos à la droite définie par les 2 positions $a et $b
+   *
+   * La distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
+   *
+   * @param TPos $pos
+   * @param TPos $a
+   * @param TPos $b
+   * @return float
+   */
   static function distancePosLine(array $pos, array $a, array $b): float {
     $ab = self::diff($b, $a);
     $ap = self::diff($pos, $a);
     if (self::norm($ab) == 0)
-      throw new \Exception("Erreur dans distancePosLine : Points A et B confondus et donc droite non définie");
+      throw new \SExcept("Erreur dans distancePosLine : Points A et B confondus et donc droite non définie",
+          self::ErrorInDistancePosLine);
     return self::vectorProduct($ab, $ap) / self::norm($ab);
   }
-  static function test_distancePosLine() {
+  static function test_distancePosLine(): void {
     foreach ([
       [[1,0], [0,0], [1,1]],
       [[1,0], [0,0], [0,2]],
@@ -160,10 +236,13 @@ class Pos {
     }
   }
   
-  /*PhpDoc: methods
-  name:  posInPolygon
-  title: "static function posInPolygon(array $p, array $cs): bool - teste si la Pos $p est dans la LPos fermée définie par $cs"
-  */
+  /**
+   * posInPolygon() -teste si la Pos $p est dans la LPos fermée définie par $cs
+   *
+   * @param TPos $p
+   * @param TLPos $cs
+   * @return bool
+   */
   static function posInPolygon(array $p, array $cs): bool {
     {/*  Code de référence en C:
     int pnpoly(int npol, float *xp, float *yp, float x, float y)
@@ -187,7 +266,7 @@ class Pos {
     }
     return $c;
   }
-  static function test_posInPolygon() {
+  static function test_posInPolygon(): void {
     $p0 = [0, 0];
     foreach ([ // liste de polyligne non fermées
       ['lpos'=> [[1, 0],[0, 1],[-1, 0],[0, -1]], 'result'=> true],
@@ -205,21 +284,25 @@ class Pos {
 
 UnitTest::class(__NAMESPACE__, __FILE__, 'Pos'); // Test unitaire de la classe Pos
 
-{/*PhpDoc: classes
-name: LPos
-title: class LPos - liste de positions contenant au moins une position
-methods:
-doc: |
-  Les méthodes is(), isValid() et getErrors() jouent le même rôle que pour la classe Pos
-*/}
+/**
+ * class LPos - fonctions s'appliquant à une liste de positions contenant au moins une position
+ *
+ * Les méthodes is(), isValid() et getErrors() jouent le même rôle que pour la classe Pos
+*/
 class LPos {
   const EXAMPLES = [
     "cas réel"=> [[ -59.572094692612, -80.040178725096 ], [ -59.865849371975, -80.549656671062 ], [ -60.15965572777, -81.000326837079 ], [ -62.255393439367, -80.863177585777 ], [ -64.48812537297, -80.921933689293 ], [ -65.74166642929, -80.588827406739 ], [ -65.74166642929, -80.549656671062 ], [ -66.290030890555, -80.255772800618 ], [ -64.037687750898, -80.294943536295 ], [ -61.883245612217, -80.392870375488 ], [ -61.138975796133, -79.981370945148 ], [ -60.610119188058, -79.628679294756 ], [ -59.572094692612, -80.040178725096 ]]
   ];
 
-  static function is($lpos): bool { return is_array($lpos) && isset($lpos[0]) && Pos::is($lpos[0]); }
+  /**
+   * is() - teste si $lpos est une liste de positions
+   */
+  static function is(mixed $lpos): bool { return is_array($lpos) && isset($lpos[0]) && Pos::is($lpos[0]); }
 
-  static function isValid($lpos): bool {
+  /**
+   * isValid() - vérifie la validité de $lpos comme liste de positions
+   */
+  static function isValid(mixed $lpos): bool {
     if (!is_array($lpos))
       return false;
     if (!$lpos)
@@ -230,7 +313,14 @@ class LPos {
     return true;
   }
 
-  static function getErrors($lpos): array {
+  /**
+   * getErrors() - renvoie les raisons pour lesquelles $lpos n'est pas une liste de positions
+   *
+   * retourne une liste de string
+   *
+   * @return array<mixed>
+  */
+  static function getErrors(mixed $lpos): array {
     $errors = [];
     if (!is_array($lpos))
       return ["La LPos doit être un array"];
@@ -247,7 +337,12 @@ class LPos {
     }
   }
   
-  
+  /**
+   * length() - longueur d'une ligne brisée définie par une liste de positions
+   *
+   * @param TLPos $lpos
+   * @return float
+   */
   static function length(array $lpos): float {
     $length = 0;
     $posPrec = null;
@@ -259,15 +354,17 @@ class LPos {
     return $length;
   }
   
-  /*PhpDoc: methods
-  name:  areaOfRing
-  title: "static function areaOfRing(array $lpos): float - renvoie la surface de l'anneau constitué par la liste des pos dans le CRS courant"
-  doc: |
-    La surface est positive ssi la géométrie est orientée dans le sens des aiguilles de la montre (sens trigo inverse).
-    Cette règle est conforme à la définition GeoJSON:
-      A linear ring MUST follow the right-hand rule with respect to the area it bounds,
-      i.e., exterior rings are clockwise, and holes are counterclockwise.
-  */
+  /**
+   * areaOfRing() - surface de l'anneau constitué par la liste de positions
+   *
+   * La surface est positive ssi la géométrie est orientée dans le sens des aiguilles d'une montre (sens trigo inverse).
+   * Cette règle est conforme à la définition GeoJSON:
+   *   A linear ring MUST follow the right-hand rule with respect to the area it bounds,
+   *   i.e., exterior rings are clockwise, and holes are counterclockwise.
+   *
+   * @param TLPos $lpos
+   * @return float
+   */
   static function areaOfRing(array $lpos): float {
     $area = 0.0;
     $pos0 = $lpos[0];
@@ -276,7 +373,7 @@ class LPos {
     }
     return -$area/2;
   }
-  static function test_areaOfRing() {
+  static function test_areaOfRing(): void {
     foreach ([
       [[0,0],[0,1],[1,0],[0,0]],
       [[0,0],[1,0],[0,1],[0,0]],
@@ -286,12 +383,15 @@ class LPos {
     }
   }
   
-  /*PhpDoc: methods
-  name: filter
-  title: "static function filter(array $lpos, int $precision): array - renvoie une LPos filtré supprimant les points successifs identiques"
-  doc: |
-    Les coordonnées sont arrondies avec $precision chiffres significatifs. Un filtre sans arrondi n'a pas de sens.
-  */
+  /**
+   * filter() - renvoie une LPos filtrée supprimant les points successifs identiques
+   *
+   * Les coordonnées sont arrondies avec $precision chiffres significatifs. Un filtre sans arrondi n'a pas de sens.
+   *
+   * @param TLPos $lpos
+   * @param int $precision
+   * @return TLPos
+   */
   static function filter(array $lpos, int $precision): array {
     //echo "Lpos::filter(",json_encode($lpos),", $precision)=<br>\n";
     $filtered = [];
@@ -309,7 +409,7 @@ class LPos {
     //echo json_encode($filtered),"<br>\n";
     return $filtered;
   }
-  static function test_filter() {
+  static function test_filter(): void {
     $ls = [[0,0],[0.1,0],[0,1],[2,2]];
     echo "filter(",json_encode($ls),", 1)=",json_encode(self::filter($ls, 1)),"<br>\n";
     echo "filter(",json_encode($ls),", 0)=",json_encode(self::filter($ls, 0)),"<br>\n";
@@ -321,13 +421,16 @@ class LPos {
     }
   }
   
-  /*PhpDoc: methods
-  name:  simplify
-  title: "static function simplify(array $lpos, float $distTreshold): array - simplifie la géométrie de la ligne brisée"
-  doc : |
-    Algorithme de Douglas & Peucker
-    Retourne un LPos simplifié ou [] si la ligne est fermée et que la distance max est inférieure au seuil
-  */
+  /**
+   * simplify() - simplifie la géométrie de la ligne brisée
+   *
+   * Algorithme de Douglas & Peucker
+   * Retourne un LPos simplifiée ou [] si la ligne est fermée et que la distance max est inférieure au seuil
+   *
+   * @param TLPos $lpos
+   * @param float $distTreshold
+   * @return TLPos
+   */
   static function simplify(array $lpos, float $distTreshold): array {
     //echo "simplify($this, $distTreshold)<br>\n";
     if (count($lpos) < 3)
@@ -372,7 +475,7 @@ class LPos {
       return array_merge($ls1, array_slice($ls2, 1));
     }
   }
-  static function test_simplify() {
+  static function test_simplify(): void {
     $ls = [[0,0],[0.1,0],[0,1],[2,2]];
     echo "simplify(",json_encode($ls),", 1)=",json_encode(self::simplify($ls, 1)),"<br>\n";
     echo "simplify(",json_encode($ls),", 0.5)=",json_encode(self::simplify($ls, 0.5)),"<br>\n";
@@ -386,12 +489,11 @@ class LPos {
 
 UnitTest::class(__NAMESPACE__, __FILE__, 'LPos'); // Test unitaire de la classe LPos
 
-{/*PhpDoc: classes
-name: LLPos
-title: class LLPos - liste de listes de positions
-doc: |
-  Les méthodes is(), isValid() et getErrors() jouent le même rôle que pour la classe Pos
-*/}
+/**
+ * class LLPos - fonctions s'appliquant à une liste de listes de positions contenant au moins une position
+ *
+ * Les méthodes is(), isValid() et getErrors() jouent le même rôle que pour la classe Pos
+*/
 class LLPos {
   const EXAMPLES = [
     "triangle unité" => [[[0,0],[0,1],[1,0],[0,0]]],
@@ -406,9 +508,15 @@ class LLPos {
     ],
   ];
   
-  static function is($llpos): bool { return is_array($llpos) && isset($llpos[0]) && LPos::is($llpos[0]); }
-  
-  static function isValid($llpos): bool {
+  /**
+   * is() - teste si $lpos est une liste de positions
+   */
+  static function is(mixed $llpos): bool { return is_array($llpos) && isset($llpos[0]) && LPos::is($llpos[0]); }
+
+  /**
+   * isValid() - vérifie la validité de $lpos comme liste de positions
+   */
+  static function isValid(mixed $llpos): bool {
     if (!is_array($llpos))
       return false;
     foreach ($llpos as $lpos)
@@ -417,7 +525,14 @@ class LLPos {
     return true;
   }
 
-  static function getErrors($llpos): array {
+  /**
+   * getErrors() - renvoie les raisons pour lesquelles $lpos n'est pas une liste de positions
+   *
+   * retourne une liste de string
+   *
+   * @return array<mixed>
+  */
+  static function getErrors(mixed $llpos): array {
     $errors = [];
     if (!is_array($llpos))
       return ["Le LLPos doit être un array"];
@@ -428,22 +543,25 @@ class LLPos {
   }
 };
 
-{/*PhpDoc: classes
-name: LnPos
-title: class LnPos - Fonctions sur les listes**n de positions
-methods:
-doc: |
-  Une LnPos est une liste puissance n de positions avec n >= 0
-  Pour n==0 c'est une position (Pos)
-  Pour n==1 c'est une liste de positions (LPos)
-  Pour n==2 c'est une liste de listes de positions (LLPos)
-  ...
-*/}
+/**
+ * class LnPos - fonctions s'appliquant à une liste**n de positions
+ *
+ * Une LnPos est une liste puissance n de positions avec n >= 0
+ * Pour n==0 c'est une position (Pos)
+ * Pour n==1 c'est une liste de positions (LPos)
+ * Pour n==2 c'est une liste de listes de positions (LLPos)
+ * ...
+*/
 class LnPos {
-  /*PhpDoc: methods
-  name: power
-  title: "static function power(array $lnpos): int - renvoie la puissance de la LnPos ou -1 pour une liste vide, génère une exception si un array non liste est rencontré"
-  */
+  const ErrorOnEmptyLPos = 'LnPos::ErrorOnEmptyLPos';
+  
+  /**
+   * power(TLnPos $lnpos): int - renvoie la puissance de la LnPos ou -1 pour une liste vide
+   *
+   * génère une exception si un array non liste est rencontré
+   *
+   * @param TLnPos $lnpos
+   */
   static function power(array $lnpos): int {
     if (!$lnpos)
       return -1; // par extension renvoie -1 pour une liste vide
@@ -454,29 +572,33 @@ class LnPos {
     else
       return 1 + self::power($lnpos[0]); // appel récursif
   }
-  static function test_power() {
+  static function test_power(): void {
     foreach(array_merge(Pos::EXAMPLES, LPos::EXAMPLES) as $lnpos)
     echo "LnPos::power(",json_encode($lnpos),")=", LnPos::power($lnpos),"<br>\n";
   }
   
-  /*PhpDoc: methods
-  name: toString
-  title: "static function toString(array $lnpos): string - génère une chaine de caractères représentant la LnPos"
+  /**
+   * toString(TLnPos $lnpos): string - génère une chaine de caractères représentant la LnPos
+   *
+   * @param TLnPos $lnpos
+   * @return string
   */
   static function toString(array $lnpos): string { return json_encode($lnpos); }
   
-  /*PhpDoc: methods
-  name: wkt
-  title: "static function wkt(array $lnpos): string - génère une chaine de caractères représentant la LnPos pour WKT"
+  /**
+   * wkt(TLnPos $lnpos): string - génère une chaine de caractères représentant la LnPos pour WKT
+   *
+   * @param TLnPos $lnpos
+   * @return string
   */
   static function wkt(array $lnpos): string {
     //echo "Appel de LnPos::wkt(",json_encode($lnpos),"<br>\n";
     if (Pos::is($lnpos)) // $lnpos est une Pos
-      return implode(' ',$lnpos);
+      return implode(' ', $lnpos); // @phpstan-ignore-line
     else
       return '('.implode(',',array_map(function(array $ln1pos): string { return self::wkt($ln1pos); }, $lnpos)).')';
   }
-  static function test_wkt() {
+  static function test_wkt(): void {
     foreach([
       "liste vide"=> [],
       "Pos"=> [0,1],
@@ -488,9 +610,11 @@ class LnPos {
     }
   }
   
-  /*PhpDoc: methods
-  name: aPos
-  title: "static function aPos(array $lnpos): array - retourne la première position"
+  /**
+   * aPos(TLnPos $lnpos): TPos - retourne la première position
+   *
+   * @param TLnPos $lnpos
+   * @return TPos
   */
   static function aPos(array $lnpos): array {
     if (!$lnpos) // $lnpos est la liste vide
@@ -501,9 +625,11 @@ class LnPos {
       return self::aPos($lnpos[0]);
   }
   
-  /*PhpDoc: methods
-  name: count
-  title: "static function count(array $lnpos): int - calcul du nbre de positions"
+  /**
+   * count(TLnPos $lnpos): int - calcul du nbre de positions
+   *
+   * @param TLnPos $lnpos
+   * @return int
   */
   static function count(array $lnpos): int {
     if (!$lnpos) // $lnpos est la liste vide
@@ -514,30 +640,36 @@ class LnPos {
       return array_sum(array_map(function(array $ln1pos): int { return self::count($ln1pos); }, $lnpos));
   }
   
-  /*PhpDoc: methods
-  name: sumncoord
-  title: "static function sumncoord(array $lnpos, int $i): int - calcul de la somme de la i-ème coordonnée de chaque position"
+  /**
+   * sumncoord(TLnPos $lnpos, int $i): int - calcul de la somme de la i-ème coordonnée de chaque position
+   *
+   * @param TLnPos $lnpos
+   * @return float
   */
-  static function sumncoord(array $lnpos, int $i): int {
+  static function sumncoord(array $lnpos, int $i): float {
     if (!$lnpos)
       return 0;
     elseif (Pos::is($lnpos)) // $lnpos est une Pos
       return $lnpos[$i];
     else
-      return array_sum(array_map(function(array $ln1pos) use($i): int { return self::sumncoord($ln1pos, $i); }, $lnpos));
+      return array_sum(array_map(function(array $ln1pos) use($i): float { return self::sumncoord($ln1pos, $i); }, $lnpos));
   }
   
-  /*PhpDoc: methods
-  name: center
-  title: "static function center(array $lnpos, int $precision): array - calcule le centre d'une liste**n de positions, génère une erreur si la liste est vide"
+  /**
+   * center(TLnPos $lnpos, int $precision): TPos - calcule le centre d'une liste**n de positions
+   *
+   * génère une erreur si la liste est vide
+   *
+   * @param TLnPos $lnpos
+   * @return TPos
   */
   static function center(array $lnpos, int $precision): array {
     if (!$lnpos)
-      throw new \Exception("Erreur d'appel de LnPos::center() sur une liste de positions vide");
+      throw new \SExcept("Erreur d'appel de LnPos::center() sur une liste de positions vide", self::ErrorOnEmptyLPos);
     $nbre = self::count($lnpos);
     return [round(self::sumncoord($lnpos, 0)/$nbre, $precision), round(self::sumncoord($lnpos, 1)/$nbre, $precision)];
   }
-  static function test_center() {
+  static function test_center(): void {
     $lpos = [[1,2],[3,7,5]];
     echo "<pre>LnPos::count(",LnPos::toString($lpos),")="; print_r(LnPos::count($lpos));
     echo "<pre>LnPos::sumncoord(",LnPos::toString($lpos),", 0)="; print_r(LnPos::sumncoord($lpos, 0));
@@ -545,12 +677,11 @@ class LnPos {
     echo "<pre>LnPos::center(",LnPos::toString($lpos),",1)=",json_encode(LnPos::center($lpos,1)),"<br>\n";
   }
   
-  /*PhpDoc: methods
-  name: projLn
-  title: "static function projLn(callable $projPos, int $n, array $coords): array - applique à chaque Pos de la LnPos la function $projPos et retourne la LnPos reconstruite"
-  doc: |
-    $projPos : function(Pos): Pos
-    $coords : LnPos
+  /**
+   * projLn(TLnPos $lnpos, callable $projPos): TLnPos- projette chaque Pos de la LnPos avec la fonction $projPos et retourne la LnPos reconstruite
+   *
+   * @param TLnPos $lnpos
+   * @return TLnPos
   */
   static function projLn(array $lnpos, callable $projPos): array {
     if (Pos::is($lnpos)) // $lnpos est une Pos

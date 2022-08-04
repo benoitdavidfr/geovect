@@ -41,9 +41,12 @@ phpScripts:
   - /geovect/features/doc.php
   - /geovect/features/oas.php
 phpIncludes:
+  - /geovect/features/fts.inc.php
+  - /geovect/features/sexcept.inc.php
   - /geovect/features/ftrserver.inc.php
   - /geovect/features/ftsonwfs.inc.php
   - /geovect/features/ftsonfile.inc.php
   - /geovect/features/ftsonsql.inc.php
+  - /geovect/features/displayjson.inc.php
 htmlFiles:
   - /geovect/features/doc.yaml

@@ -280,8 +280,7 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
   }*/
   
   // retourne le résultat de la requête comme string GeoJSON
-  function getFeature(string $typename, array $properties=[], array $bbox=[], string $where='',
-                      int $count=100, int $startindex=0): string {
+  function getFeature(string $typename, array $properties=[], array $bbox=[], string $where='', int $count=100, int $startindex=0): string {
     $request = [
       'VERSION'=> '2.0.0',
       'REQUEST'=> 'GetFeature',
@@ -315,8 +314,7 @@ class WfsGeoJson extends WfsServer { // gère les fonctionnalités d'un serveur 
   }
   
   // retourne le résultat de la requête en GeoJSON encodé en array Php
-  function getFeatureAsArray(string $typename, array $properties=[], array $bbox=[], string $where='',
-                             int $count=100, int $startindex=0): array {
+  function getFeatureAsArray(string $typename, array $properties=[], array $bbox=[], string $where='', int $count=100, int $startindex=0): array {
     $result = $this->getFeature($typename, $properties, $bbox, $where, $count, $startindex);
     return json_decode($result, true);
   }
