@@ -38,29 +38,27 @@ journal: |
     La détection de WKT est transférée dans une classe spécifique.
 */}
   
-{/*PhpDoc: classes
-name:  iEllipsoid
-title: interface iEllipsoid - interface de définition d'un ellipsoide
-methods:
-doc: |
-  a : semi-major axis
-  b : semi-minor axis
-  flattening : f = ( a − b ) / a
-  eccentricity : e ** 2 = 1 - (1 - flattening) ** 2
-  e ** 2 = 1 - b ** 2 / a ** 2
-*/}
+/**
+ * interface iEllipsoid - un ellipsoide est défini par une classe statique respectant cette interface
+ *
+ * a : semi-major axis
+ * b : semi-minor axis
+ * flattening : f = ( a − b ) / a
+ * eccentricity : e ** 2 = 1 - (1 - flattening) ** 2
+ * e ** 2 = 1 - b ** 2 / a ** 2
+ */
 interface iEllipsoid {
-  static function a(); // semi-major axis
-  static function e2(); // eccentricity ** 2
-  static function e(); // eccentricity
+  /** semi-major axis */
+  static function a(): float;
+  /** eccentricity ** 2 */
+  static function e2(): float;
+  /** eccentricity */
+  static function e(): float;
 };
   
-{/*PhpDoc: classes
-name:  IAG_GRS_1980
-title: Class IAG_GRS_1980 - classe statique définissant l'ellipsoide IAG_GRS_1980
-methods:
-doc: |
-*/}
+/**
+ * Class IAG_GRS_1980 - classe statique définissant l'ellipsoide IAG_GRS_1980
+ */
 class IAG_GRS_1980 implements iEllipsoid {
   const PARAMS = [
     'title'=> "Ellipsoide GRS (Geodetic Reference System) 1980 défini par l'IAG (Int. Association of Geodesy)",
@@ -70,29 +68,50 @@ class IAG_GRS_1980 implements iEllipsoid {
     'f' => 1/298.2572221010000, // 1/f: inverse de l'aplatissement = a / (a - b), en: inverse flattening
   ];
     
-  static function a() { return self::PARAMS['a']; }
-  static function e2() { return 1 - pow(1 - self::PARAMS['f'], 2); }
-  static function e() { return sqrt(self::e2()); }
+  static function a(): float { return self::PARAMS['a']; }
+  static function e2(): float { return 1 - pow(1 - self::PARAMS['f'], 2); }
+  static function e(): float { return sqrt(self::e2()); }
 };
 
-/*PhpDoc: classes
-name:  Lambert93
-title: Class Lambert93 extends IAG_GRS_1980 - définition des fonctions de proj et inverse du Lambert 93
-methods:
-doc: |
-  Lambert93 est un CRS défini sur l'ellipsoide IAG_GRS_1980
-*/
-class Lambert93 extends IAG_GRS_1980 {
+/**
+ * interface iCoordinateReferenceSystem - interface spécifiant une classe statique définissant un système de coordonnéees
+ */
+interface iCoordinateReferenceSystem {
+  /**
+   * proj(TPos $pos): TPos  - convertit une pos. (longitude, latitude) en degrés déc. en une pos. [X, Y] dans le syst. de coord.
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function proj(array $pos, string $zone=''): array;
+
+  /**
+   * geo(IPos $pos): TPos  - convertit une pos. [X, Y] dans le syst. de coord. en pos (longitude, latitude) en degrés déc.
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function geo(array $pos, string $zone=''): array;
+};
+
+/**
+ * Class Lambert93 extends IAG_GRS_1980 - définition des fonctions de proj et inverse du Lambert 93
+ *
+ * Lambert93 est un CRS défini sur l'ellipsoide IAG_GRS_1980
+ */
+class Lambert93 extends IAG_GRS_1980 implements iCoordinateReferenceSystem {
   const c = 11754255.426096; //constante de la projection
   const n = 0.725607765053267; //exposant de la projection
   const xs = 700000; //coordonnées en projection du pole
   const ys = 12655612.049876; //coordonnées en projection du pole
   
-  /*PhpDoc: methods
-  name:  proj
-  title: "static function proj(array $pos): array  - convertit une pos. (longitude, latitude) en degrés déc. en [X, Y]"
-  */
-  static function proj(array $pos): array {
+  /**
+   * proj(TPos $pos): TPos  - convertit une pos. (longitude, latitude) en degrés déc. en une pos. [X, Y] Lambert93
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function proj(array $pos, string $zone=''): array {
     list($longitude, $latitude) = $pos;
     // définition des constantes
     $e = self::e(); //première exentricité de l'ellipsoïde
@@ -107,11 +126,13 @@ class Lambert93 extends IAG_GRS_1980 {
     return [$x,$y];
   }
   
-  /*PhpDoc: methods
-  name:  geo
-  title: "static function geo(array $pos): array  - retourne [longitude, latitude] en degrés décimaux"
-  */
-  static function geo(array $pos): array {
+  /**
+   * geo(IPos $pos): TPos  - convertit une pos. [X, Y] Lambert93 en pos (longitude, latitude) en degrés déc.
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function geo(array $pos, string $zone=''): array {
     list($X, $Y) = $pos;
     $e = self::e(); // 0.0818191910428158; //première exentricité de l'ellipsoïde
 
@@ -127,26 +148,27 @@ class Lambert93 extends IAG_GRS_1980 {
     return [ $longitude , $latitude ];
   }
 
-  /*PhpDoc: methods
-  name:  limits
-  title: "static function limits(): GBox - retourne l'espace de définition de la projection en coord. géo."
+  /**
+   * limits(): array<int, float> - l'espace de définition de la projection en coord. géo. comme array de 4 coordonnées
+   *
+   * @return array<int, float>
   */
-  static function limits(): array { return [[-7, 41], [13, 51]]; }
+  static function limits(): array { return [-7, 41, 13, 51]; }
 };
   
-/*PhpDoc: classes
-name:  WebMercator
-title: Class WebMercator extends IAG_GRS_1980 - définition des fonctions de proj et inverse du Web Mercator
-methods:
-doc: |
-  WebMercator est un CRS défini sur l'ellipsoide IAG_GRS_1980
+/**
+ * Class WebMercator extends IAG_GRS_1980 - définition des fonctions de proj et inverse du Web Mercator
+ *
+ * WebMercator est un CRS défini sur l'ellipsoide IAG_GRS_1980
 */
 class WebMercator extends IAG_GRS_1980 {
-  /*PhpDoc: methods
-  name:  proj
-  title: "static function proj(array $pos): array  - convertit une pos. (longitude, latitude) en degrés déc. en [X, Y]"
-  */
-  static function proj(array $pos): array {
+  /**
+   * proj(TPos $pos): TPos  - convertit une pos. (longitude, latitude) en degrés déc. en une pos. [X, Y] WebMercator
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function proj(array $pos, string $zone=''): array {
     list($longitude, $latitude) = $pos;
     $lambda = $longitude * pi() / 180.0; // longitude en radians
     $phi = $latitude * pi() / 180.0;  // latitude en radians
@@ -156,35 +178,35 @@ class WebMercator extends IAG_GRS_1980 {
     return [$x, $y];
   }
     
-  /*PhpDoc: methods
-  name:  geo
-  title: "static function geo(array $pos): array - prend des coordonnées Web Mercator et retourne [longitude, latitude] en degrés"
-  */
-  static function geo(array $pos): array {
+  /**
+   * geo(IPos $pos): TPos  - convertit une pos. [X, Y] WebMercator en pos (longitude, latitude) en degrés déc.
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function geo(array $pos, string $zone=''): array {
     list($X, $Y) = $pos;
     $phi = pi()/2 - 2*atan(exp(-$Y/self::a())); // (7-4)
     $lambda = $X / self::a(); // (7-5)
     return [ $lambda / pi() * 180.0 , $phi / pi() * 180.0 ];
   }
 
-  /*PhpDoc: methods
-  name:  limits
-  title: "static function limits(): array - retourne l'espace de définition de la projection en coord. géo."
+  /**
+   * limits(): array<int, float> - l'espace de définition de la projection en coord. géo. comme array de 4 coordonnées
+   *
+   * @return array<int, float>
   */
-  static function limits(): array { return [[-180,-85], [180,85]]; }
+  static function limits(): array { return [-180,-85, 180,85]; }
 };
 
-/*PhpDoc: classes
-name:  Class Ellipsoid
-title: Class Ellipsoid - classe statique permettant de chosir l'ellipsoide pour effcteur les calculs de projection
-methods:
-doc: |
-  La classe porte d'une part les constantes définissant les différents ellipsoides et, d'autre part,
-  la définition de l'ellipsoide courant.
-  Par défaut utilisation de l'ellipsoide IAG_GRS_1980
-  L'ellipsoide de Clarke 1866 peut être sélectionné pour tester l'exemple USGS sur UTM
-  D'autres ellipsoides peuvent être ajoutés au besoin.
-  https://en.wikipedia.org/wiki/Earth_ellipsoid
+/**
+ * Class Ellipsoid - classe statique permettant de choisir l'ellipsoide pour effctuer les calculs de projection
+ *
+ * La classe porte d'une part les constantes définissant différents ellipsoides et, d'autre part,
+ * la définition de l'ellipsoide courant qui est l'ellipsoide IAG_GRS_1980.
+ * L'ellipsoide de Clarke 1866 peut être sélectionné pour tester l'exemple USGS sur UTM
+ * D'autres ellipsoides peuvent être ajoutés au besoin.
+ * https://en.wikipedia.org/wiki/Earth_ellipsoid
 */
 class Ellipsoid implements iEllipsoid {
   const DEFAULT = 'IAG_GRS_1980'; // ellipsoide par défaut IAG_GRS_1980
@@ -212,21 +234,26 @@ class Ellipsoid implements iEllipsoid {
       'f'=> 0, // excentricité = (a - b) / a
     ],
   ];
+  const ErrorUndefinedEllipsoid = 'Ellipsoid::ErrorUndefinedEllipsoid';
   
-  static $current = self::DEFAULT; // ellipsoide courant, par défaut IAG_GRS_1980
+  static string $current = self::DEFAULT; // ellipsoide courant, par défaut IAG_GRS_1980
   
-  // liste les ellipsoides proposés
-  static function available(): array { return self::PARAMS; }
+  /**
+   * liste les codes des ellipsoides disponibles
+   *
+   * @return array<int, string>
+   */
+  static function available(): array { return array_keys(self::PARAMS); }
   
-  // fournit l'ellipsoide courant
+  /** fournit l'ellipsoide courant */
   static function current(): string { return self::$current; }
   
-  // Chgt d'ellipsoide
+  /** Chgt d'ellipsoide */
   static function set(string $ellipsoid=self::DEFAULT): void {
     if (isset(self::PARAMS[$ellipsoid]))
       self::$current = $ellipsoid;
     else
-      throw new Exception("Erreur dans Ellipsoid::set($ellipsoid): ellipsoide non défini");
+      throw new SExcept("Erreur dans Ellipsoid::set($ellipsoid): ellipsoide non défini", self::ErrorUndefinedEllipsoid);
   }
   
   // retourne la valeur d'un paramètre stocké pour l'ellipsoide courant
@@ -234,28 +261,29 @@ class Ellipsoid implements iEllipsoid {
     return isset(self::PARAMS[self::$current][$name]) ? self::PARAMS[self::$current][$name] : null;
   }
   
-  static function a() { return self::param('a'); }
+  static function a(): float { return self::param('a'); }
   
-  static function e2() { return 1 - pow(1 - self::param('f'), 2); }
+  static function e2(): float { return 1 - pow(1 - self::param('f'), 2); }
   
-  static function e() { return sqrt(self::e2()); }
+  static function e(): float { return sqrt(self::e2()); }
 };
 
-/*PhpDoc: classes
-name:  WorldMercator
-title: Class WorldMercator extends Ellipsoid - définition des fonctions de proj et inverse du World Mercator
-methods:
-doc: |
-  La projection WorldMercator peut être définie sur différents ellipsoides.
+/**
+ * Class WorldMercator extends Ellipsoid implements iCoordinateReferenceSystem - définition du CRS World Mercator
+ *
+ * La projection WorldMercator peut être définie sur différents ellipsoides.
 */
-class WorldMercator extends Ellipsoid {
+class WorldMercator extends Ellipsoid implements iCoordinateReferenceSystem {
   const epsilon = 1E-11; // tolerance de convergence du calcul de la latitude
+  const ErrorNoConvergence = 'WorldMercator::ErrorNoConvergence';
   
-  /*PhpDoc: methods
-  name:  proj
-  title: "static function proj(array $pos): array  - convertit une pos. (longitude, latitude) en degrés déc. en [X, Y]"
-  */
-  static function proj(array $pos): array {
+  /**
+   * proj(TPos $pos): TPos  - convertit une pos. (longitude, latitude) en degrés déc. en une pos. [X, Y] WorldMercator
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function proj(array $pos, string $zone=''): array {
     list($longitude, $latitude) = $pos;
     $lambda = $longitude * pi() / 180.0; // longitude en radians
     $phi = $latitude * pi() / 180.0;  // latitude en radians
@@ -265,11 +293,13 @@ class WorldMercator extends Ellipsoid {
     return [$x, $y];
   }
     
-  /*PhpDoc: methods
-  name:  geo
-  title: "static function geo(array $pos): array  - prend des coord. Web Mercator et retourne [longitude, latitude] en degrés"
-  */
-  static function geo(array $pos): array {
+  /**
+   * geo(IPos $pos): TPos  - convertit une pos. [X, Y] WebMercator en pos (longitude, latitude) en degrés déc.
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function geo(array $pos, string $zone=''): array {
     list($X, $Y) = $pos;
     $t = exp(-$Y/self::a()); // (7-10)
     $phi = pi()/2 - 2 * atan($t); // (7-11)
@@ -283,38 +313,37 @@ class WorldMercator extends Ellipsoid {
       if (abs($phi-$phi0) < self::epsilon)
         return [ $lambda / pi() * 180.0 , $phi / pi() * 180.0 ];
       if ($nbiter++ > 20)
-        throw new Exception("Convergence inachevee dans WorldMercator::geo() pour nbiter=$nbiter");
+        throw new SExcept("Convergence inachevee dans WorldMercator::geo() pour nbiter=$nbiter", self::ErrorNoConvergence);
     }
   }
 
-  /*PhpDoc: methods
-  name:  limits
-  title: "static function limits(): array - retourne l'espace de définition de la projection en coord. géo."
+  /**
+   * limits(): array<int, float> - l'espace de définition de la projection en coord. géo. comme array de 4 coordonnées
+   *
+   * @return array<int, float>
   */
-  static function limits(): array { return [[-180,-85], [180,85]]; }
+  static function limits(): array { return [-180,-85, 180,85]; }
 };
 
-/*PhpDoc: classes
-name:  UTM
-title: Class UTM extends Ellipsoid - définition des fonctions de proj et inverse de l'UTM zone
-methods:
-doc: |
-  La projection UTM est définie par zone correspondant à un fuseau de 6 degrés en séparant l’hémisphère Nord du Sud.
-  Soit au total 120 zones (60 pour le Nord et 60 pour le Sud).
-  Cette zone est définie sur 3 caractères, les 2 premiers indiquant le no de fuseau et le 3ème N ou S.
-  La projection UTM peut être définie sur différents ellipsoides.
-  L'exemple USGS utilise l'ellipsoide de Clarke 1866.
+/**
+ * Class UTM extends Ellipsoid implements iCoordinateReferenceSystem - définition de l'UTM zone
+ *
+ * La projection UTM est définie par zone correspondant à un fuseau de 6 degrés en séparant l’hémisphère Nord du Sud.
+ * Soit au total 120 zones (60 pour le Nord et 60 pour le Sud).
+ * Cette zone est définie sur 3 caractères, les 2 premiers indiquant le no de fuseau et le 3ème N ou S.
+ * La projection UTM peut être définie sur différents ellipsoides.
+ * L'exemple USGS utilise l'ellipsoide de Clarke 1866.
 */
-class UTM extends Ellipsoid {
+class UTM extends Ellipsoid implements iCoordinateReferenceSystem {
   const k0 = 0.9996;
   
-  static function lambda0(int $nozone) { return (($nozone-30.5)*6)/180*pi(); } // en radians
+  private static function lambda0(int $nozone): float { return (($nozone-30.5)*6)/180*pi(); } // en radians
   
-  static function Xs(): float { return 500000; }
-  static function Ys(string $NS): float { return $NS=='S'? 10000000 : 0; }
+  private static function Xs(): float { return 500000; }
+  private static function Ys(string $NS): float { return $NS=='S'? 10000000 : 0; }
   
   // distanceAlongMeridianFromTheEquatorToLatitude (3-21)
-  static function distanceAlongMeridianFromTheEquatorToLatitude(float $phi): float {
+  private static function distanceAlongMeridianFromTheEquatorToLatitude(float $phi): float {
     $e2 = self::e2();
     return (self::a())
          * (   (1 - $e2/4 - 3*$e2*$e2/64 - 5*$e2*$e2*$e2/256)*$phi
@@ -324,19 +353,22 @@ class UTM extends Ellipsoid {
            );
   }
   
-  /*PhpDoc: methods
-  name:  zone
-  title: "static function zone(array $pos): string  - (longitude, latitude) en degrés -> zone UTM"
-  */
+  /**
+   * zone(array $pos): string  - (longitude, latitude) en degrés -> zone UTM"
+   *
+   * @param TPos $pos
+   */
   static function zone(array $pos): string {
     return sprintf('%02d',floor($pos[0]/6)+31).($pos[1]>0?'N':'S');
   }
  
-  /*PhpDoc: methods
-  name:  proj
-  title: "static function proj(string $zone, array $pos): array  - (lon, lat) en degrés déc. -> [X, Y] en UTM zone"
-  */
-  static function proj(string $zone, array $pos): array {
+  /**
+   * proj(TPos $pos): TPos  - convertit une pos. (longitude, latitude) en degrés déc. en une pos. [X, Y] UTM zone
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function proj(array $pos, string $zone=''): array {
     list($longitude, $latitude) = $pos;
     $nozone = (int)substr($zone, 0, 2);
     $NS = substr($zone, 2);
@@ -363,11 +395,13 @@ class UTM extends Ellipsoid {
     return [$x + self::Xs(), $y + self::Ys($NS)];
   }
     
-  /*PhpDoc: methods
-  name:  geo
-  title: "static function geo(string $zone, array $pos): array  - coord. UTM zone -> [lon, lat] en degrés"
-  */
-  static function geo(string $zone, array $pos): array {
+  /**
+   * geo(TPos $pos): TPos  - convertit une pos. [X, Y] UTM zone en pos (longitude, latitude) en degrés déc.
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function geo(array $pos, string $zone=''): array {
     list($X, $Y) = $pos;
     $nozone = (int)substr($zone, 0, 2);
     $NS = substr($zone, 2);
@@ -394,19 +428,18 @@ class UTM extends Ellipsoid {
     return [ $lambda / pi() * 180.0, $phi / pi() * 180.0 ];
   }
   
-  /*PhpDoc: methods
-  name:  test
-  title: "static function test(): void  - test unitaire de la classe en utilisant l'exemple défini dans le rapport USGS"
-  */
+  /**
+   * test(): void  - test unitaire de la classe en utilisant l'exemple défini dans le rapport USGS
+   */
   static function test(): void {
     echo "Exemple du rapport USGS pp 269-270 utilisant l'Ellipsoide de Clarke\n";
     Ellipsoid::set('Clarke1866');
     $pt = [-73.5, 40.5];
     echo "phi=",radians2degresSexa($pt[1]/180*PI(),'N'),", lambda=", radians2degresSexa($pt[0]/180*PI(),'E'),"\n";
-    $utm = UTM::proj('18N', $pt);
+    $utm = UTM::proj($pt, '18N');
     echo "UTM: X=$utm[0] / 127106.5, Y=$utm[1] / 4,484,124.4\n";
 
-    $verif = UTM::geo('18N', $utm);
+    $verif = UTM::geo($utm, '18N');
     echo "phi=",radians2degresSexa($verif[1]/180*PI(),'N')," / ",radians2degresSexa($pt[1]/180*PI(),'N'),
          ", lambda=", radians2degresSexa($verif[0]/180*PI(),'E')," / ", radians2degresSexa($pt[0]/180*PI(),'E'),"\n";
     //die("FIN ligne ".__LINE__);
@@ -414,22 +447,20 @@ class UTM extends Ellipsoid {
   }
 };
 
-/*PhpDoc: classes
-name:  Legal
-title: class Legal - projection légale en métropole et dans les DROM
-methods:
-doc: |
-  Partant du constat que les projections légales en métropole et DROM ont des espaces de coordonnées projetées
-  ne s'intersectant pas, il est possible de localiser un point par ses coord. en projection légale.
-  Cette classe permet donc de passer de projection légale en coord. géo. et vice-versa
-  Les Y dissocient les espaces (en Km):
-    GF: 400 -> 1000
-    GP,MQ: 1500 -> 2100
-    FXX: 6000 -> 7200
-    RE: 7200 -> 8000
-    MYT: 8300 -> 8800
+/**
+ * class Legal - projection légale en métropole et dans les DROM
+ *
+ * Partant du constat que les projections légales en métropole et DROM ont des espaces de coordonnées projetées
+ * ne s'intersectant pas, il est possible de localiser un point par ses coord. en projection légale.
+ * Cette classe permet donc de passer de projection légale en coord. géo. et vice-versa
+ * Les Y dissocient les espaces (en Km):
+ *   GF: 400 -> 1000
+ *   GP,MQ: 1500 -> 2100
+ *   FXX: 6000 -> 7200
+ *   RE: 7200 -> 8000
+ *   MYT: 8300 -> 8800
 */
-class Legal {
+class Legal implements iCoordinateReferenceSystem {
   // espace des coordonnées projetées par zone et par projection sous la forme [west, south, east, north]
   const ProjBoundingRect = [
     'GF'=> [
@@ -457,15 +488,20 @@ class Legal {
     'RE'=> [ 51.79, -24.74, 58.23, -18.28 ],
     'YT'=> [ 43.48, -14.53, 46.69, -11.13 ],
   ];
+  const ErrorOutOfBound = 'Legal::ErrorOutOfBound';
   
-  // retourne la projection en fonction des coord. projetées
+  /**
+   * projectionOfProjected(TPos $pos): string - retourne la projection en fonction des coord. projetées
+   *
+   * @param TPos $pos
+   */
   static function projectionOfProjected(array $pos): string {
     foreach (self::ProjBoundingRect as $zone => $projbr) {
       foreach ($projbr as $proj => $br) {
         if (($pos[1] >= $br[1]) && ($pos[1] <= $br[3])) {
           if ($zone <> 'GF')
             return $proj;
-          elseif ($pos[0] > self::BoundingRect['GF']['UTM-21N'][0])
+          elseif ($pos[0] > self::ProjBoundingRect['GF']['UTM-21N'][0])
             return 'UTM-21N';
           else
             return 'UTM-22N';
@@ -475,7 +511,11 @@ class Legal {
     return '';
   }
   
-  // retourne la zone en fonction des coord. géo.
+  /**
+   * retourne la zone en fonction des coord. géo.
+   *
+   * @param TPos $pos
+   */
   static function zone(array $pos): string {
     foreach (self::GeoBoundingRect as $zone => $geobr) {
       if (($pos[0] >= $geobr[0]) && ($pos[1] >= $geobr[1]) && ($pos[0] <= $geobr[2]) && ($pos[1] <= $geobr[3]))
@@ -484,56 +524,60 @@ class Legal {
     return '';
   }
   
-  /*PhpDoc: methods
-  name:  proj
-  title: "static function proj(array $pos): array  - convertit une pos. (longitude, latitude) en degrés déc. en [X, Y]"
-  */
-  static function proj(array $pos): array {
+  /**
+   * proj(TPos $pos): TPos  - convertit une pos. (longitude, latitude) en degrés déc. en une pos. [X, Y] légal
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function proj(array $pos, string $zone=''): array {
     //echo "Legal::proj($pos[0], $pos[1])";
     if (!($zone = self::zone($pos)))
-      throw new Exception("position ($pos[0], $pos[1]) hors cadre");
+      throw new SExcept("position ($pos[0], $pos[1]) hors cadre", self::ErrorOutOfBound);
     $projection = array_keys(self::ProjBoundingRect[$zone])[0];
     if ($projection == 'L93')
       return Lambert93::proj($pos);
     $utmZone = substr($projection, 4);
-    return UTM::proj($utmZone, $pos);
+    return UTM::proj($pos, $utmZone);
   }
   
   
-  /*PhpDoc: methods
-  name:  geo
-  title: "static function geo(array $pos): array  - retourne [longitude, latitude] en degrés décimaux"
-  */
-  static function geo(array $pos): array {
+  /**
+   * geo(TPos $pos): TPos  - convertit une pos. [X, Y] légale en pos (longitude, latitude) en degrés déc.
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function geo(array $pos, string $zone=''): array {
     if (!($projection = self::projectionOfProjected($pos)))
-      throw new Exception("position ($pos[0], $pos[1]) hors cadre");
+      throw new SExcept("position ($pos[0], $pos[1]) hors cadre", self::ErrorOutOfBound);
     if ($projection == 'L93')
       return Lambert93::geo($pos);
     $utmZone = substr($projection, 4);
-    return UTM::geo($utmZone, $pos);
+    return UTM::geo($pos, $utmZone);
   }
 };
 
 
-/*PhpDoc: classes
-name:  Sinusoidal
-title: class Sinusoidal extends IAG_GRS_1980 - projection Sinusoidale
-methods:
-doc: |
-  Le calcul de la projection sinusoidale est très simple dans sa version sphérique.
-  C'est une projection valable sur la Terre entière et équivalente.
-  Elle est donc bien adaptée pour calculer des surfaces à partir de coordonnée géographiques.
+/**
+ * class Sinusoidal extends Ellipsoid implements iCoordinateReferenceSystem - projection Sinusoidale
+ *
+ * Le calcul de la projection sinusoidale est très simple dans sa version sphérique.
+ * C'est une projection valable sur la Terre entière et équivalente.
+ * Elle est donc bien adaptée pour calculer des surfaces à partir de coordonnée géographiques.
 */
-class Sinusoidal extends Ellipsoid {
-  static $longitude0 = 0;
+class Sinusoidal extends Ellipsoid implements iCoordinateReferenceSystem {
+  static float $longitude0 = 0;
   
   static function setLongitude0(float $longitude0=0): void { self::$longitude0 = $longitude0; }
   
-  /*PhpDoc: methods
-  name:  proj
-  title: "static function proj(array $pos): array  - convertit une pos. (longitude, latitude) en degrés déc. en [X, Y]"
-  */
-  static function proj(array $pos): array {
+  /**
+   * proj(TPos $pos): TPos  - convertit une pos. (longitude, latitude) en degrés déc. en une pos. [X, Y] proj. Sinusoidale
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function proj(array $pos, string $zone=''): array {
     list($longitude, $latitude) = $pos;
     $lambda = ($longitude - self::$longitude0) * pi() / 180.0; // longitude en radians
     $phi = $latitude * pi() / 180.0;  // latitude en radians
@@ -543,39 +587,40 @@ class Sinusoidal extends Ellipsoid {
     return [$x, $y];
   }
   
-  /*PhpDoc: methods
-  name:  geo
-  title: "static function geo(array $pos): array  - prend des coord. Sinusoidales et retourne [longitude, latitude] en degrés"
-  */
-  static function geo(array $pos): array {
+  /**
+   * geo(TPos $pos): TPos  - convertit une pos. [X, Y] proj. Sinusoidale en pos (longitude, latitude) en degrés déc.
+   *
+   * @param TPos $pos
+   * @return TPos
+   */
+  static function geo(array $pos, string $zone=''): array {
     list($X, $Y) = $pos;
     $phi = $Y / self::a(); // (30-6)
     $lambda = $X / (self::a() * cos($phi)); // (30-7)
     return [ $lambda / pi() * 180.0 + self::$longitude0 , $phi / pi() * 180.0 ];
   }
 
-  /*PhpDoc: methods
-  name:  limits
-  title: "static function limits(): array - retourne l'espace de définition de la projection en coord. géo."
+  /**
+   * limits(): array<int, float> - l'espace de définition de la projection en coord. géo. comme array de 4 coordonnées
+   *
+   * @return array<int, float>
   */
-  static function limits(): array { return [[-180,-90], [180,90]]; }
+  static function limits(): array { return [-180,-90, 180,90]; }
 
-  /*PhpDoc: methods
-  name:  limits
-  title: "static function projectedLimits(): array - retourne l'espace de définition de la projection en coord. projetées"
+  /**
+   * projectedLimits(): array<int, float> - l'espace de définition de la projection en proj. Sinusoidale comme array de 4 coordonnées
+   *
+   * @return array<int, float>
   */
   static function projectedLimits(): array {
     $w = self::proj([-180,0]);
     $e = self::proj([180,0]);
     $s = self::proj([0,-90]);
     $n = self::proj([0,90]);
-    return [[$w[0],$s[1]], [$e[0],$n[1]]];
+    return [$w[0],$s[1], $e[0],$n[1]];
   }
   
-  /*PhpDoc: methods
-  name:  test
-  title: "static function test(): void  - test unitaire de la classe en utilisant l'exemple défini dans le rapport USGS"
-  */
+  /** test(): void  - test unitaire de la classe en utilisant l'exemple défini dans le rapport USGS */
   static function test(): void {
     echo "Exemple du rapport USGS p. 365\n";
     Ellipsoid::set('UnitSphere');
@@ -598,16 +643,15 @@ class Sinusoidal extends Ellipsoid {
 if (basename(__FILE__) <> basename($_SERVER['PHP_SELF'])) return;
 
 
-/*PhpDoc: functions
-name: radians2degresSexa
-title: function radians2degresSexa(float $r, string $ptcardinal='', float $dr=0)
-doc: |
-  Transformation d'une valeur en radians en une chaine en degres sexagesimaux
-  si ptcardinal est fourni alors le retour respecte la notation avec point cardinal
-  sinon c'est la notation signee qui est utilisee
-  dr est la precision de r
+/**
+ * radians2degresSexa(float $r, string $ptcardinal='', float $dr=0)
+ *
+ * Transformation d'une valeur en radians en une chaine en degres sexagesimaux
+ * si ptcardinal est fourni alors le retour respecte la notation avec point cardinal
+ * sinon c'est la notation signee qui est utilisee
+ * dr est la precision de r
 */
-function radians2degresSexa(float $r, string $ptcardinal='', float $dr=0) {
+function radians2degresSexa(float $r, string $ptcardinal='', float $dr=0): string {
   $signe = '';
   if ($r < 0) {
     if ($ptcardinal) {
@@ -653,11 +697,11 @@ echo "<html><head><meta charset='UTF-8'><title>coordsys</title></head><body><pre
 
 //echo "x",UTM::zone([-179,0]),"x\n";
 
-if (1) {
+if (1) { // @phpstan-ignore-line
   Sinusoidal::test();
 }
 
-if (1) {
+if (1) { // @phpstan-ignore-line
   UTM::test();
 }
 
@@ -686,7 +730,7 @@ Lambert93::geo([658557.548, 6860084.001]);
 Lambert93::proj([2.435368, 48.839473]);
 WebMercator::proj([2.435368, 48.839473]);
 WorldMercator::proj([2.435368, 48.839473]);
-UTM::proj(UTM::zone([2.435368, 48.839473]), [2.435368, 48.839473]);
+UTM::proj([2.435368, 48.839473], UTM::zone([2.435368, 48.839473]));
 
 foreach ($refs as $name => $ref) {
   echo "\nCoordonnees Pt Geodesique <a href='$ref[src]'>$name</a>\n";
@@ -716,9 +760,9 @@ foreach ($refs as $name => $ref) {
 // UTM
     $zone = UTM::zone($cgeo);
     echo "\nUTM:\nzone=$zone\n";
-    $cutm = UTM::proj($zone, $cgeo);
+    $cutm = UTM::proj($cgeo, $zone);
     printf ("Coordonnées en UTM-$zone: %.2f / %.2f, %.2f / %.2f\n", $cutm[0], $ref['UTM-31N'][0], $cutm[1], $ref['UTM-31N'][1]);
-    $verif = UTM::geo($zone, $cutm);
+    $verif = UTM::geo($cutm, $zone);
     echo "Verification du calcul inverse:\n";
     printf ("phi=%s / %s lambda=%s / %s\n",
       radians2degresSexa($verif[1]/180*PI(),'N', 1/180*PI()/60/60/10000), $ref['dms'][0],
@@ -727,11 +771,11 @@ foreach ($refs as $name => $ref) {
   elseif (isset($ref['UTM'])) {
     $zone = array_keys($ref['UTM'])[0];
     $cutm0 = $ref['UTM'][$zone];
-    $cgeo = UTM::geo($zone, $cutm0);
+    $cgeo = UTM::geo($cutm0, $zone);
     printf ("phi=%s / %s lambda=%s / %s\n",
       radians2degresSexa($cgeo[1]/180*PI(),'N'), $ref['dms'][0],
       radians2degresSexa($cgeo[0]/180*PI(),'E'), $ref['dms'][1]);
-    $cutm = UTM::proj($zone, $cgeo);
+    $cutm = UTM::proj($cgeo, $zone);
     printf ("Coordonnées en UTM-%s: %.2f / %.2f, %.2f / %.2f\n", $zone, $cutm[0], $cutm0[0], $cutm[1], $cutm0[1]);
 
     $cgeo = Legal::geo($cutm0);

@@ -9,6 +9,7 @@ require_once __DIR__.'/../gegeom/gebox.inc.php';
 require_once __DIR__.'/../gegeom/gegeom.inc.php';
 
 // lit le fichier geojson défini par $filename et retourne un array de Feature défini comme array Php
+/** @return array<int, GeoJsonFeatures */
 function readFeatureCollection(string $filename): array {
   if (($geojson = @file_get_contents($filename)) === FALSE)
     die("Erreur: lecture de $filename impossible");

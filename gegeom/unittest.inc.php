@@ -137,7 +137,7 @@ class ClasseATester {
   static function test_methodeStatiqueATester(): void { self::methodeStatiqueATester(); }
   
   function methodeNonStatiqueATester(): void { echo "méthode non statique à tester<br>\n"; }
-  static function test_methodeNonStatiqueATester(): void { (new CATester)->methodeNonStatiqueATester(); }
+  static function test_methodeNonStatiqueATester(): void { (new self)->methodeNonStatiqueATester(); }
   
   function methodA(): void { echo "CATester::methodeA<br>\n"; }
   static function test_methodA(): void { (new self)->methodA(); }
@@ -146,7 +146,7 @@ class ClasseATester {
 UnitTest::class(__NAMESPACE__, __FILE__, 'ClasseATester');
 
 class ClasseFille extends ClasseATester {
-  function methodA(): void { echo "CFille::methodeA<br>\n"; }
+  function methodA(): void { echo "ClasseFille::methodeA<br>\n"; }
   static function test_CFille_methodA(): void { (new self)->methodA(); }
   
   static function test_methodFille(): void {}
