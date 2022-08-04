@@ -598,9 +598,9 @@ class EBox extends BBox {
     echo "$gbox ->center() = ", json_encode($gbox->center()),"<br>\n";
     echo "UTM::zone($gbox ->center()) = ", $zone = \UTM::zone($gbox->center()),"<br>\n";
     echo "$gbox ->proj(UTM-$zone) = ",
-         $eboxutm = $gbox->proj(function(array $pos) use($zone) { return \UTM::proj($zone, $pos); }),"<br>\n";
+         $eboxutm = $gbox->proj(function(array $pos) use($zone) { return \UTM::proj($pos, $zone); }),"<br>\n";
     echo "$eboxutm ->geo(UTM-$zone) = ",
-         $eboxutm->geo(function(array $pos) use($zone) { return \UTM::geo($zone, $pos); }),"<br>\n";
+         $eboxutm->geo(function(array $pos) use($zone) { return \UTM::geo($pos, $zone); }),"<br>\n";
   }
 };
 
