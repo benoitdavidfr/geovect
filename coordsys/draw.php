@@ -9,6 +9,9 @@ includes:
   - full.inc.php
   - light.inc.php
 journal: |
+  4/8/2022:
+   - corrections suite à analyse PhpStan level 6
+   - structuration de la doc conformément à phpDocumentor
   21/5/2019:
     - adaptation à la nouvelle interface de fcoll
   4-5/5/2019:
@@ -23,27 +26,41 @@ use \gegeom\Geometry;
 use \gegeom\GdDrawing;
 use \fcoll\GeoJFile;
 
-// Itérateur des lignes de latitude et longitude constantes
-// Chaque itération génère un Feature ayant une géométrie LineString
-// Les lignes doivent être incluses dans le GBox world
-class Graticule implements Iterator {
-  private $world; // GBox contraignant les lignes
-  private $step = 10;
-  private $i = 0;
-  private $lon = 0;
-  private $lat = 0;
+// implémentation du générateur au-dessus de l'itérateur pour éviter de récrire la classe
+class Graticule {
+  protected GBox $world; // GBox contraignant les lignes
+  protected float $step = 10;
+
+  function __construct(GBox $world, float $step) { $this->world = $world; $this->step = $step; }
+
+  /** @param array<string, string> $criteria */
+  function features(array $criteria): Generator {
+    $it = new GraticuleIterator($this->world, $this->step);
+    $it->rewind();
+    while ($it->valid()) {
+      yield $it->key() => $it->current();
+      $it->next();
+    }
+  }
+};
+
+/**
+ * class Graticule implements Iterator - Itérateur des lignes de latitude et longitude constantes
+ *
+ * Chaque itération génère un Feature ayant une géométrie LineString
+ * Les lignes doivent être incluses dans le GBox world
+ *
+ * @implements Iterator<int, TGeoJsonFeature>
+*/
+class GraticuleIterator implements Iterator {
+  protected GBox $world; // GBox contraignant les lignes
+  protected float $step = 10;
+  protected int $i = 0;
+  protected float $lon = 0;
+  protected float $lat = 0;
   
   function __construct(GBox $world, float $step) { $this->world = $world; $this->step = $step; }
   
-  // implémentation du générateur au-dessus de l'itérateur pour éviter de récrire la classe
-  function features(array $criteria) {
-    $this->rewind();
-    while ($this->valid()) {
-      yield $this->key() => $this->current();
-      $this->next();
-    }
-  }
-    
   function rewind(): void { $this->i = 0; $this->lon = -180; $this->lat = -90; }
   function valid(): bool { return $this->lat <= 80; }
   

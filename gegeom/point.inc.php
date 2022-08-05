@@ -25,7 +25,9 @@ methods:
 title: class Point extends Homogeneous - correspond à une position mais peut aussi être considéré comme un vecteur
 */}
 class Point extends Homogeneous {
-  // $coords contient une position (Pos)
+  /* @var TPos $coords; */
+  protected array $coords; // redéfinition de $coords pour préciser son type pour cette classe
+  
   function eltTypes(): array { return ['Point']; }
   function __toString(): string { return 'Point('.implode(' ',$this->coords).')'; }
   function wkt(): string { return 'POINT('.implode(' ',$this->coords).')'; }

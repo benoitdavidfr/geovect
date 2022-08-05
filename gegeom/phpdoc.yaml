@@ -56,7 +56,15 @@ doc: |
     - adapter les dév de geom2d et geometry, notamment:
       - les algorithmes de tuilage utilisés pour CLC
   
+  // @phpstan-ignore-line
+
+
+
 journal: |
+  4-5/8/2022:
+    - corrections suite à analyse PhpStan level 6
+    - structuration de la doc conformément à phpDocumentor
+    - restructuration du code pour corriger des erreurs
   9/12/2020:
     - modifs importantes pour mise en compatibilité avec Php8
   14/5/2019:

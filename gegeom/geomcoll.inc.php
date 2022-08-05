@@ -29,7 +29,7 @@ class GeometryCollection extends Geometry {
   function type(): string { $c = get_called_class(); return substr($c, strrpos($c, '\\')+1); }
 
   // récupère les coordonnées, retourne [] pour une GeometryCollection
-  function coords(): array { return []; }
+  //function coords(): array { return []; }
   
   function geoms(): array { return $this->geometries; } // liste des objets contenus dans l'objet
   

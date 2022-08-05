@@ -22,6 +22,9 @@ doc: |
   
   La projection sinusoidale est unique et équivalente (conserve localement les surfaces) permet de calculer des surfaces; 
 journal: |
+  4/8/2022:
+   - corrections suite à analyse PhpStan level 6
+   - structuration de la doc conformément à phpDocumentor
   22/4/2019:
     Ajout de la projection Sinusoidal
   18/4/2019:

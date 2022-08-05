@@ -6,6 +6,9 @@ classes:
 functions:
 doc: |
 journal: |
+  4/8/2022:
+   - corrections suite à analyse PhpStan level 6
+   - structuration de la doc conformément à phpDocumentor
   25/3/2019:
     - vérifiCATION que:
       - qd le code EPSG est rempli alors le CRS est dans le registre EPSG et vice-versa

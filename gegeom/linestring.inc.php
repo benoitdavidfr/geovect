@@ -7,6 +7,9 @@ classes:
 doc: |
   Fichier concu pour être inclus dans gegeom.inc.php
 journal: |
+  5/8/2022:
+   - corrections suite à analyse PhpStan level 6
+   - structuration de la doc conformément à phpDocumentor
   3/5/2019:
     - ajout: filter(), isClosed(), simplify()
   30/4/2019:
@@ -22,7 +25,9 @@ title: class LineString extends Homogeneous - contient au moins 2 positions
 methods:
 */}
 class LineString extends Homogeneous {
-  // $coords contient une liste de positions (LPos)
+  /* @var TLPos $coords; */
+  protected array $coords; // redéfinition de $coords pour préciser son type pour cette classe
+
   function eltTypes(): array { return ['LineString']; }
   
   function geoms(): array { return array_map(function(array $pos) { return new Point($pos); }, $this->coords); }

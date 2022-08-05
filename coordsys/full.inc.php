@@ -43,6 +43,9 @@ doc: |
     - faire une ihm, un web-service ?
      
 journal: |
+  4/8/2022:
+   - corrections suite à analyse PhpStan level 6
+   - structuration de la doc conformément à phpDocumentor
   29-30/3/2019:
     - transfert des registres dans le fichier crsregistre.yaml défini par le schema crsregistre.schema.yaml
   23-24/3/2019:
