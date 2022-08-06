@@ -84,13 +84,14 @@ Les fonctions géométriques sont définies dans les 4 classes statiques suivant
   - **LnPos** pour les fonctions dont le premier paramètre est une liste**n de positions
 
 ### 2.2 Fonctions statiques définies dans la classe Pos
-Dans certains cas, une position peut être interprétée comme un vecteur.
+La classe `Pos` regroupe les fonctions dont le premier paramètre est une position,
+qui peut parfois interprétée comme un vecteur.
 
 - `is(mixed $pos): bool` - teste si $pos est une position, permet notament de distinguer Pos, LPos, LLPos et LLLPos
   mais ne vérifie pas la validité de $pos
 - `getErrors(mixed $pos): array` - renvoie les raisons pour lesquelles $pos n'est pas une position
-- `fromGeoDMd() TPos`- décode une position en coords géographiques en degré minutes décimales conforme
-  au motif suivant `!^(\d+)°((\d\d)(,(\d+))?\')?(N|S) - (\d+)°((\d\d)(,(\d+))?\')?(E|W)$!  
+- `fromGeoDMd(string $geoDMd) TPos`- décode une position en coords géographiques en degré minutes décimales conforme
+  au motif suivant `!^(\d+)°((\d\d)(,(\d+))?\')?(N|S) - (\d+)°((\d\d)(,(\d+))?\')?(E|W)$!`  
   exemple: `45°23,45'N - 1°12'W`
 - `formatInGeoDMd(TPos $pos, float $resolution): string` - Formate une position (lon,lat) en lat,lon degrés,
   minutes décimales, $resolution est la résolution de la position en degrés à conserver
@@ -102,290 +103,25 @@ Dans certains cas, une position peut être interprétée comme un vecteur.
 - `distancePosLine(TPos $pos, TPos $a, TPos $b): float` - distance signée de la position $pos à la droite définie
   par les 2 positions $a et $b ;
   la distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
+- `posInPolygon(TPos $p, TLPos $cs): bool` - teste si la Pos $p est dans la LPos fermée définie par $cs
 
+### 2.2 Fonctions statiques définies dans la classe LPos
+La classe `LPos` regroupe les fonctions dont le premier paramètre est une liste de positions en comportant au moins une.
   
-    class Pos {  
-  
-      /**
-       * distancePosLine() - 
-       *
-       * 
-       *
-       * @param  $pos
-       * @param TPos $a
-       * @param TPos $b
-       * @return float
-       */
-      static function  {
-        $ab = self::diff($b, $a);
-        $ap = self::diff($pos, $a);
-        if (self::norm($ab) == 0)
-          throw new \SExcept("Erreur dans distancePosLine : Points A et B confondus et donc droite non définie",
-              self::ErrorInDistancePosLine);
-        return self::vectorProduct($ab, $ap) / self::norm($ab);
-      }
-      static function test_distancePosLine(): void {
-        foreach ([
-          [[1,0], [0,0], [1,1]],
-          [[1,0], [0,0], [0,2]],
-        ] as $lpts) {
-          echo "distancePosLine([",implode(',', $lpts[0]),"],[",implode(',',$lpts[1]),'],[',implode(',',$lpts[2]),"])->",
-            self::distancePosLine($lpts[0], $lpts[1],$lpts[2]),"<br>\n";
-        }
-      }
-  
-      /**
-       * posInPolygon() -teste si la Pos $p est dans la LPos fermée définie par $cs
-       *
-       * @param TPos $p
-       * @param TLPos $cs
-       * @return bool
-       */
-      static function posInPolygon(array $p, array $cs): bool {
-        {/*  Code de référence en C:
-        int pnpoly(int npol, float *xp, float *yp, float x, float y)
-        { int i, j, c = 0;
-          for (i = 0, j = npol-1; i < npol; j = i++) {
-            if ((((yp[i]<=y) && (y<yp[j])) ||
-                 ((yp[j]<=y) && (y<yp[i]))) &&
-                ((x - xp[i]) < (xp[j] - xp[i]) * (y - yp[i]) / (yp[j] - yp[i])))
-              c = !c;
-          }
-          return c;
-        }*/}
-        $c = false;
-        $j = count($cs) - 1;
-        for($i=0; $i<count($cs); $i++) {
-          if (((($cs[$i][1] <= $p[1]) && ($p[1] < $cs[$j][1])) || (($cs[$j][1] <= $p[1]) && ($p[1] < $cs[$i][1])))
-            && (($p[0] - $cs[$i][0]) < ($cs[$j][0] - $cs[$i][0]) * ($p[1] - $cs[$i][1]) / ($cs[$j][1] - $cs[$i][1]))) {
-            $c = !$c;
-          }
-          $j = $i;
-        }
-        return $c;
-      }
-      static function test_posInPolygon(): void {
-        $p0 = [0, 0];
-        foreach ([ // liste de polyligne non fermées
-          ['lpos'=> [[1, 0],[0, 1],[-1, 0],[0, -1]], 'result'=> true],
-          ['lpos'=> [[1, 1],[-1, 1],[-1, -1],[1, -1]], 'result'=> true],
-          ['lpos'=> [[1, 1],[-1, 1],[-1, -1],[1, -1],[1, 1]], 'result'=> true],
-          ['lpos'=> [[1, 1],[2, 1],[2, 2],[1, 2]], 'result'=> false],
-        ] as $test) {
-          $lpos = $test['lpos'];
-          $lpos[] = $lpos[0]; // fermeture de la polyligne
-          echo "posInPolygon(",json_encode($lpos),',',json_encode($p0),")=",
-              (self::posInPolygon($p0, $lpos)?'true':'false')," / ",($test['result']?'true':'false'),"<br>\n";
-        }
-      }
-    };
+- `is(mixed $lpos): bool` - teste si $lpos est une liste de positions en comportant au moins une
+- `isValid(mixed $lpos): bool` - vérifie la validité de $lpos comme liste de positions en comportant au moins une
+- `getErrors(mixed $lpos): array` - renvoie les raisons pour lesquelles $lpos n'est pas une liste de positions
+- `length(TLPos $lpos): float` - longueur d'une ligne brisée définie par une liste de positions
+- `areaOfRing(TLPos $lpos): float` - surface de l'anneau constitué par la liste de positions  
+  La surface est positive ssi la géométrie est orientée dans le sens des aiguilles d'une montre (sens trigo inverse),
+  comm dans la définition GeoJSON
+- `filter(TLPos $lpos, int $precision): TLPos` - renvoie une LPos filtrée supprimant les points successifs identiques  
+  Les coordonnées sont arrondies avec $precision chiffres significatifs. Un filtre sans arrondi n'a pas de sens.
+- `simplify(TLPos $lpos, float $distTreshold): TLPos` - simplifie la géométrie de la ligne brisée par l'algorithme
+  de Douglas & Peucker. Retourne `[]` si la ligne est fermée et que son diamètre est inférieur au seuil
 
-    UnitTest::class(__NAMESPACE__, __FILE__, 'Pos'); // Test unitaire de la classe Pos
-
-    /**
-     * class LPos - fonctions s'appliquant à une liste de positions contenant au moins une position
-     *
-     * Les méthodes is(), isValid() et getErrors() jouent le même rôle que pour la classe Pos
-    */
-    class LPos {
-      const EXAMPLES = [
-        "cas réel"=> [[ -59.572094692612, -80.040178725096 ], [ -59.865849371975, -80.549656671062 ], [ -60.15965572777, -81.000326837079 ], [ -62.255393439367, -80.863177585777 ], [ -64.48812537297, -80.921933689293 ], [ -65.74166642929, -80.588827406739 ], [ -65.74166642929, -80.549656671062 ], [ -66.290030890555, -80.255772800618 ], [ -64.037687750898, -80.294943536295 ], [ -61.883245612217, -80.392870375488 ], [ -61.138975796133, -79.981370945148 ], [ -60.610119188058, -79.628679294756 ], [ -59.572094692612, -80.040178725096 ]]
-      ];
-
-      /**
-       * is() - teste si $lpos est une liste de positions
-       */
-      static function is(mixed $lpos): bool { return is_array($lpos) && isset($lpos[0]) && Pos::is($lpos[0]); }
-
-      /**
-       * isValid() - vérifie la validité de $lpos comme liste de positions
-       */
-      static function isValid(mixed $lpos): bool {
-        if (!is_array($lpos))
-          return false;
-        if (!$lpos)
-          return false;
-        foreach ($lpos as $pos)
-          if (!Pos::isValid($pos))
-            return false;
-        return true;
-      }
-
-      /**
-       * getErrors() - renvoie les raisons pour lesquelles $lpos n'est pas une liste de positions
-       *
-       * retourne une liste de string
-       *
-       * @return array<mixed>
-      */
-      static function getErrors(mixed $lpos): array {
-        $errors = [];
-        if (!is_array($lpos))
-          return ["La LPos doit être un array"];
-        if (!$lpos)
-          return ["La LPos doit contenir au moins une position"];
-        foreach ($lpos as $i => $pos)
-          if ($posErrors = Pos::getErrors($pos))
-            $errors[] = ["Erreur sur la position $i :", $posErrors];
-        return $errors;
-      }
-      static function test_getErrors(): void {
-        foreach (self::EXAMPLES as $title => $ex) {
-          echo "$title - getErrors()=",json_encode(self::getErrors($ex)),"<br>\n";
-        }
-      }
-  
-      /**
-       * length() - longueur d'une ligne brisée définie par une liste de positions
-       *
-       * @param TLPos $lpos
-       * @return float
-       */
-      static function length(array $lpos): float {
-        $length = 0;
-        $posPrec = null;
-        foreach ($lpos as $pos) {
-          if ($posPrec)
-            $length += Pos::distance($posPrec, $pos);
-          $posPrec = $pos;
-        }
-        return $length;
-      }
-  
-      /**
-       * areaOfRing() - surface de l'anneau constitué par la liste de positions
-       *
-       * La surface est positive ssi la géométrie est orientée dans le sens des aiguilles d'une montre (sens trigo inverse).
-       * Cette règle est conforme à la définition GeoJSON:
-       *   A linear ring MUST follow the right-hand rule with respect to the area it bounds,
-       *   i.e., exterior rings are clockwise, and holes are counterclockwise.
-       *
-       * @param TLPos $lpos
-       * @return float
-       */
-      static function areaOfRing(array $lpos): float {
-        $area = 0.0;
-        $pos0 = $lpos[0];
-        for ($i=1; $i<count($lpos)-1; $i++) {
-          $area += Pos::vectorProduct(Pos::diff($lpos[$i], $pos0), Pos::diff($lpos[$i+1], $pos0));
-        }
-        return -$area/2;
-      }
-      static function test_areaOfRing(): void {
-        foreach ([
-          [[0,0],[0,1],[1,0],[0,0]],
-          [[0,0],[1,0],[0,1],[0,0]],
-          [[0,0],[0,1],[1,1],[1,0],[0,0]],
-        ] as $lpos) {
-          echo "areaOfRing(".LnPos::wkt($lpos).")=",self::areaOfRing($lpos),"<br>\n";
-        }
-      }
-  
-      /**
-       * filter() - renvoie une LPos filtrée supprimant les points successifs identiques
-       *
-       * Les coordonnées sont arrondies avec $precision chiffres significatifs. Un filtre sans arrondi n'a pas de sens.
-       *
-       * @param TLPos $lpos
-       * @param int $precision
-       * @return TLPos
-       */
-      static function filter(array $lpos, int $precision): array {
-        //echo "Lpos::filter(",json_encode($lpos),", $precision)=<br>\n";
-        $filtered = [];
-        $posprec = null;
-        foreach ($lpos as $pos) {
-          $rounded = [round($pos[0], $precision), round($pos[1], $precision)];
-          //echo "rounded(",json_encode($pos),")=",json_encode($rounded),"<br>\n";
-          if (isset($pos[2]))
-            $rounded[] = $pos[2];
-          if (!$posprec || ($rounded <> $posprec)) {
-            $filtered[] = $rounded;
-          }
-          $posprec = $rounded;
-        }
-        //echo json_encode($filtered),"<br>\n";
-        return $filtered;
-      }
-      static function test_filter(): void {
-        $ls = [[0,0],[0.1,0],[0,1],[2,2]];
-        echo "filter(",json_encode($ls),", 1)=",json_encode(self::filter($ls, 1)),"<br>\n";
-        echo "filter(",json_encode($ls),", 0)=",json_encode(self::filter($ls, 0)),"<br>\n";
-        $ls = [[0,0],[0.1,0],[0,1],[2,2],[0,0]];
-        echo "filter(",json_encode($ls),", 1)=",json_encode(self::filter($ls, 1)),"<br>\n";
-        echo "filter(",json_encode($ls),", 0)=",json_encode(self::filter($ls, 0)),"<br>\n";
-        foreach (self::EXAMPLES as $title => $ex) {
-          echo "filter(",json_encode($ex),", 3)=",json_encode(self::filter($ex, 0)),"<br>\n";
-        }
-      }
-  
-      /**
-       * simplify() - simplifie la géométrie de la ligne brisée
-       *
-       * Algorithme de Douglas & Peucker
-       * Retourne un LPos simplifiée ou [] si la ligne est fermée et que la distance max est inférieure au seuil
-       *
-       * @param TLPos $lpos
-       * @param float $distTreshold
-       * @return TLPos
-       */
-      static function simplify(array $lpos, float $distTreshold): array {
-        //echo "simplify($this, $distTreshold)<br>\n";
-        if (count($lpos) < 3)
-          return $lpos;
-        $pos0 = $lpos[0];
-        $posn = $lpos[count($lpos)-1];
-        if ($pos0 <> $posn) { // cas d'une ligne ouverte
-          $distmax = 0; // distance max
-          $nptmax = -1; // num du point pour la distance max
-          foreach($lpos as $n => $pos) {
-            $dist = abs(Pos::distancePosLine($pos, $pos0, $posn));
-            if ($dist > $distmax) {
-              $distmax = $dist;
-              $nptmax = $n;
-            }
-          }
-          //echo "distmax=$distmax, nptmax=$nptmax<br>\n";
-          if ($distmax < $distTreshold)
-            return [$pos0, $posn];
-          $ls1 = array_slice($lpos, 0, $nptmax+1);
-          $ls1 = self::simplify($ls1, $distTreshold);
-          $ls2 = array_slice($lpos, $nptmax);
-          $ls2 = self::simplify($ls2, $distTreshold);
-          return array_merge($ls1, array_slice($ls2, 1));
-        }
-        else { // cas d'une ligne fermée
-          $distmax = 0; // distance max
-          $nptmax = -1; // num du point pour la distance max
-          foreach($lpos as $n => $pos) {
-            $dist = Pos::distance($pos0, $pos);
-            if ($dist > $distmax) {
-              $distmax = $dist;
-              $nptmax = $n;
-            }
-          }
-          if ($distmax < $distTreshold)
-            return [];
-          $ls1 = array_slice($lpos, 0, $nptmax+1);
-          $ls1 = self::simplify($ls1, $distTreshold);
-          $ls2 = array_slice($lpos, $nptmax);
-          $ls2 = self::simplify($ls2, $distTreshold);
-          return array_merge($ls1, array_slice($ls2, 1));
-        }
-      }
-      static function test_simplify(): void {
-        $ls = [[0,0],[0.1,0],[0,1],[2,2]];
-        echo "simplify(",json_encode($ls),", 1)=",json_encode(self::simplify($ls, 1)),"<br>\n";
-        echo "simplify(",json_encode($ls),", 0.5)=",json_encode(self::simplify($ls, 0.5)),"<br>\n";
-        $ls = [[0,0],[0.1,0],[0,1],[2,2],[0,0]];
-        echo "simplify(",json_encode($ls),", 1)=",json_encode(self::simplify($ls, 1)),"<br>\n";
-        foreach (self::EXAMPLES as $title => $ex) {
-          echo "filter(",json_encode($ex),", 3)=",json_encode(self::simplify($ex, 0.1)),"<br>\n";
-        }
-      }
-    };
-
-    UnitTest::class(__NAMESPACE__, __FILE__, 'LPos'); // Test unitaire de la classe LPos
+### 2.3 Fonctions statiques définies dans la classe LLPos
+La classe `LPos` regroupe les fonctions dont le premier paramètre est une liste de positions en comportant au moins une.
 
     /**
      * class LLPos - fonctions s'appliquant à une liste de listes de positions contenant au moins une position
@@ -589,7 +325,6 @@ Dans certains cas, une position peut être interprétée comme un vecteur.
       }
     };
 
-### 3.3 La classe LPos
 ### 3.4 La classe LLPos
 ### 3.5 La classe LnPos
 
