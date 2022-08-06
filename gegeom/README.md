@@ -47,7 +47,7 @@ Les changements de systèmes de coordonnées sont effectués en passant en param
 une fonction anonyme qui fait correspondre une position en coord. projetées à une position en coord. géo.
 ou vice-versa.  
 Cette bibliothèque a été conçue pour permettre d'utiliser facilement les fonctions définies
-dans la [bibliothèque CoordSys](/benoitdavidfr/geovect/tree/master/coordsys).
+dans la [bibliothèque CoordSys](../coordsys).
 
 ### 1.3. Dessin des primitives géométriques
 Les primitives géométriques peuvent se dessiner dans un objet dessin.
@@ -58,9 +58,9 @@ par la [spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master
 La classe `GdDrawing` implémente ces primitives au dessus de la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php). 
 
 ### 1.4. Les types PhpDocumentor/PhpStan
-Quelques types sont définis pour PhpStan, ils sont listé dans [phpstan.neon](../phpstan.neon).
+Quelques types sont définis pour ce dépôt PhpStan, ils sont listés dans [phpstan.neon](../phpstan.neon).
 
-### 1.4. Pourquoi une nouvelle bibliothèque ?
+### 1.5. Pourquoi une nouvelle bibliothèque ?
 Cette bibliothèque redéfinit des fonctionnalités proches de [geometry](https://github.com/benoitdavidfr/geometry)
 et de [geom2d](https://github.com/benoitdavidfr/geom2d).
 Elle apporte principalement 4 spécificités :
