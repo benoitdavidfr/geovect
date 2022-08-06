@@ -11,9 +11,9 @@ Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon et Geometr
 
 Elle comprend en outre :
 
-  - la classe abstraite `BBox` définissant une boite englobante ainsi que 2 sous-classes `GBox` et `EBox` définissant
-    ces boites respectivement en coordonnées géographiques et euclidiennes,
-  - la classe abstraite `Drawing` définissant l'interface d'un dessin et la classe `GdDrawing` implémentant cette interface
+  - la classe abstraite `BBox` définissant une boite englobante ainsi que 2 sous-classes concrètes `GBox` et `EBox`
+    définissant ces boites respectivement en coordonnées géographiques et euclidiennes,
+  - l'interface `Drawing` d'un dessin et la classe `GdDrawing` implémentant cette interface
     avec [la bibliothèque GD](https://www.php.net/manual/fr/book.image.php).
   - la classe `FeatureStream` permettant de lire un flux de Feature GeoJSON pour quelques types de couches particulières.
 
@@ -24,20 +24,20 @@ Cette documentation utilise donc les types de PhpDocumentor utilisés dans PhpSt
 ### 1.1. Le concept de position
 La bibliothèque reprend de GeoJSON le concept de **position** constituée de 2 coordonnées éventuellement complétées
 par une altitude.
-Une position est définie en Php comme une liste de 2 ou 3 nombres et n'est pas un objet Php.
+En Php, une position est définie comme une liste de 2 ou 3 nombres et n'est pas un objet Php.
 Une position indéfinie peut être représentée de manière standardisée par la liste vide mais n'est pas une position valide.
 Dans cette bibliothèque une position peut être soit définie en coordonnées géographiques (longitude, latitude)
 en degrés décimaux soit dans un système de coordonnées projeté.
 Ainsi, les coordonnées des objets géométriques sont définies:
 
-  - pour un Point, par une position, notée Pos et dont le type PhpStan est `TPos`,
-  - pour une LineString ou un MultiPoint, par une liste de positions, notée LPos et dont le type PhpStan est `TLPos`,
-  - pour un Polygon ou un MultiLineString, par une liste de listes de positions, notée LLPos
+  - pour un `Point`, par une position, notée `Pos` et dont le type PhpStan est `TPos`,
+  - pour une `LineString` ou un `MultiPoint`, par une liste de positions, notée `LPos` et dont le type PhpStan est `TLPos`,
+  - pour un Polygon ou un MultiLineString, par une liste de listes de positions, notée `LLPos`
     et dont le type PhpStan est `TLLPos`,
-  - pour un MultiPolygon, par une liste de listes de listes de positions, notée LLLPos.
+  - enfin, pour un MultiPolygon, par une liste de listes de listes de positions, notée `LLLPos`.
 
-L'utilisation de ce concept de position simplifie la création des objets correspondants aux primitives
-puisque la structure est très proche de celle de GeoJSON.
+L'utilisation de ce concept de position et son implémentation en Php simplifie la création des objets correspondants
+aux primitives.
 
 ### 1.2. Les changements de systèmes de coordonnées
 La bibliothèque est indépendante des systèmes de coordonnées.
@@ -52,7 +52,7 @@ dans la [bibliothèque CoordSys](../coordsys).
 ### 1.3. Dessin des primitives géométriques
 Les primitives géométriques peuvent se dessiner dans un objet dessin.
 Afin de rendre la bibliothèque indépendante des différentes techniques de dessin (GD, SVG, ...), elle utilise des primitives
-génériques de dessin définies par la classe abstraite `Drawing`.
+génériques de dessin définies par l'interface `Drawing`.
 Elles utilisent un style de dessin défini
 par la [spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0).  
 La classe `GdDrawing` implémente ces primitives au dessus de la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php). 
@@ -80,10 +80,10 @@ notamment celles de tuilage.
 ## 2. Les fonction géométriques
 Les fonctions géométriques sont définies comme méthodes statiques dans les 4 classes statiques suivantes:
 
-  - la classe **Pos** pour les fonctions dont le premier paramètre est une position,
-  - la classe **LPos** pour les fonctions dont le premier paramètre est une liste de positions,
-  - la classe **LLPos** pour les fonctions dont le premier paramètre est une liste de listes de positions,
-  - la classe **LnPos** pour les fonctions dont le premier paramètre est une liste**n de positions,
+  - la classe **Pos** pour les fonctions sur une position,
+  - la classe **LPos** pour les fonctions sur une liste de positions,
+  - la classe **LLPos** pour les fonctions sur une liste de listes de positions,
+  - la classe **LnPos** pour les fonctions sur une liste**n de positions,
     caad soit une Pos, soit une LPos, soit une LLPos, soit une LLLPos.
 
 ### 2.1 Fonctions définies dans la classe Pos
@@ -309,28 +309,28 @@ d'objets élémentaires.
 Elle hérite de la classe Geometry et ne possède aucune méthode spécifique.
 
 ## 5. Le dessin des primitives géométriques
-### 5.1. La classe abstraite Drawing
-La classe abstraite `Drawing` définit l'interface à respecter par une classe de dessin.  
-Le paramètre `$style` respecte les principes définis
+### 5.1. Linterface Drawing
+L'interface `Drawing` définit l'interface à respecter par une classe de dessin.  
+Le paramètre `$style` reprend les principes définis
 par la [spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0), notamment:
 
-  - stroke: couleur RVB de dessin d'une ligne brisée ou d'un contour de polygone
-  - stroke-opacity : opacité entre 0 (transparent) et 1 (opaque)
-  - fill: couleur RVB de remplissage d'un polygone
-  - fill-opacity : opacité entre 0 (transparent) et 1 (opaque)
+  - `stroke`: couleur RVB de dessin d'une ligne brisée ou d'un contour de polygone
+  - `stroke-opacity` : opacité entre 0 (transparent) et 1 (opaque)
+  - `fill`: couleur RVB de remplissage d'un polygone
+  - `fill-opacity` : opacité entre 0 (transparent) et 1 (opaque)
 
 #### Méthodes
-Elle définit les méthodes abstraites suivantes:
+Elle spécifie les méthodes suivantes:
 
   - `__construct(int $width, int $height, ?BBox $world=null, int $bgColor=0xFFFFFF, float $bgOpacity=1)` - initialisation du dessin  
     - `$width` et $height indiquent la taille du dessin sur l'écran en nbre de pixels  
     - `$world` défini le système de coordonnées utilisateur, par défaut [-180, -90, 180, 90]  
     - `$bgColor` est la couleur de fond du dessin codé en RGB
     - `$bgOpacity` est l'opacité du fond du dessin entre 0 (transparent) et 1 (opaque)
-  - `polyline(array $lpos, array $style): void` - dessine une ligne brisée
+  - `polyline(TLPos $lpos, TStyle $style): void` - dessine une ligne brisée
     - `$lpos` est une liste de positions en coordonnées utilisateur
     - `$style` est le style de dessin
-  - `polygon(array $llpos, array $style): void` - dessine une ligne brisée
+  - `polygon(TLLPos $llpos, TStyle $style): void` - dessine un polygone
     - `$llpos` est une liste de listes de positions en coordonnées utilisateur
     - `$style` est le style de dessin
   - `flush(string $format='', bool $noheader=false): void` - affiche l'image construite
@@ -338,14 +338,5 @@ Elle définit les méthodes abstraites suivantes:
     - si `$noheader` est vrai alors le header n'est pas transmis
 
 ### 5.2. La classe concrète GdDrawing
-La classe GdDrawing implémente les primtives de dessin avec la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php).
-
-## 6. Les flux de Feature
-### 6.1. La classe FeatureStream
-La classe `FeatureStream` facilite l'accès à quelques flux de Feature.  
-Cette classe propose, d'une part, une constante LAYERS qui retourne les couches disponibles
-et d'autre part implémente un constructeur prenant en paramètres l'URI de la couche
-et permettant d'itérer sur les objets de la couche ainsi définie.
-L'itérateur renvoie un array respectant le format des Feature GeoJSON.
-
+La classe GdDrawing implémente les méthodes de dessin avec la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php).
 

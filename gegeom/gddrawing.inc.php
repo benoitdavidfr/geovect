@@ -39,7 +39,7 @@ require_once __DIR__.'/drawing.inc.php';
  * Il définit des méthodes de dessin d'une ligne brisée et d'un polygone.
  * Il permet aussi de rééchantilloner l'image dessinée, pour par ex. modifier son échelle.
  */
-class GdDrawing extends Drawing {
+class GdDrawing implements Drawing {
   const ErrorCreate = 'GdDrawing::ErrorCreate';
   const ErrorCreateFromPng = 'GdDrawing::ErrorCreateFromPng';
   const ErrorCopy = 'GdDrawing::ErrorCopy';
