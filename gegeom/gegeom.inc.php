@@ -296,17 +296,8 @@ abstract class Homogeneous extends Geometry {
    */
   function wkt(): string { return strtoupper($this->type()).LnPos::wkt($this->coords); }
   
-  /*PhpDoc: methods
-  name: geoms
-  title: "abstract function geoms(): array - retourne la liste des primitives contenues dans l'objet sous la forme d'objets"
-  doc: |
-    Point -> [], MultiPoint->[Point], LineString->[Point], MultiLineString->[LineString], Polygon->[LineString],
-    MutiPolygon->[Polygon], GeometryCollection->[Elements]  
-  *//*
-  abstract function geoms(): array;*/
-  
   /**
-   * proj2D(): $this - projection 2D, supprime l'éventuelle 3ème coordonnée, renvoie un nouvel objet de même type"
+   * proj2D(): self - projection 2D, supprime l'éventuelle 3ème coordonnée, renvoie un nouvel objet de même type
   */
   function proj2D(): Homogeneous { return self::proj(function(array $pos) { return [$pos[0], $pos[1]]; }); }
   

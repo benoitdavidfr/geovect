@@ -186,7 +186,7 @@ foreach ($layers as $layer) {
   foreach ($layer['features']->features($layer['criteria'] ?? []) as $feature) {
     //echo "feature="; print_r($feature);
     $geom = Geometry::fromGeoJSON($feature['geometry']);
-    if ($geom->bbox()->inters($world)) {
+    if ($geom->gbox()->inters($world)) {
       $geom->proj($projPos)->draw($drawing, $layer['style']);
     }
   }

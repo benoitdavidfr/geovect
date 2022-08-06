@@ -19,7 +19,7 @@ foreach (['GBox','EBox'] as $class) {
   $class = __NAMESPACE__.'\\'.$class;
   $bbox = new $class([0,0]);
   "bbox=$bbox<br>\n";
-  $bbox->defined();
+  $bbox->empty();
   $bbox->posInBBox([0,0]);
   $bbox->bound([1,1]);
   $bbox->center();
@@ -53,17 +53,15 @@ foreach ([
     $class = __NAMESPACE__.'\\'.$class;
     $geom = new $class($value);
     $geom->coords();
-    $geom->geoms();
     $geom->asArray();
     "geom=$geom<br>\n";
-    $geom->geojson();
     $geom->wkt();
     $geom->isValid();
     $geom->getErrors();
     $geom->proj2D();
     $geom->center();
     $geom->aPos();
-    $geom->bbox();
+    $geom->gbox();
     $geom->ebox();
     $geom->proj(function($pos) { return $pos; });
     $geom->nbPoints();

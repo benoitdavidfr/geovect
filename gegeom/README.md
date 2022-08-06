@@ -71,8 +71,8 @@ notamment celles de tuilage.
 ## 2. Les boites englobantes
 ### 2.1. La classe abstraite BBox
 La classe BBox définit une boite englobante définie par 2 positions min et max.
-Ces 2 positions peuvent ne pas être définies et dans ce cas la boite est dite **indéterminée**.
-Si une boite n'est pas indéterminée alors min et max contiennent chacun une position définie.
+Ces 2 positions peuvent ne pas être définies et dans ce cas la boite est dite **vide**.
+Si une boite n'est pas vide alors min et max contiennent chacun une position définie.
 
 #### Méthodes
 Elle comporte les méthodes suivantes:
@@ -85,7 +85,7 @@ Elle comporte les méthodes suivantes:
     - Si c'est une liste de positions, ou une liste de listes de positions, alors la boite est la boite minimum contenant
       toutes ces positions,
   - `__toString(): string` -  chaine représentant la boite avec des coord. arrondies
-  - `defined(): bool` - indique si la boite est déterminée ou non
+  - `empty(): bool` - indique si la boite est vide ou non
   - `posInBBox(array $pos): bool` - teste si une position est dans la bbox considérée comme fermée à gauche et ouverte à droite
   - `bound(array $pos): BBox` - ajoute une position à la boite et renvoie la boite modifiée
   - `asArray(): array` - renvoie [xmin, ymin, xmax, ymax] ou []
@@ -121,8 +121,6 @@ Outre les méthodes génériques de BBox, les méthodes suivantes sont définies
 ### 3.1. La classe abstraite Geometry
 La classe abstraite Geometry permet de gérer a minima une géométrie sans avoir à connaître son type
 et porte aussi 2 méthodes statiques de construction d'objet à partir respectivement d'un GeoJSON ou d'un WKT. 
-Elle permet d'associer à cette géométrie un style inspiré
-de [la spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0).
 
 #### Méthodes
 Elle définit les méthodes suivantes:
@@ -134,20 +132,17 @@ Elle définit les méthodes suivantes:
     liste de positions, ..., et d'un éventuel style,
   - `coords(): array` - retourne les coordonnées comme position ou liste de positions ou liste de listes ...,
     retourne [] pour une GeometryCollection,
-  - `geoms(): array` - pour une GeometryCollection retourne la liste des objets contenus dans l'objet,
-    pour les autres types retourne le singleton composé de l'objet,
   - `asArray(): array` - retourne la représentation GeoJSON comme array Php
-  - `__toString(): string` - retourne une représentation en string
-  - `geojson(): string` - retourne la représentation GeoJSON en string
+  - `__toString(): string` - retourne la représentation GeoJSON en string
   - `wkt(): string` - retourne la représentation WKT
   - `isValid(): bool` - retourne vrai ssi l'objet est valide
   - `getErrors(): array` - retourne l'arbre des erreurs si l'objet est invalide, sinon renvoie []
   - `proj2D(): Geometry` - projection 2D, supprime l'éventuelle 3ème coordonnée, renvoie un nouveau Geometry
   - `center(): array` - retourne le centre de l'objet comme position
   - `aPos(): array` - retourne une position de l'objet
-  - `bbox(): GBox` - retourne le BBox de l'objet considéré en coordonnées géographiques
+  - `gbox(): GBox` - retourne le BBox de l'objet considéré en coordonnées géographiques
   - `ebox(): EBox` - retourne le BBox de l'objet considéré en coordonnées euclidiennes
-  - `proj(callable $projPos): Geometry` - change de système de coordonnées en appliquant la fonction anonyme passée en paramètre,
+  - `proj(callable $projPos): Geometry` - retourne un nouvel objet de la même classe en changeant de système de coordonnées en appliquant la fonction anonyme passée en paramètre à chaque position,
     retourne un nouvel objet de la même classe que l'objet d'origine,
   - `nbPoints(): int` - retourne le nombre de points de l'objet (pas de positions)
   - `length(): float` - retourne la longueur de l'objet dans le système de coordonnées (ne pas utiliser avec des coord. géo.)
@@ -161,7 +156,9 @@ Elle définit les méthodes suivantes:
   - `simplify(float $distTreshold): Geometry` - simplifie la géométrie en utilisant la méthode de Douglas & Peucker,
     le paramètre `$distTreshold` est la distance minimum d'un point au segment père,
     renvoie un nouvel objet de la même classe que l'objet d'origine,
-  - `draw(Drawing $drawing, array $style)` - dessine l'objet dans le dessin $drawing avec le style $style
+  - `draw(Drawing $drawing, array $style)` - dessine l'objet dans le dessin $drawing avec le style $style inspiré
+    de [la spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0).
+  
 
 ### 3.2. La classe Point
 La classe Point implémente la primitive Point en 2D ou 3D défini par une position ;
