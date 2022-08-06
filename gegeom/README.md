@@ -74,57 +74,8 @@ Les fonctionnalités de [geometry](https://github.com/benoitdavidfr/geometry) on
 Celles de [geom2d](https://github.com/benoitdavidfr/geom2d) ne l'ont été que partiellement,
 notamment celles de tuilage.
 
-## 2. Les boites englobantes
-### 2.1. La classe abstraite BBox
-La classe BBox définit une boite englobante définie par 2 positions min et max.
-Ces 2 positions peuvent ne pas être définies et dans ce cas la boite est dite **vide**.
-Si une boite n'est pas vide alors min et max contiennent chacun une position définie.
-
-#### Méthodes
-Elle comporte les méthodes suivantes:
-
-  - `__construct(...$params)` - initialise une boite en fonction du paramètre.  
-    - Sans paramètre la boite est initialisée indéterminée.  
-    - Si c'est un array de 2 ou 3 nombres, ou une chaine correspondant à 2 ou 3 nombres, interprétés comme une position, alors la boite est définie par cette position,  
-    - Si c'est un array de 4 ou 6 nombres, ou une chaine correspondant à 4 ou 6 nombres, interprétés
-      comme 2 positions, alors la boite est définie par ces 2 positions,  
-    - Si c'est une liste de positions, ou une liste de listes de positions, alors la boite est la boite minimum contenant
-      toutes ces positions,
-  - `__toString(): string` -  chaine représentant la boite avec des coord. arrondies
-  - `empty(): bool` - indique si la boite est vide ou non
-  - `posInBBox(array $pos): bool` - teste si une position est dans la bbox considérée comme fermée à gauche et ouverte à droite
-  - `bound(array $pos): BBox` - ajoute une position à la boite et renvoie la boite modifiée
-  - `asArray(): array` - renvoie [xmin, ymin, xmax, ymax] ou []
-  - `center(): array` - position du centre de la boite ou [] si elle est indéterminée
-  - `polygon(): array` - liste de listes de positions avec les 5 pos. du polygone de la boite ou [] si elle est indéterminée
-  - `union(BBox $b2): BBox` - agrandit la boite courante pour contenir la boite en paramètre et renvoie la boite courante
-  - `intersects(BBox $b2): ?BBox` - retourne l'intersection des 2 boites si elles s'intersectent, sinon null
-  - `size(): float` - longueur du plus grand côté
-  - `dist(BBox $b2): float` - distance la plus courte entre les positions des 2 BBox, génère une erreur si une des 2 est
-    indéterminée
-  - `distance(BBox $b2): float` - distance entre 2 boites, nulle ssi les 2 boites sont identiques
-  - //`isIncludedIn(BBox $bbox1):bool` - teste si this est inclus dans bbox1 (NON IMPLEMENTEE)
-  
-### 2.2. La classe concrète GBox
-La classe GBox définit des boites englobantes en coordonnées géographiques.
-
-#### Méthodes
-Outre les méthodes génériques de BBox, la méthode suivante est définie :
-
-  - `proj(callable $projPos): EBox` - projection d'un GBox selon la fonction anonyme de projection en paramètre
-  
-### 2.3. La classe concrète EBox
-La classe EBox définit des boites englobantes en coordonnées euclidiennes.
-
-#### Méthodes
-Outre les méthodes génériques de BBox, les méthodes suivantes sont définies :
-
-  - `area(): float` - surface de la boite
-  - `covers(EBox $b2): float` - taux de couverture de $b2 par $this
-  - `geo(callable $projPos): GBox` - calcule les coord. géo. en utilisant la fonction anonyme en paramètre
-
-## 3. Les fonction géométriques
-### 3.1 Définition de classes statiques
+## 2. Les fonction géométriques
+### 2.1 Définition de classes statiques
 Les fonctions géométriques sont définies dans les 4 classes statiques suivantes:
 
   - **Pos** pour les fonctions dont le premier paramètre est une position
@@ -132,192 +83,40 @@ Les fonctions géométriques sont définies dans les 4 classes statiques suivant
   - **LLPos** pour les fonctions dont le premier paramètre est une liste de listes de positions
   - **LnPos** pour les fonctions dont le premier paramètre est une liste**n de positions
 
-### 3.2 Fonctions statiques définies dans la classe Pos
+### 2.2 Fonctions statiques définies dans la classe Pos
+Dans certains cas, une position peut être interprétée comme un vecteur.
 
-- is(mixed $pos): bool - teste si $pos est une position, permet notament de distinguer Pos, LPos, LLPos et LLLPos
-  mais ne vérifie pas la validité de $pos.
-- getErrors(): array<mixed> - renvoie les raisons pour lesquelles $pos n'est pas une position
+- `is(mixed $pos): bool` - teste si $pos est une position, permet notament de distinguer Pos, LPos, LLPos et LLLPos
+  mais ne vérifie pas la validité de $pos
+- `getErrors(mixed $pos): array` - renvoie les raisons pour lesquelles $pos n'est pas une position
+- `fromGeoDMd() TPos`- décode une position en coords géographiques en degré minutes décimales conforme
+  au motif suivant `!^(\d+)°((\d\d)(,(\d+))?\')?(N|S) - (\d+)°((\d\d)(,(\d+))?\')?(E|W)$!  
+  exemple: `45°23,45'N - 1°12'W`
+- `formatInGeoDMd(TPos $pos, float $resolution): string` - Formate une position (lon,lat) en lat,lon degrés,
+  minutes décimales, $resolution est la résolution de la position en degrés à conserver
+- `diff(TPos $pos, TPos $v): TPos` - $pos - $v en 2D où $pos et $v sont 2 positions
+- `vectorProduct(TPos $u, TPos $v): float` - produit vectoriel $u par $v en 2D
+- `scalarProduct(TPos $u, TPos $v): float` - produit scalaire $u par $v en 2D
+- `norm(TPos $u): float` - norme de $u en 2D
+- `distance(TPos $a, TPos $b): float` - distance euclidienne entre les positions $a et $b
+- `distancePosLine(TPos $pos, TPos $a, TPos $b): float` - distance signée de la position $pos à la droite définie
+  par les 2 positions $a et $b ;
+  la distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
 
-    /**
-     * class Pos - fonctions s'appliquant à une position
-     *
-     * La classe est une classe statique regroupant les fonctions
-     * une position est une liste de 2 ou 3 nombres
-     * Peut correspondre à un point ou à un vecteur.
-    */
-    class Pos {
+  
+    class Pos {  
   
       /**
-       * isValid() - vérifie la validité de $pos comme position
+       * distancePosLine() - 
        *
-       * définition la moins contraignante possible
-       */
-      static function isValid(mixed $pos): bool {
-        return is_array($pos) && isset($pos[0]) && is_numeric($pos[0]) && isset($pos[1]) && is_numeric($pos[1])
-            && (!isset($pos[2]) || is_numeric($pos[2]));
-      }
-  
-      /**
        * 
        *
-       * retourne une liste de string
-       *
-       * @return array<int, string>
-      */
-      static function getErrors(mixed $pos): array {
-        $errors = [];
-        if (!is_array($pos))
-          return ["La position doit être un array"];
-        if (!$pos)
-          return ["[] n'est pas une position valide"];
-        if (!isset($pos[0]) || !is_numeric($pos[0]))
-          $errors[] = "La première coordonnée de la position doit être un nombre";
-        if (!isset($pos[1]) || !is_numeric($pos[1]))
-          $errors[] = "La deuxième coordonnée de la position doit être un nombre";
-        if (isset($pos[2]) && !is_numeric($pos[2]))
-          $errors[] = "Quand elle existe la troisième coordonnée de la position doit être un nombre";
-        return $errors;
-      }
-      static function test_getErrors(): void {
-        foreach (array_merge(self::EXAMPLES, self::COUNTEREXAMPLES) as $title => $ex) {
-          echo "$title - getErrors()=",json_encode(self::getErrors($ex)),"<br>\n";
-        }
-      }
-  
-      /**
-       * fromGeoDMd() - décode une position en coords géographiques en degré minutes décimales
-       *
-       * @return TPos
-       */
-      static function fromGeoDMd(string $geoDMd): array {
-        if (!preg_match(self::GEODMD_PATTERN, $geoDMd, $matches))
-          throw new \SExcept("No match in Pos::fromGeoDMd($geoDMd)", self::ErrorParamInFromGeoDMd);
-        //echo "<pre>matches="; print_r($matches); echo "</pre>\n";
-        $lat = ($matches[6]=='N' ? 1 : -1) * 
-          ($matches[1] + (($matches[3] ? $matches[3] : 0) + ($matches[5] ? ".$matches[5]" : 0))/60);
-        //echo "lat=$lat";
-        $lon = ($matches[12]=='E' ? 1 : -1) * 
-          ($matches[7] + (($matches[9] ? $matches[9] : 0) + ($matches[11] ? ".$matches[11]" : 0))/60);
-        //echo ", lon=$lon";
-        return [$lon, $lat];
-      }
-  
-      // Formatte une coord. lat ou lon
-      static function formatCoordInDMd(float $coord, int $nbposMin): string {
-        $min = number_format(($coord-floor($coord))*60, $nbposMin, ','); // minutes formattées
-        //echo "min=$min<br>\n";
-        if ($nbposMin <> 0) {
-          if (preg_match('!^\d,!', $min)) // si il n'y a qu'un seul chiffre avant la virgule
-            $min = '0'.$min; // alors je rajoute un zéro avant
-        }
-        elseif (preg_match('!^\d$!', $min)) // si il n'y a qu'un seul chiffre avant la virgule
-          $min = '0'.$min; // alors je rajoute un zéro avant
-
-        $string = sprintf("%d°%s'", floor($coord), $min);
-        return $string;
-      }
-  
-      /**
-       * Formate une position (lon,lat) en lat,lon degrés, minutes décimales
-       *
-       * $resolution est la résolution de la position en degrés à conserver
-       *
-       * @param TPos $pos
-       */
-      static function formatInGeoDMd(array $pos, float $resolution): string {
-        //return sprintf("[%f, %f]",$pos[0], $pos[1]);
-        $lat = $pos[1];
-        $lon = $pos[0];
-        if ($lon > 180)
-          $lon -= 360;
-    
-        $resolution *= 60;
-        //echo "resolution=$resolution<br>\n";
-        //echo "log10=",log($resolution,10),"<br>\n";
-        $nbposMin = ceil(-log($resolution,10));
-        if ($nbposMin < 0)
-          $nbposMin = 0;
-        //echo "nbposMin=$nbposMin<br>\n";
-    
-        return self::formatCoordInDMd(abs($lat), $nbposMin).(($lat >= 0) ? 'N' : 'S')
-          .' - '.self::formatCoordInDMd(abs($lon), $nbposMin).(($lon >= 0) ? 'E' : 'W');
-      }
-
-      /**
-       * diff() - $pos - $v en 2D où $v est une position
-       *
-       * @param TPos $pos
-       * @param TPos $v
-       * @return TPos
-       */
-      static function diff(array $pos, array $v): array {
-        if (!self::is($pos))
-          throw new \Exception("Erreur dans Pos:diff(), paramètre pos pas une position");
-        elseif (!self::is($v))
-          throw new \Exception("Erreur dans Pos:diff(), paramètre v pas une position");
-        else
-          return [$pos[0] - $v[0], $pos[1] - $v[1]];
-      }
-  
-      /**
-       * vectorProduct() - produit vectoriel $u par $v en 2D
-       *
-       * @param TPos $u
-       * @param TPos $v
-       * @return float
-       */
-      static function vectorProduct(array $u, array $v): float { return $u[0] * $v[1] - $u[1] * $v[0]; }
-  
-      /**
-       * scalarProduct() - produit scalaire $u par $v en 2D
-       *
-       * @param TPos $u
-       * @param TPos $v
-       * @return float
-       */
-      static function scalarProduct(array $u, array $v): float { return $u[0] * $v[0] + $u[1] * $v[1]; }
-      static function test_scalarProduct(): void {
-        foreach ([
-          [[15,20], [20,15]],
-          [[1,0], [0,1]],
-          [[4,0], [0,3]],
-          [[1,0], [1,0]],
-        ] as $lpts) {
-          $v0 = $lpts[0];
-          $v1 = $lpts[1];
-          echo "vectorProduct(",implode(',',$v0),",",implode(',',$v1),")=",self::vectorProduct($v0, $v1),"<br>\n";
-          echo "scalarProduct(",implode(',',$v0),",",implode(',',$v1),")=",self::scalarProduct($v0, $v1),"<br>\n";
-        }
-      }
-  
-      /**
-       * norm() - norme de $u en 2D
-       *
-       * @param TPos $u
-       * @return float
-       */
-      static function norm(array $u): float { return sqrt(self::scalarProduct($u, $u)); }
-    
-      /**
-       * distance() -  distance entre les positions $a et $b
-       *
+       * @param  $pos
        * @param TPos $a
        * @param TPos $b
        * @return float
        */
-      static function distance(array $a, array $b): float { return self::norm(self::diff($a, $b)); }
-  
-      /**
-       * distancePosLine() - distance signée de la position $pos à la droite définie par les 2 positions $a et $b
-       *
-       * La distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
-       *
-       * @param TPos $pos
-       * @param TPos $a
-       * @param TPos $b
-       * @return float
-       */
-      static function distancePosLine(array $pos, array $a, array $b): float {
+      static function  {
         $ab = self::diff($b, $a);
         $ap = self::diff($pos, $a);
         if (self::norm($ab) == 0)
@@ -794,6 +593,55 @@ Les fonctions géométriques sont définies dans les 4 classes statiques suivant
 ### 3.4 La classe LLPos
 ### 3.5 La classe LnPos
 
+
+## 2. Les boites englobantes
+### 2.1. La classe abstraite BBox
+La classe BBox définit une boite englobante définie par 2 positions min et max.
+Ces 2 positions peuvent ne pas être définies et dans ce cas la boite est dite **vide**.
+Si une boite n'est pas vide alors min et max contiennent chacun une position définie.
+
+#### Méthodes
+Elle comporte les méthodes suivantes:
+
+  - `__construct(...$params)` - initialise une boite en fonction du paramètre.  
+    - Sans paramètre la boite est initialisée indéterminée.  
+    - Si c'est un array de 2 ou 3 nombres, ou une chaine correspondant à 2 ou 3 nombres, interprétés comme une position, alors la boite est définie par cette position,  
+    - Si c'est un array de 4 ou 6 nombres, ou une chaine correspondant à 4 ou 6 nombres, interprétés
+      comme 2 positions, alors la boite est définie par ces 2 positions,  
+    - Si c'est une liste de positions, ou une liste de listes de positions, alors la boite est la boite minimum contenant
+      toutes ces positions,
+  - `__toString(): string` -  chaine représentant la boite avec des coord. arrondies
+  - `empty(): bool` - indique si la boite est vide ou non
+  - `posInBBox(array $pos): bool` - teste si une position est dans la bbox considérée comme fermée à gauche et ouverte à droite
+  - `bound(array $pos): BBox` - ajoute une position à la boite et renvoie la boite modifiée
+  - `asArray(): array` - renvoie [xmin, ymin, xmax, ymax] ou []
+  - `center(): array` - position du centre de la boite ou [] si elle est indéterminée
+  - `polygon(): array` - liste de listes de positions avec les 5 pos. du polygone de la boite ou [] si elle est indéterminée
+  - `union(BBox $b2): BBox` - agrandit la boite courante pour contenir la boite en paramètre et renvoie la boite courante
+  - `intersects(BBox $b2): ?BBox` - retourne l'intersection des 2 boites si elles s'intersectent, sinon null
+  - `size(): float` - longueur du plus grand côté
+  - `dist(BBox $b2): float` - distance la plus courte entre les positions des 2 BBox, génère une erreur si une des 2 est
+    indéterminée
+  - `distance(BBox $b2): float` - distance entre 2 boites, nulle ssi les 2 boites sont identiques
+  - //`isIncludedIn(BBox $bbox1):bool` - teste si this est inclus dans bbox1 (NON IMPLEMENTEE)
+  
+### 2.2. La classe concrète GBox
+La classe GBox définit des boites englobantes en coordonnées géographiques.
+
+#### Méthodes
+Outre les méthodes génériques de BBox, la méthode suivante est définie :
+
+  - `proj(callable $projPos): EBox` - projection d'un GBox selon la fonction anonyme de projection en paramètre
+  
+### 2.3. La classe concrète EBox
+La classe EBox définit des boites englobantes en coordonnées euclidiennes.
+
+#### Méthodes
+Outre les méthodes génériques de BBox, les méthodes suivantes sont définies :
+
+  - `area(): float` - surface de la boite
+  - `covers(EBox $b2): float` - taux de couverture de $b2 par $this
+  - `geo(callable $projPos): GBox` - calcule les coord. géo. en utilisant la fonction anonyme en paramètre
 
 ## 3. Les 7 primitives géométriques et leur sur-classe abstraite
 ### 3.1. La classe abstraite Geometry
