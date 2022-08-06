@@ -87,12 +87,12 @@ Les fonctions géométriques sont définies comme méthodes statiques dans les 4
     caad soit une Pos, soit une LPos, soit une LLPos, soit une LLLPos.
 
 ### 2.1 Fonctions définies dans la classe Pos
-La classe `Pos` regroupe les fonctions suivantes dont le premier paramètre est une position,
-qui peut parfois interprétée comme un vecteur ou qui fabrique ou teste une position:
+La classe `Pos` regroupe des fonctions suivantes dont le premier paramètre est une position,
+qui peut parfois interprétée comme un vecteur, ou qui fabrique ou teste une position:
 
 - `is(mixed $pos): bool` - teste si $pos est une position, permet notament de distinguer Pos, LPos, LLPos et LLLPos
   mais ne vérifie pas la validité de $pos,
-- `isValid(mixed $pos): bool` - vérifie la validité de $pos comme  position,
+- `isValid(mixed $pos): bool` - vérifie que $pos est une  position valide,
 - `getErrors(mixed $pos): array` - renvoie les raisons pour lesquelles $pos n'est pas une position,
 - `fromGeoDMd(string $geoDMd) TPos`- renvoie une position codée comme coords géographiques en degré minutes décimales
   conforme au motif suivant `!^(\d+)°((\d\d)(,(\d+))?\')?(N|S) - (\d+)°((\d\d)(,(\d+))?\')?(E|W)$!`  
@@ -100,9 +100,9 @@ qui peut parfois interprétée comme un vecteur ou qui fabrique ou teste une pos
 - `formatInGeoDMd(TPos $pos, float $resolution): string` - Formate une position (lon,lat) en lat,lon degrés,
   minutes décimales, $resolution est la résolution de la position en degrés à conserver,
 - `diff(TPos $pos, TPos $v): TPos` - $pos - $v en 2D où $pos et $v sont 2 positions,
-- `vectorProduct(TPos $u, TPos $v): float` - produit vectoriel $u par $v en 2D,
-- `scalarProduct(TPos $u, TPos $v): float` - produit scalaire $u par $v en 2D,
-- `norm(TPos $u): float` - norme de $u en 2D,
+- `vectorProduct(TPos $u, TPos $v): float` - produit vectoriel du vecteur $u par le vecteur $v en 2D,
+- `scalarProduct(TPos $u, TPos $v): float` - produit scalaire du vecteur $u par le vecteur $v en 2D,
+- `norm(TPos $u): float` - norme euclidienne du vecteur $u en 2D,
 - `distance(TPos $a, TPos $b): float` - distance euclidienne entre les positions $a et $b,
 - `distancePosLine(TPos $pos, TPos $a, TPos $b): float` - distance signée de la position $pos à la droite définie
   par les 2 positions $a et $b ;
@@ -110,38 +110,40 @@ qui peut parfois interprétée comme un vecteur ou qui fabrique ou teste une pos
 - `posInPolygon(TPos $p, TLPos $cs): bool` - teste si la Pos $p est dans la LPos fermée définie par $cs.
 
 ### 2.2 Fonctions définies dans la classe LPos
-La classe `LPos` regroupe les fonctions dont le premier paramètre est une liste de positions en comportant au moins une.
+La classe `LPos` regroupe des fonctions suivantes dont le premier paramètre est une liste de positions
+en comportant au moins une, ou qui teste une telle liste:
   
-- `is(mixed $lpos): bool` - teste si $lpos est une liste de positions en comportant au moins une
-- `isValid(mixed $lpos): bool` - vérifie la validité de $lpos comme liste de positions en comportant au moins une
-- `getErrors(mixed $lpos): array` - renvoie les raisons pour lesquelles $lpos n'est pas une liste de positions
-- `length(TLPos $lpos): float` - longueur de la ligne brisée définie par la liste de positions
-- `areaOfRing(TLPos $lpos): float` - surface de l'anneau constitué par la liste de positions  
+- `is(mixed $lpos): bool` - teste si $lpos est une liste de positions en comportant au moins une,
+- `isValid(mixed $lpos): bool` - vérifie la validité de $lpos comme liste de positions en comportant au moins une,
+- `getErrors(mixed $lpos): array` - renvoie les raisons pour lesquelles $lpos n'est pas une liste de positions,
+- `length(TLPos $lpos): float` - longueur de la ligne brisée définie par la liste de positions,
+- `areaOfRing(TLPos $lpos): float` - surface de l'anneau constitué par la liste de positions ;  
   La surface est positive ssi la géométrie est orientée dans le sens des aiguilles d'une montre (sens trigo inverse),
-  comm dans la définition GeoJSON
-- `filter(TLPos $lpos, int $precision): TLPos` - renvoie une LPos filtrée supprimant les points successifs identiques  
-  Les coordonnées sont arrondies avec `$precision` chiffres significatifs. Un filtre sans arrondi n'a pas de sens.
+  comme dans la définition GeoJSON,
+- `filter(TLPos $lpos, int $precision): TLPos` - renvoie une LPos filtrée supprimant les points successifs identiques ;  
+  Les coordonnées sont arrondies avec `$precision` chiffres significatifs (un filtre sans arrondi n'a pas de sens),
 - `simplify(TLPos $lpos, float $distTreshold): TLPos` - simplifie la géométrie de la ligne brisée par l'algorithme
-  de Douglas & Peucker. Retourne `[]` si la ligne est fermée et que son diamètre est inférieur au seuil
+  de Douglas & Peucker ; retourne `[]` si la ligne est fermée et que son diamètre est inférieur au seuil.
 
 ### 2.3 Fonctions définies dans la classe LLPos
 La classe `LLPos` regroupe les fonctions dont le premier paramètre est une liste de listes de positions
-comportant au moins une position.
+comportant au moins une position, ou qui teste une telle liste.
 
 - `is(mixed $llpos): bool` - teste si $lpos est une liste de listes de positions
 - `isValid(mixed $llpos): bool` - vérifie la validité de $llpos comme liste de listes de positions
 - `getErrors(mixed $llpos): array` - renvoie les raisons pour lesquelles $llpos n'est pas une liste de listes de positions
 
-### 2.3 Fonctions définies dans la classe LnPos
-La classe `LnPos` regroupe les fonctions dont le premier paramètre est indiféremment une position,
+### 2.4 Fonctions définies dans la classe LnPos
+La classe `LnPos` regroupe les fonctions dont le premier paramètre est indifféremment une position,
 une liste de positions, une liste de listes de positions, ...
 
-- `power(TLnPos $lnpos): int` - renvoie la puissance de la LnPos ou -1 pour une liste vide
-- `aPos(TLnPos $lnpos): TPos` - retourne la première position
-- `count(TLnPos $lnpos): int` - calcul du nbre de positions
-- `center(TLnPos $lnpos, int $precision): TPos` - calcule le centre d'une liste**n de positions
+- `power(TLnPos $lnpos): int` - renvoie la puissance de la LnPos, 0 pour un Pos, 1 pour une LPos, ...
+  et -1 pour une liste vide,
+- `aPos(TLnPos $lnpos): TPos` - retourne la première position,
+- `count(TLnPos $lnpos): int` - calcule le nbre de positions,
+- `center(TLnPos $lnpos, int $precision): TPos` - calcule le centre d'une liste**n de positions,
 - `projLn(TLnPos $lnpos, callable $projPos): TLnPos`- projette chaque Pos de la LnPos avec la fonction $projPos
-  et retourne la LnPos reconstruite
+  et retourne la LnPos reconstruite.
 
 
 ## 3. Les boites englobantes
@@ -154,7 +156,7 @@ Si une boite n'est pas vide alors min et max contiennent chacun une position dé
 Elle comporte les méthodes suivantes:
 
   - `__construct(...$params)` - initialise une boite en fonction du paramètre.  
-    - Sans paramètre la boite est initialisée indéterminée.  
+    - Sans paramètre la boite est initialisée vide.  
     - Si c'est un array de 2 ou 3 nombres, ou une chaine correspondant à 2 ou 3 nombres, interprétés comme une position, alors la boite est définie par cette position,  
     - Si c'est un array de 4 ou 6 nombres, ou une chaine correspondant à 4 ou 6 nombres, interprétés
       comme 2 positions, alors la boite est définie par ces 2 positions,  
