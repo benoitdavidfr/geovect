@@ -4,21 +4,21 @@
 Cette bibliothèque Php définit d'une part des fonctions géométriques et d'autre part des classes Php de gestion
 des primitives géométriques [GeoJSON](https://tools.ietf.org/html/rfc7946)
 et [OGC WKT](https://en.wikipedia.org/wiki/Well-known_text).  
-Elle comprend tout d'abord des classes statiques dans lesquelles sont définies un certain nombre de fonctions géométriques
-et, d'autre part, la classe abstraite Geometry ainsi que les 7 sous-classes suivantes correspondant
+Elle comprend tout d'abord des classes statiques dans lesquelles sont définies un certain nombre de fonctions géométriques,
+d'autre part, les classes abstraites Geometry et Homeogeneous ainsi que les 7 sous-classes suivantes correspondant
 aux différentes primitives géométriques :
 Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon et GeometryCollection
 
 Elle comprend en outre :
 
-  - la classe abstraite `BBox` qui définit les boites englobantes ainsi que 2 sous-classes `GBox` et `EBox` définissant
-    respectivement les boites en coordonnées géographiques et euclidiennes,
+  - la classe abstraite `BBox` définissant une boite englobante ainsi que 2 sous-classes `GBox` et `EBox` définissant
+    ces boites respectivement en coordonnées géographiques et euclidiennes,
   - la classe abstraite `Drawing` définissant l'interface d'un dessin et la classe `GdDrawing` implémentant cette interface
-    avec GD.
-  - la classe `FeatureStream` permettant de lire un flux de Feature GeoJSON pour quelques couches particulières.
+    avec [la bibliothèque GD](https://www.php.net/manual/fr/book.image.php).
+  - la classe `FeatureStream` permettant de lire un flux de Feature GeoJSON pour quelques types de couches particulières.
 
-La bibliothèque est compatible avec Php 8.1, documentée avec [PhpDocumentor](https://docs.phpdoc.org/3.0/)
-et testée avec [PhpStan](https://phpstan.org/) au niveau 6.
+La bibliothèque est compatible avec Php 8.1, est documentée avec [PhpDocumentor](https://docs.phpdoc.org/3.0/)
+et est testée avec [PhpStan](https://phpstan.org/) au niveau 6.
 Cette documentation utilise donc les types de PhpDocumentor utilisés dans PhpStan.
 
 ### 1.1. Le concept de position
@@ -56,6 +56,9 @@ génériques de dessin définies par la classe abstraite `Drawing`.
 Elles utilisent un style de dessin défini
 par la [spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0).  
 La classe `GdDrawing` implémente ces primitives au dessus de la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php). 
+
+### 1.4. Les types PhpDocumentor/PhpStan
+Quelques types sont définis pour PhpStan, ils sont listé dans [phpstan.neon](phpstan.neon).
 
 ### 1.4. Pourquoi une nouvelle bibliothèque ?
 Cette bibliothèque redéfinit des fonctionnalités proches de [geometry](https://github.com/benoitdavidfr/geometry)
