@@ -88,26 +88,26 @@ Les fonctions géométriques sont définies comme méthodes statiques dans les 4
 
 ### 2.1 Fonctions définies dans la classe Pos
 La classe `Pos` regroupe les fonctions suivantes dont le premier paramètre est une position,
-qui peut parfois interprétée comme un vecteur:
+qui peut parfois interprétée comme un vecteur ou qui fabrique ou teste une position:
 
 - `is(mixed $pos): bool` - teste si $pos est une position, permet notament de distinguer Pos, LPos, LLPos et LLLPos
-  mais ne vérifie pas la validité de $pos
+  mais ne vérifie pas la validité de $pos,
 - `isValid(mixed $pos): bool` - vérifie la validité de $pos comme  position,
-- `getErrors(mixed $pos): array` - renvoie les raisons pour lesquelles $pos n'est pas une position
+- `getErrors(mixed $pos): array` - renvoie les raisons pour lesquelles $pos n'est pas une position,
 - `fromGeoDMd(string $geoDMd) TPos`- renvoie une position codée comme coords géographiques en degré minutes décimales
   conforme au motif suivant `!^(\d+)°((\d\d)(,(\d+))?\')?(N|S) - (\d+)°((\d\d)(,(\d+))?\')?(E|W)$!`  
-  exemple: `45°23,45'N - 1°12'W`
+  exemple: `45°23,45'N - 1°12'W`,
 - `formatInGeoDMd(TPos $pos, float $resolution): string` - Formate une position (lon,lat) en lat,lon degrés,
-  minutes décimales, $resolution est la résolution de la position en degrés à conserver
-- `diff(TPos $pos, TPos $v): TPos` - $pos - $v en 2D où $pos et $v sont 2 positions
-- `vectorProduct(TPos $u, TPos $v): float` - produit vectoriel $u par $v en 2D
-- `scalarProduct(TPos $u, TPos $v): float` - produit scalaire $u par $v en 2D
-- `norm(TPos $u): float` - norme de $u en 2D
-- `distance(TPos $a, TPos $b): float` - distance euclidienne entre les positions $a et $b
+  minutes décimales, $resolution est la résolution de la position en degrés à conserver,
+- `diff(TPos $pos, TPos $v): TPos` - $pos - $v en 2D où $pos et $v sont 2 positions,
+- `vectorProduct(TPos $u, TPos $v): float` - produit vectoriel $u par $v en 2D,
+- `scalarProduct(TPos $u, TPos $v): float` - produit scalaire $u par $v en 2D,
+- `norm(TPos $u): float` - norme de $u en 2D,
+- `distance(TPos $a, TPos $b): float` - distance euclidienne entre les positions $a et $b,
 - `distancePosLine(TPos $pos, TPos $a, TPos $b): float` - distance signée de la position $pos à la droite définie
   par les 2 positions $a et $b ;
-  la distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
-- `posInPolygon(TPos $p, TLPos $cs): bool` - teste si la Pos $p est dans la LPos fermée définie par $cs
+  la distance est positive si le point est à gauche de la droite AB et négative s'il est à droite,
+- `posInPolygon(TPos $p, TLPos $cs): bool` - teste si la Pos $p est dans la LPos fermée définie par $cs.
 
 ### 2.2 Fonctions définies dans la classe LPos
 La classe `LPos` regroupe les fonctions dont le premier paramètre est une liste de positions en comportant au moins une.
