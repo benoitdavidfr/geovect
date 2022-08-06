@@ -603,14 +603,6 @@ class LnPos {
   }
   
   /**
-   * toString(TLnPos $lnpos): string - génère une chaine de caractères représentant la LnPos
-   *
-   * @param TLnPos $lnpos
-   * @return string
-  */
-  static function toString(array $lnpos): string { return json_encode($lnpos); }
-  
-  /**
    * wkt(TLnPos $lnpos): string - génère une chaine de caractères représentant la LnPos pour WKT
    *
    * @param TLnPos $lnpos

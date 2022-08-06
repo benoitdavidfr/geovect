@@ -75,15 +75,14 @@ Celles de [geom2d](https://github.com/benoitdavidfr/geom2d) ne l'ont été que p
 notamment celles de tuilage.
 
 ## 2. Les fonction géométriques
-### 2.1 Définition de classes statiques
-Les fonctions géométriques sont définies dans les 4 classes statiques suivantes:
+Les fonctions géométriques sont définies comme méthodes statiques dans les 4 classes statiques suivantes:
 
   - **Pos** pour les fonctions dont le premier paramètre est une position
   - **LPos** pour les fonctions dont le premier paramètre est une liste de positions
   - **LLPos** pour les fonctions dont le premier paramètre est une liste de listes de positions
   - **LnPos** pour les fonctions dont le premier paramètre est une liste**n de positions
 
-### 2.2 Fonctions statiques définies dans la classe Pos
+### 2.1 Fonctions définies dans la classe Pos
 La classe `Pos` regroupe les fonctions dont le premier paramètre est une position,
 qui peut parfois interprétée comme un vecteur.
 
@@ -105,232 +104,43 @@ qui peut parfois interprétée comme un vecteur.
   la distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
 - `posInPolygon(TPos $p, TLPos $cs): bool` - teste si la Pos $p est dans la LPos fermée définie par $cs
 
-### 2.2 Fonctions statiques définies dans la classe LPos
+### 2.2 Fonctions définies dans la classe LPos
 La classe `LPos` regroupe les fonctions dont le premier paramètre est une liste de positions en comportant au moins une.
   
 - `is(mixed $lpos): bool` - teste si $lpos est une liste de positions en comportant au moins une
 - `isValid(mixed $lpos): bool` - vérifie la validité de $lpos comme liste de positions en comportant au moins une
 - `getErrors(mixed $lpos): array` - renvoie les raisons pour lesquelles $lpos n'est pas une liste de positions
-- `length(TLPos $lpos): float` - longueur d'une ligne brisée définie par une liste de positions
+- `length(TLPos $lpos): float` - longueur de la ligne brisée définie par la liste de positions
 - `areaOfRing(TLPos $lpos): float` - surface de l'anneau constitué par la liste de positions  
   La surface est positive ssi la géométrie est orientée dans le sens des aiguilles d'une montre (sens trigo inverse),
   comm dans la définition GeoJSON
 - `filter(TLPos $lpos, int $precision): TLPos` - renvoie une LPos filtrée supprimant les points successifs identiques  
-  Les coordonnées sont arrondies avec $precision chiffres significatifs. Un filtre sans arrondi n'a pas de sens.
+  Les coordonnées sont arrondies avec `$precision` chiffres significatifs. Un filtre sans arrondi n'a pas de sens.
 - `simplify(TLPos $lpos, float $distTreshold): TLPos` - simplifie la géométrie de la ligne brisée par l'algorithme
   de Douglas & Peucker. Retourne `[]` si la ligne est fermée et que son diamètre est inférieur au seuil
 
-### 2.3 Fonctions statiques définies dans la classe LLPos
-La classe `LPos` regroupe les fonctions dont le premier paramètre est une liste de positions en comportant au moins une.
+### 2.3 Fonctions définies dans la classe LLPos
+La classe `LLPos` regroupe les fonctions dont le premier paramètre est une liste de listes de positions
+comportant au moins une position.
 
-    /**
-     * class LLPos - fonctions s'appliquant à une liste de listes de positions contenant au moins une position
-     *
-     * Les méthodes is(), isValid() et getErrors() jouent le même rôle que pour la classe Pos
-    */
-    class LLPos {
-      const EXAMPLES = [
-        "triangle unité" => [[[0,0],[0,1],[1,0],[0,0]]],
-        "carré unité"=> [[[0,0],[0,1],[1,1],[1,0],[0,0]]],
-        "carré troué bien orienté"=>[
-          [[0,0],[0,10],[10,10],[10,0],[0,0]],
-          [[2,2],[8,2],[8,8],[2,8],[2,2]]
-        ],
-        "carré troué mal orienté"=> [
-          [[0,0],[0,10],[10,10],[10,0],[0,0]],
-          [[2,2],[2,8],[8,8],[8,2],[2,2]]
-        ],
-      ];
-  
-      /**
-       * is() - teste si $lpos est une liste de positions
-       */
-      static function is(mixed $llpos): bool { return is_array($llpos) && isset($llpos[0]) && LPos::is($llpos[0]); }
+- `is(mixed $llpos): bool` - teste si $lpos est une liste de listes de positions
+- `isValid(mixed $llpos): bool` - vérifie la validité de $llpos comme liste de listes de positions
+- `getErrors(mixed $llpos): array` - renvoie les raisons pour lesquelles $llpos n'est pas une liste de listes de positions
 
-      /**
-       * isValid() - vérifie la validité de $lpos comme liste de positions
-       */
-      static function isValid(mixed $llpos): bool {
-        if (!is_array($llpos))
-          return false;
-        foreach ($llpos as $lpos)
-          if (!LPos::isValid($lpos))
-            return false;
-        return true;
-      }
+### 2.3 Fonctions définies dans la classe LnPos
+La classe `LnPos` regroupe les fonctions dont le premier paramètre est indiféremment une position,
+une liste de positions, une liste de listes de positions, ...
 
-      /**
-       * getErrors() - renvoie les raisons pour lesquelles $lpos n'est pas une liste de positions
-       *
-       * retourne une liste de string
-       *
-       * @return array<mixed>
-      */
-      static function getErrors(mixed $llpos): array {
-        $errors = [];
-        if (!is_array($llpos))
-          return ["Le LLPos doit être un array"];
-        foreach ($llpos as $i => $lpos)
-          if ($lposErrors = LPos::getErrors($lpos))
-            $errors[] = ["Erreur sur le LPos $i :", $lposErrors];
-        return $errors;
-      }
-    };
-
-    /**
-     * class LnPos - fonctions s'appliquant à une liste**n de positions
-     *
-     * Une LnPos est une liste puissance n de positions avec n >= 0
-     * Pour n==0 c'est une position (Pos)
-     * Pour n==1 c'est une liste de positions (LPos)
-     * Pour n==2 c'est une liste de listes de positions (LLPos)
-     * ...
-    */
-    class LnPos {
-      const ErrorOnEmptyLPos = 'LnPos::ErrorOnEmptyLPos';
-  
-      /**
-       * power(TLnPos $lnpos): int - renvoie la puissance de la LnPos ou -1 pour une liste vide
-       *
-       * génère une exception si un array non liste est rencontré
-       *
-       * @param TLnPos $lnpos
-       */
-      static function power(array $lnpos): int {
-        if (!$lnpos)
-          return -1; // par extension renvoie -1 pour une liste vide
-        if (!isset($lnpos[0]))
-          throw new \Exception("Erreur d'appel de LnPos::power() sur un array qui n'est pas une liste");
-        if (is_numeric($lnpos[0])) // c'est une position
-          return 0; // Pos
-        else
-          return 1 + self::power($lnpos[0]); // appel récursif
-      }
-      static function test_power(): void {
-        foreach(array_merge(Pos::EXAMPLES, LPos::EXAMPLES) as $lnpos)
-        echo "LnPos::power(",json_encode($lnpos),")=", LnPos::power($lnpos),"<br>\n";
-      }
-  
-      /**
-       * toString(TLnPos $lnpos): string - génère une chaine de caractères représentant la LnPos
-       *
-       * @param TLnPos $lnpos
-       * @return string
-      */
-      static function toString(array $lnpos): string { return json_encode($lnpos); }
-  
-      /**
-       * wkt(TLnPos $lnpos): string - génère une chaine de caractères représentant la LnPos pour WKT
-       *
-       * @param TLnPos $lnpos
-       * @return string
-      */
-      static function wkt(array $lnpos): string {
-        //echo "Appel de LnPos::wkt(",json_encode($lnpos),"<br>\n";
-        if (Pos::is($lnpos)) // $lnpos est une Pos
-          return implode(' ', $lnpos); // @phpstan-ignore-line
-        else
-          return '('.implode(',',array_map(function(array $ln1pos): string { return self::wkt($ln1pos); }, $lnpos)).')';
-      }
-      static function test_wkt(): void {
-        foreach([
-          "liste vide"=> [],
-          "Pos"=> [0,1],
-          "LPos"=> [[0,1],[2,3]], // LPos
-          "LLPos"=> [[[0,1],[2,3]],[[3,4]]], // LLPos
-          "LLLPos"=> [[[[0,1],[2,3]],[[3,4]]],[[[5,6]]]], // LLLPos
-        ] as $label => $lnpos) {
-          echo "$label -> ",self::wkt($lnpos),"<br>\n";
-        }
-      }
-  
-      /**
-       * aPos(TLnPos $lnpos): TPos - retourne la première position
-       *
-       * @param TLnPos $lnpos
-       * @return TPos
-      */
-      static function aPos(array $lnpos): array {
-        if (!$lnpos) // $lnpos est la liste vide
-          throw new \Exception("Erreur d'appel de LnPos::aPos() sur une liste de positions vide");
-        if (Pos::is($lnpos)) // $lnpos est une Pos
-          return $lnpos;
-        else
-          return self::aPos($lnpos[0]);
-      }
-  
-      /**
-       * count(TLnPos $lnpos): int - calcul du nbre de positions
-       *
-       * @param TLnPos $lnpos
-       * @return int
-      */
-      static function count(array $lnpos): int {
-        if (!$lnpos) // $lnpos est la liste vide
-          return 0;
-        if (Pos::is($lnpos)) // $lnpos est une Pos
-          return 1;
-        else
-          return array_sum(array_map(function(array $ln1pos): int { return self::count($ln1pos); }, $lnpos));
-      }
-  
-      /**
-       * sumncoord(TLnPos $lnpos, int $i): int - calcul de la somme de la i-ème coordonnée de chaque position
-       *
-       * @param TLnPos $lnpos
-       * @return float
-      */
-      static function sumncoord(array $lnpos, int $i): float {
-        if (!$lnpos)
-          return 0;
-        elseif (Pos::is($lnpos)) // $lnpos est une Pos
-          return $lnpos[$i];
-        else
-          return array_sum(array_map(function(array $ln1pos) use($i): float { return self::sumncoord($ln1pos, $i); }, $lnpos));
-      }
-  
-      /**
-       * center(TLnPos $lnpos, int $precision): TPos - calcule le centre d'une liste**n de positions
-       *
-       * génère une erreur si la liste est vide
-       *
-       * @param TLnPos $lnpos
-       * @return TPos
-      */
-      static function center(array $lnpos, int $precision): array {
-        if (!$lnpos)
-          throw new \SExcept("Erreur d'appel de LnPos::center() sur une liste de positions vide", self::ErrorOnEmptyLPos);
-        $nbre = self::count($lnpos);
-        return [round(self::sumncoord($lnpos, 0)/$nbre, $precision), round(self::sumncoord($lnpos, 1)/$nbre, $precision)];
-      }
-      static function test_center(): void {
-        $lpos = [[1,2],[3,7,5]];
-        echo "<pre>LnPos::count(",LnPos::toString($lpos),")="; print_r(LnPos::count($lpos));
-        echo "<pre>LnPos::sumncoord(",LnPos::toString($lpos),", 0)="; print_r(LnPos::sumncoord($lpos, 0));
-        echo "<pre>LnPos::sumncoord(",LnPos::toString($lpos),", 1)="; print_r(LnPos::sumncoord($lpos, 1));
-        echo "<pre>LnPos::center(",LnPos::toString($lpos),",1)=",json_encode(LnPos::center($lpos,1)),"<br>\n";
-      }
-  
-      /**
-       * projLn(TLnPos $lnpos, callable $projPos): TLnPos- projette chaque Pos de la LnPos avec la fonction $projPos et retourne la LnPos reconstruite
-       *
-       * @param TLnPos $lnpos
-       * @return TLnPos
-      */
-      static function projLn(array $lnpos, callable $projPos): array {
-        if (Pos::is($lnpos)) // $lnpos est une Pos
-          return $projPos($lnpos);
-        else
-          return array_map(function(array $ln1pos) use($projPos) { return self::projLn($ln1pos, $projPos); }, $lnpos);
-      }
-    };
-
-### 3.4 La classe LLPos
-### 3.5 La classe LnPos
+- `power(TLnPos $lnpos): int` - renvoie la puissance de la LnPos ou -1 pour une liste vide
+- `aPos(TLnPos $lnpos): TPos` - retourne la première position
+- `count(TLnPos $lnpos): int` - calcul du nbre de positions
+- `center(TLnPos $lnpos, int $precision): TPos` - calcule le centre d'une liste**n de positions
+- `projLn(TLnPos $lnpos, callable $projPos): TLnPos`- projette chaque Pos de la LnPos avec la fonction $projPos
+  et retourne la LnPos reconstruite
 
 
-## 2. Les boites englobantes
-### 2.1. La classe abstraite BBox
+## 3. Les boites englobantes
+### 3.1. La classe abstraite BBox
 La classe BBox définit une boite englobante définie par 2 positions min et max.
 Ces 2 positions peuvent ne pas être définies et dans ce cas la boite est dite **vide**.
 Si une boite n'est pas vide alors min et max contiennent chacun une position définie.
@@ -360,7 +170,7 @@ Elle comporte les méthodes suivantes:
   - `distance(BBox $b2): float` - distance entre 2 boites, nulle ssi les 2 boites sont identiques
   - //`isIncludedIn(BBox $bbox1):bool` - teste si this est inclus dans bbox1 (NON IMPLEMENTEE)
   
-### 2.2. La classe concrète GBox
+### 3.2. La classe concrète GBox
 La classe GBox définit des boites englobantes en coordonnées géographiques.
 
 #### Méthodes
@@ -368,7 +178,7 @@ Outre les méthodes génériques de BBox, la méthode suivante est définie :
 
   - `proj(callable $projPos): EBox` - projection d'un GBox selon la fonction anonyme de projection en paramètre
   
-### 2.3. La classe concrète EBox
+### 3.3. La classe concrète EBox
 La classe EBox définit des boites englobantes en coordonnées euclidiennes.
 
 #### Méthodes
@@ -378,8 +188,8 @@ Outre les méthodes génériques de BBox, les méthodes suivantes sont définies
   - `covers(EBox $b2): float` - taux de couverture de $b2 par $this
   - `geo(callable $projPos): GBox` - calcule les coord. géo. en utilisant la fonction anonyme en paramètre
 
-## 3. Les 7 primitives géométriques et leur sur-classe abstraite
-### 3.1. La classe abstraite Geometry
+## 4. Les 7 primitives géométriques et leur sur-classe abstraite
+### 4.1. La classe abstraite Geometry
 La classe abstraite Geometry permet de gérer a minima une géométrie sans avoir à connaître son type
 et porte aussi 2 méthodes statiques de construction d'objet à partir respectivement d'un GeoJSON ou d'un WKT. 
 
@@ -419,9 +229,8 @@ Elle définit les méthodes suivantes:
     renvoie un nouvel objet de la même classe que l'objet d'origine,
   - `draw(Drawing $drawing, array $style)` - dessine l'objet dans le dessin $drawing avec le style $style inspiré
     de [la spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0).
-  
 
-### 3.2. La classe Point
+### 4.2. La classe Point
 La classe Point implémente la primitive Point en 2D ou 3D défini par une position ;
 pour certaines méthodes l'objet est considéré comme un vecteur.  
 Elle hérite de la classe Geometry.
@@ -444,11 +253,11 @@ Outre les méthodes génériques de Geometry, les méthodes suivantes sont défi
     Le point projeté est sur le segment ssi u est dans [0 .. 1].
   - // `round(int $nbdigits): Point` - arrondit un point avec le nb de chiffres indiqués (NON IMPLEMENTEE)
   
-### 3.3. La classe MultiPoint
+### 4.3. La classe MultiPoint
 La classe MultiPoint implémente la primitive MultiPoint correspondant à une liste de positions.  
 Elle hérite de la classe Geometry et ne définit aucune méthode spécifique.
 
-### 3.4. La classe LineString
+### 4.4. La classe LineString
 La classe LineString implémente la primtive LineString en 2D ou 3D correspondant à une ligne brisée.
 Elle hérite de la classe `Geometry`.
 
@@ -461,11 +270,11 @@ Outre les méthodes génériques de Geometry, les méthodes suivantes sont défi
   - // `distancePointLineString(Point $pt): array` - distance minimum de la ligne brisée au point pt (NON IMPLEMENTE)  
     retourne la distance et le point qui correspond à la distance minimum sous la forme ['dmin'=>$dmin, 'pt'=>$pt]
 
-### 3.5. La classe MultiLineString
+### 4.5. La classe MultiLineString
 La classe MultiLineString implémente la primitive MultiLineString correspondant à une liste de lignes brisées.  
 Elle hérite de la classe Geometry et ne possède aucune méthode spécifique.
 
-### 3.6. La classe Polygon
+### 4.6. La classe Polygon
 La classe Polygon implémente la primitive Polygon correspondant à un extérieur défini par une ligne brisée fermée
 et d'éventuels trous chacun défini comme une ligne brisée fermée.
 Elle hérite de la classe Geometry.
@@ -477,7 +286,7 @@ Outre les méthodes génériques de Geometry, les méthodes suivantes sont défi
   - `inters(Geometry $geom): bool` - teste l'intersection entre un polygone et soit un polygone soit multi-polygone
   - // `addHole(LineString $hole): void` - ajoute un trou au polygone (NON IMPLEMENTE) 
 
-### 3.7. La classe MultiPolygon
+### 4.7. La classe MultiPolygon
 La classe MultiPolygon implémente la primitive MultiPolygon correspondant à une liste de polygones.  
 Elle hérite de la classe Geometry.
 
@@ -487,13 +296,13 @@ Outre les méthodes génériques de Geometry, les méthodes suivantes sont défi
   - `inters(Geometry $geom): bool` - teste l'intersection entre un multi-polygone et soit un polygone soit un multi-polygone
   - //`pointInPolygon(array $pos): bool` - teste si une position est dans le polygone (NON IMPLEMENTE)
 
-### 3.8. La classe GeometryCollection
+### 4.8. La classe GeometryCollection
 La classe GeometryCollection implémente la primitive GeometryCollection correspondant à une liste
 d'objets élémentaires.  
 Elle hérite de la classe Geometry et ne possède aucune méthode spécifique.
 
-## 4. Le dessin des primitives géométriques
-### 4.1. La classe abstraite Drawing
+## 5. Le dessin des primitives géométriques
+### 5.1. La classe abstraite Drawing
 La classe abstraite `Drawing` définit l'interface à respecter par une classe de dessin.  
 Le paramètre `$style` respecte les principes définis
 par la [spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0), notamment:
@@ -521,11 +330,11 @@ Elle définit les méthodes abstraites suivantes:
     - `$format` est le format MIME d'affichage
     - si `$noheader` est vrai alors le header n'est pas transmis
 
-### 4.2. La classe concrète GdDrawing
+### 5.2. La classe concrète GdDrawing
 La classe GdDrawing implémente les primtives de dessin avec la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php).
 
-## 5. Les flux de Feature
-### 5.1. La classe FeatureStream
+## 6. Les flux de Feature
+### 6.1. La classe FeatureStream
 La classe `FeatureStream` facilite l'accès à quelques flux de Feature.  
 Cette classe propose, d'une part, une constante LAYERS qui retourne les couches disponibles
 et d'autre part implémente un constructeur prenant en paramètres l'URI de la couche
