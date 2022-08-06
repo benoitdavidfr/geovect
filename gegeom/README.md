@@ -58,7 +58,7 @@ par la [spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master
 La classe `GdDrawing` implémente ces primitives au dessus de la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php). 
 
 ### 1.4. Les types PhpDocumentor/PhpStan
-Quelques types sont définis pour PhpStan, ils sont listé dans [phpstan.neon](/benoitdavidfr/geovect/blob/master/phpstan.neon).
+Quelques types sont définis pour PhpStan, ils sont listé dans [phpstan.neon](../phpstan.neon).
 
 ### 1.4. Pourquoi une nouvelle bibliothèque ?
 Cette bibliothèque redéfinit des fonctionnalités proches de [geometry](https://github.com/benoitdavidfr/geometry)
