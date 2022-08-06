@@ -58,7 +58,7 @@ par la [spec simplestyle](https://github.com/mapbox/simplestyle-spec/tree/master
 La classe `GdDrawing` implémente ces primitives au dessus de la [bibliothèque GD](https://www.php.net/manual/fr/ref.image.php). 
 
 ### 1.4. Les types PhpDocumentor/PhpStan
-Quelques types sont définis pour ce dépôt PhpStan, ils sont listés dans [phpstan.neon](../phpstan.neon).
+Quelques types sont définis pour ce dépôt et pour PhpStan, ils sont listés dans [phpstan.neon](../phpstan.neon).
 
 ### 1.5. Pourquoi une nouvelle bibliothèque ?
 Cette bibliothèque redéfinit des fonctionnalités proches de [geometry](https://github.com/benoitdavidfr/geometry)
@@ -80,20 +80,22 @@ notamment celles de tuilage.
 ## 2. Les fonction géométriques
 Les fonctions géométriques sont définies comme méthodes statiques dans les 4 classes statiques suivantes:
 
-  - **Pos** pour les fonctions dont le premier paramètre est une position
-  - **LPos** pour les fonctions dont le premier paramètre est une liste de positions
-  - **LLPos** pour les fonctions dont le premier paramètre est une liste de listes de positions
-  - **LnPos** pour les fonctions dont le premier paramètre est une liste**n de positions
+  - la classe **Pos** pour les fonctions dont le premier paramètre est une position,
+  - la classe **LPos** pour les fonctions dont le premier paramètre est une liste de positions,
+  - la classe **LLPos** pour les fonctions dont le premier paramètre est une liste de listes de positions,
+  - la classe **LnPos** pour les fonctions dont le premier paramètre est une liste**n de positions,
+    caad soit une Pos, soit une LPos, soit une LLPos, soit une LLLPos.
 
 ### 2.1 Fonctions définies dans la classe Pos
-La classe `Pos` regroupe les fonctions dont le premier paramètre est une position,
-qui peut parfois interprétée comme un vecteur.
+La classe `Pos` regroupe les fonctions suivantes dont le premier paramètre est une position,
+qui peut parfois interprétée comme un vecteur:
 
 - `is(mixed $pos): bool` - teste si $pos est une position, permet notament de distinguer Pos, LPos, LLPos et LLLPos
   mais ne vérifie pas la validité de $pos
+- `isValid(mixed $pos): bool` - vérifie la validité de $pos comme  position,
 - `getErrors(mixed $pos): array` - renvoie les raisons pour lesquelles $pos n'est pas une position
-- `fromGeoDMd(string $geoDMd) TPos`- décode une position en coords géographiques en degré minutes décimales conforme
-  au motif suivant `!^(\d+)°((\d\d)(,(\d+))?\')?(N|S) - (\d+)°((\d\d)(,(\d+))?\')?(E|W)$!`  
+- `fromGeoDMd(string $geoDMd) TPos`- renvoie une position codée comme coords géographiques en degré minutes décimales
+  conforme au motif suivant `!^(\d+)°((\d\d)(,(\d+))?\')?(N|S) - (\d+)°((\d\d)(,(\d+))?\')?(E|W)$!`  
   exemple: `45°23,45'N - 1°12'W`
 - `formatInGeoDMd(TPos $pos, float $resolution): string` - Formate une position (lon,lat) en lat,lon degrés,
   minutes décimales, $resolution est la résolution de la position en degrés à conserver
