@@ -1,6 +1,6 @@
 <?php
 namespace gegeom;
-{/*PhpDoc:
+/*PhpDoc:
 name:  point.inc.php
 title: point.inc.php - définition des classes Point, Segment et MultiPoint
 classes:
@@ -8,6 +8,9 @@ doc: |
   Fichier concu pour être inclus dans gegeom.inc.php
   La classe Segment est utilisée pour effectuer certains calculs au sein de gegeom
 journal: |
+  5/8/2022:
+   - corrections suite à analyse PhpStan level 6
+   - structuration de la doc conformément à phpDocumentor
   9/12/2020:
     - transfert de méthodes Point dans Pos pour passage Php8
   3/5/2019:
@@ -15,35 +18,32 @@ journal: |
   30/4/2019:
     - éclatement de gegeom.inc.php
 includes: [gegeom.inc.php]
-*/}
+*/
 require_once __DIR__.'/gegeom.inc.php';
 use \unittest\UnitTest;
 
-{/*PhpDoc: classes
-name: Point
-methods:
-title: class Point extends Homogeneous - correspond à une position mais peut aussi être considéré comme un vecteur
-*/}
+/**
+ * class Point extends Homogeneous - correspond à une position mais peut aussi être considéré comme un vecteur
+ */
 class Point extends Homogeneous {
+  const ErrorAdd = 'Point::ErrorAdd';
+  const ErrorDiff = 'Point::ErrorDiff';
+  
   /* @var TPos $coords; */
   protected array $coords; // redéfinition de $coords pour préciser son type pour cette classe
   
   function eltTypes(): array { return ['Point']; }
-  function __toString(): string { return 'Point('.implode(' ',$this->coords).')'; }
-  function wkt(): string { return 'POINT('.implode(' ',$this->coords).')'; }
-  function geoms(): array { return []; }
   function nbPoints(): int { return 1; }
 
   function isValid(): bool { return Pos::isValid($this->coords); }
   
   function getErrors(): array { return Pos::getErrors($this->coords); }
 
-  /*PhpDoc: methods
-  name:  norm
-  title: "function norm(): float - renvoie la norme du vecteur"
-  */
+  /**
+   * norm(): float - norme du Point considéré comme vecteur
+   */
   function norm(): float { return Pos::norm($this->coords); }
-  static function test_norm() {
+  static function test_norm(): void {
     foreach ([
       [15,20],
       [1,1],
@@ -53,77 +53,66 @@ class Point extends Homogeneous {
     }
   }
 
-  /*PhpDoc: methods
-  name:  distance
-  title: "function distance(array $pos): float - distance entre $this et $pos"
-  */
+  /**
+   * distance(array $pos): float - distance entre $this et $pos
+   *
+   * @param TPos $pos
+   */
   function distance(array $pos): float { return Pos::distance($this->coords, $pos); }
   
-  /*PhpDoc: methods
-  name:  add
-  title: "function add($v): Point - $this + $v en 2D, $v peut être un Point ou une position"
-  */
-  function add($v): Point {
+  /**
+   * add(Point|TPos $v): Point - $this + $v en 2D, $v peut être un Point ou une position
+   *
+   * @param Point|TPos $v
+   */
+  function add(Point|array $v): Point {
     if (Pos::is($v))
       return new Point([$this->coords[0] + $v[0], $this->coords[1] + $v[1]]);
     elseif (get_class($v) == __NAMESPACE__.'\Point')
       return new Point([$this->coords[0] + $v->coords[0], $this->coords[1] + $v->coords[1]]);
     else
-      throw new \Exception("Erreur dans Point:add(), paramètre ni position ni Point");
+      throw new \SExcept("Erreur dans Point:add(), paramètre ni position ni Point", self::ErrorAdd);
   }
   
-  /*PhpDoc: methods
-  name:  diff
-  title: "function diff($v): Point - $this - $v en 2D, $v peut être un Point ou une position"
-  */
-  function diff($v): Point {
+  /**
+   * diff(Point|TPos $v): Point - $this - $v en 2D, $v peut être un Point ou une position
+   *
+   * @param Point|TPos $v
+   */
+  function diff(Point|array $v): Point {
     if (Pos::is($v))
       return new Point([$this->coords[0] - $v[0], $this->coords[1] - $v[1]]);
     elseif (get_class($v) == __NAMESPACE__.'\Point')
       return new Point([$this->coords[0] - $v->coords[0], $this->coords[1] - $v->coords[1]]);
     else
-      throw new \Exception("Erreur dans Point:diff(), paramètre ni position ni Point");
+      throw new \SExcept("Erreur dans Point:diff(), paramètre ni position ni Point", self::ErrorDiff);
   }
   
-  /*PhpDoc: methods
-  name:  vectorProduct
-  title: "static function vectorProduct(array $u, array $v): float - produit vectoriel $this par $v en 2D"
+  /**
+   * vectorProduct(Point $v): float - produit vectoriel $this par $v en 2D
   */
   function vectorProduct(Point $v): float { return Pos::vectorProduct($this->coords, $v->coords); }
   
-  /*PhpDoc: methods
-  name:  scalarProduct
-  title: "function scalarProduct(Point $v): float - produit scalaire $this par $v en 2D"
+  /**
+   * scalarProduct(Point $v): float - produit scalaire $this par $v en 2D
   */
   function scalarProduct(Point $v): float { return Pos::scalarProduct($this->coords, $v->coords); }
   
-  /*PhpDoc: methods
-  name:  scalMult
-  title: "function scalMult(float $scal): Point  - multiplication de $this considéré comme un vecteur par un scalaire"
+  /**
+   * scalMult(float $scal): Point  - multiplication de $this considéré comme un vecteur par un scalaire
   */
   function scalMult(float $scal): Point { return new Point([$this->coords[0] * $scal, $this->coords[1] * $scal]); }
 
-  /*PhpDoc: methods
-  name:  distancePointLine
-  title: "function distancePointLine(array $a, array $b): float - distance signée du point courant à la droite définie par les 2 positions a et b"
-  doc: |
-    La distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
-    # Distance signee d'un point P a une droite orientee definie par 2 points A et B
-    # la distance est positive si P est a gauche de la droite AB et negative si le point est a droite
-    # Les parametres sont les 3 points P, A, B
-    # La fonction retourne cette distance.
-    # --------------------
-    sub DistancePointDroite
-    # --------------------
-    { my @ab = (@_[4] - @_[2], @_[5] - @_[3]); # vecteur B-A
-      my @ap = (@_[0] - @_[2], @_[1] - @_[3]); # vecteur P-A
-      return pvect (@ab, @ap) / Norme(@ab);
-    }
-  */
-  function distancePointLine(array $a, array $b): float {
-    return Pos::distancePosLine($this->coords, $a, $b);
-  }
-  static function test_distancePointLine() {
+  /**
+   * distancePointLine(TPos $a, TPos $b): float - distance signée du point courant à la droite définie par les 2 pos a et b
+   *
+   *  La distance est positive si le point est à gauche de la droite AB et négative s'il est à droite
+   *
+   * @param TPos $a
+   * @param TPos $b
+   */
+  function distancePointLine(array $a, array $b): float { return Pos::distancePosLine($this->coords, $a, $b); }
+  static function test_distancePointLine(): void {
     foreach ([
       [[1,0], [0,0], [1,1]],
       [[1,0], [0,0], [0,2]],
@@ -134,28 +123,19 @@ class Point extends Homogeneous {
     }
   }
     
-  /*PhpDoc: methods
-  name:  projPointOnLine
-  title: "function projPointOnLine(array $a, array $b): float - projection du point sur la droite A,B, renvoie u"
-  doc: |
-    # Projection P' d'un point P sur une droite A,B
-    # Les parametres sont les 3 points P, A, B
-    # Renvoit u / P' = A + u * (B-A).
-    # Le point projete est sur le segment ssi u est dans [0 .. 1].
-    # -----------------------
-    sub ProjectionPointDroite
-    # -----------------------
-    { my @ab = (@_[4] - @_[2], @_[5] - @_[3]); # vecteur B-A
-      my @ap = (@_[0] - @_[2], @_[1] - @_[3]); # vecteur P-A
-      return pscal(@ab, @ap)/(@ab[0]**2 + @ab[1]**2);
-    }
-  */
-  function projPointOnLine(array $a, array $b): float {
-    $ab = (new Point($b))->diff($a);
-    $ap = $this->diff($a);
-    return $ab->scalarProduct($ap) / $ab->scalarProduct($ab);
-  }
-  static function test_projPointOnLine() {
+  /**
+   * projPointOnLine(array $a, array $b): float - projection du point sur la droite A,B, renvoie u"
+   *
+   * Projection P' d'un point P sur une droite A,B
+   * Les parametres sont les 3 points P, A, B
+   * Renvoit u / P' = A + u * (B-A).
+   * Le point projeté est sur le segment ssi u est dans [0 .. 1].
+   *
+   * @param TPos $a
+   * @param TPos $b
+   */
+  function projPointOnLine(array $a, array $b): float { return Pos::distancePosLine($this->coords, $a, $b); }
+  static function test_projPointOnLine(): void {
     foreach ([
       [[1,0], [0,0], [1,1]],
       [[1,0], [0,0], [0,2]],
@@ -166,68 +146,74 @@ class Point extends Homogeneous {
     }
   }
 
-  function draw(Drawing $drawing, array $style=[]) {}
+  /**
+   * simpleGeoms(): array - Retourne une structure standardisée commune à ttes les géométries
+   *
+   * Retourne un array composé d'exactement 3 champs points, lineStrings et polygons contenant chacun
+   * une liste évt. vide d'objets respectivement Point, LineString et Polygon.
+   *
+   * @return array<string, array<int, Homogeneous>>
+   */
+  function simpleGeoms(): array {
+    return ['points'=> [$this], 'lineStrings'=> [], 'polygons'=> []];
+  }
+
+  function draw(Drawing $drawing, array $style=[]): void {}
 };
 
 UnitTest::class(__NAMESPACE__, __FILE__, 'Point'); // Test unitaire de la classe Point
 
-{/*PhpDoc: classes
-name: Segment
-title: class Segment - Segment composé de 2 positions ; considéré comme orienté de la première vers la seconde
-methods:
-doc: |
-  On considère le segment comme fermé sur sa première position et ouvert sur la seconde
-  Cela signifie que la première position appartient au segment mais pas la seconde.
-*/}
+/**
+ * class Segment - Segment composé de 2 positions ; considéré comme orienté de la première vers la seconde
+ *
+ * On considère le segment comme fermé sur sa première position et ouvert sur la seconde
+ * Cela signifie que la première position appartient au segment mais pas la seconde.
+*/
 class Segment {
-  private $tab; // 2 positions: [[number]]
+  /** @var array<int, TPos> $tab liste de 2 positions */
+  protected array $tab;
   
-  /*PhpDoc: methods
-  name:  __construct
-  title: "function __construct(array $pos0, array $pos1) - initialise un segment par 2 positions"
-  */
+  /**
+   * __construct(TPos $pos0, TPos $pos1) - initialise le segment par 2 positions
+   *
+   * @param TPos $pos0
+   * @param TPos $pos1
+   */
   function __construct(array $pos0, array $pos1) { $this->tab = [$pos0, $pos1]; }
   
-  /*PhpDoc: methods
-  name:  asArray
-  title: "function asArray(): array - représentation comme array des 2 positions définissant le sgement"
-  */
-  function asArray(): array { return $this->tab; }
+  /**
+   * asArray(): array - représentation comme array des 2 positions définissant le segment
+   *
+   * @return array<string, string|array<int, TPos>>
+   */
+  function asArray(): array { return ['type'=> 'Segment', 'coordinates'=> $this->tab]; }
   
-  /*PhpDoc: methods
-  name:  __toString
-  title: "function __toString(): string - représentation comme string des 2 positions définissant le sgement"
-  */
-  function __toString(): string { return json_encode($this->tab); }
+  /**
+   * __toString(): string - représentation comme string des 2 positions définissant le sgement
+   */
+  function __toString(): string { return json_encode($this->asArray()); }
   
-  /*PhpDoc: methods
-  name:  length
-  title: "function length(): float - longueur du segment définie par la distance euclidienne"
+  /**
+   * length(): float - longueur du segment définie par la distance euclidienne
   */
-  function length(): float {
-    $dx = $this->tab[1][0] - $this->tab[0][0];
-    $dy = $this->tab[1][1] - $this->tab[0][1];
-    return sqrt($dx*$dx + $dy*$dy);
-  }
+  function length(): float { return Pos::distance($this->tab[0], $this->tab[1]); }
   
-  /*PhpDoc: methods
-  name:  vector
-  title: "function vector(): Point - vecteur correspondant à $tab[1] - $tab[0] représenté par un Point"
+  /**
+   * vector(): Point - vecteur correspondant à $tab[1] - $tab[0] représenté par un Point
   */
-  function vector(): Point {
-    return new Point([$this->tab[1][0] - $this->tab[0][0], $this->tab[1][1] - $this->tab[0][1]]);
-  }
+  function vector(): Point { return new Point(Pos::diff($this->tab[1], $this->tab[0])); }
   
-  /*PhpDoc: methods
-  name:  intersects
-  title: "function intersects(Segment $seg): array - intersection entre 2 segments"
-  doc: |
-    Je considère les segments fermé sur la première position et ouvert sur la seconde.
-    Cela signifie qu'une intersection ne peut avoir lieu sur la seconde position
-    Si les segments ne s'intersectent pas alors retourne []
-    S'ils s'intersectent en un point alors retourne le dictionnaire
-      ['point'=> le point d'intersection, 'u'=> l'abscisse sur le premier segment, 'v'=> l'abscisse sur le second]
-    S'ils s'intersectent en un segment alors retourne ['segment'=> intesection]
+  /**
+   * intersects(Segment $seg): array - intersection entre 2 segments
+   *
+   * Je considère les segments ferméq sur la première position et ouvert sur la seconde.
+   * Cela signifie qu'une intersection ne peut avoir lieu sur la seconde position
+   * Si les segments ne s'intersectent pas alors retourne []
+   * S'ils s'intersectent en un point alors retourne le dictionnaire
+   *   ['point'=> le point d'intersection, 'u'=> l'abscisse sur le premier segment, 'v'=> l'abscisse sur le second]
+   * S'ils s'intersectent en un segment alors retourne ['segment'=> segment d'intesection]
+   *
+   * @return array<mixed>
   */
   function intersects(Segment $seg): array {
     $a = $this->tab;
@@ -293,47 +279,49 @@ class Segment {
 
 UnitTest::class(__NAMESPACE__, __FILE__, 'Segment'); // Test unitaire de la classe Segment
 
-{/*PhpDoc: classes
-name: MultiPoint
-title: class MultiPoint extends Homogeneous - Une liste éventuellement vide de positions
-*/}
+/**
+ * class MultiPoint extends Homogeneous - Une liste éventuellement vide de positions
+ */
 class MultiPoint extends Homogeneous {
-  // $coords contient une liste de positions (LPos)
+  /** @var TLPos $coords */
+  protected array $coords;
+
   function eltTypes(): array { return $this->coords ? ['Point'] : []; }
-  function geoms(): array { return array_map(function(array $pos) { return new Point($pos); }, $this->coords); }
   function nbPoints(): int { return count($this->coords); }
   
-  /*PhpDoc: methods
-  name: __toString
-  title: "function __toString(): string - génère la réprésentation string WKT"
-  */
-  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
-  
   function isValid(): bool {
-    foreach ($this->geoms() as $pt)
-      if (!$pt->isValid())
+    foreach ($this->coords as $pos)
+      if (!(new Point($pos))->isValid())
         return false;
     return true;
   }
   
   function getErrors(): array { return LPos::getErrors($this->coords); }
-  
-  /*static function haggregate(array $elts) - NON UTILISE {
-    $coords = [];
-    foreach ($elts as $elt)
-      $coords[] = $elt->coords;
-    return new MultiPoint($coords);
-  }*/
 
-  function draw(Drawing $drawing, array $style=[]) {}
+  /**
+   * simpleGeoms(): array - Retourne une structure standardisée commune à ttes les géométries
+   *
+   * Retourne un array composé d'exactement 3 champs points, lineStrings et polygons contenant chacun
+   * une liste évt. vide d'objets respectivement Point, LineString et Polygon.
+   *
+   * @return array<string, array<int, Homogeneous>>
+   */
+  function simpleGeoms(): array {
+    $points = [];
+    foreach ($this->coords as $pos)
+      $points[] = new Point($pos);
+    return ['points'=> $points, 'lineStrings'=> [], 'polygons'=> []];
+  }
+  
+  function draw(Drawing $drawing, array $style=[]): void {}
     
   // méthode de test global de la classe
-  static function test_MultiPoint() {
+  static function test_MultiPoint(): void {
     $mpt = Geometry::fromGeoJSON(['type'=>'MultiPoint', 'coordinates'=>[]]);
     $mpt = Geometry::fromGeoJSON(['type'=>'MultiPoint', 'coordinates'=>[[0,0],[1,1]]]);
     echo "$mpt ->center() = ",json_encode($mpt->center()),"<br>\n";
     echo "$mpt ->aPos() = ",json_encode($mpt->aPos()),"<br>\n";
-    echo "$mpt ->bbox() = ",$mpt->bbox(),"<br>\n";
+    echo "$mpt ->gbox() = ",$mpt->gbox(),"<br>\n";
     echo "$mpt ->proj() = ",$mpt->proj(function(array $pos) { return $pos; }),"<br>\n";
   }
 }

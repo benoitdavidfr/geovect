@@ -29,17 +29,14 @@ class LineString extends Homogeneous {
   protected array $coords; // redéfinition de $coords pour préciser son type pour cette classe
 
   function eltTypes(): array { return ['LineString']; }
-  
-  function geoms(): array { return array_map(function(array $pos) { return new Point($pos); }, $this->coords); }
-  
-  /*PhpDoc: methods
-  name: __toString
-  title: "function __toString(): string - génère la réprésentation string WKT"
-  */
-  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
 
   function isValid(): bool { return LPos::isValid($this->coords) && (count($this->coords) >= 2); }
   
+  /**
+   * getErrors(): array - renvoie l'arbre des erreurs ou [] s'il n'y en a pas
+   *
+   * @return array<mixed>
+   */
   function getErrors(): array {
     return array_merge(
       LPos::getErrors($this->coords),
@@ -51,27 +48,16 @@ class LineString extends Homogeneous {
     return LPos::length($this->coords);
   }
   
-  /*PhpDoc: methods
-  name:  areaOfRing
-  title: "function areaOfRingv(): float - renvoie la surface de l'anneau constitué par la polyligne dans le CRS courant"
-  doc: |
-    La surface est positive ssi la géométrie est orientée dans le sens des aiguilles de la montre (sens trigo inverse).
-    Cette règle est conforme à la définition GeoJSON:
-      A linear ring MUST follow the right-hand rule with respect to the area it bounds,
-      i.e., exterior rings are clockwise, and holes are counterclockwise.
+  /**
+  * areaOfRingv(): float - renvoie la surface de l'anneau constitué par la polyligne dans le CRS courant
+  *
+  *  La surface est positive ssi la géométrie est orientée dans le sens des aiguilles de la montre (sens trigo inverse).
+  *  Cette règle est conforme à la définition GeoJSON:
+  *    A linear ring MUST follow the right-hand rule with respect to the area it bounds,
+  *    i.e., exterior rings are clockwise, and holes are counterclockwise.
   */
-  /*function areaOfRing(): float {
-    $area = 0.0;
-    $geoms = $this->geoms();
-    $n = count($geoms);
-    $pt0 = $geoms[0];
-    for ($i=1; $i<$n-1; $i++) {
-      $area += $geoms[$i]->diff($pt0)->vectorProduct($geoms[$i+1]->diff($pt0));
-    }
-    return -$area/2;
-  }*/
   function areaOfRing(): float { return LPos::areaOfRing($this->coords); }
-  static function test_areaOfRing() {
+  static function test_areaOfRing(): void {
     foreach ([
       [[0,0],[0,1],[1,0],[0,0]],
       [[0,0],[1,0],[0,1],[0,0]],
@@ -84,15 +70,14 @@ class LineString extends Homogeneous {
     }
   }
   
-  /*PhpDoc: methods
-  name:  filter
-  title: "function filter(int $precision=9999): ?Homogeneous - renvoie un nouveau LineString filtré supprimant les points successifs identiques"
-  doc: |
-    Les coordonnées sont arrondies avec le nbre de chiffres significatifs défini par le paramètre precision
-    ou par la précision par défaut.
-    Un filtre sans arrondi n'a pas de sens.
+  /**
+   * filter(int $precision=9999): ?LineString - renvoie un nouveau LineString filtré supprimant les points successifs identiques
+   *
+   * Les coordonnées sont arrondies avec le nbre de chiffres significatifs défini par le paramètre precision
+   * ou par la précision par défaut.
+   * Un filtre sans arrondi n'a pas de sens.
   */
-  function filter(int $precision=9999): ?Homogeneous {
+  function filter(int $precision=9999): ?LineString {
     $cclass = get_called_class();
     $lpos = LPos::filter($this->coords, $precision == 9999 ? self::$precision : $precision);
     if (count($lpos) >= 2)
@@ -101,26 +86,16 @@ class LineString extends Homogeneous {
       return null;
   }
   
-  /*PhpDoc: methods
-  name:  filter
-  title: "function efilter(): Homogeneous - renvoie un nouveau LineString filtré supprimant les points successifs identiques en utilisant eprecision (A REVOIR)"
-  */
-  function efilter(): Homogeneous {
-    $cclass = get_called_class();
-    return new $cclass(LPos::filter($this->coords, self::$eprecision));
-  }
+  /**
+   * efilter(): LineString - renvoie un nouveau LineString filtré supprimant les points successifs identiques en utilisant ePrecision
+   */
+  function efilter(): ?LineString { return $this->filter(self::$ePrecision); }
   
-  /* Dév interrompu
-  function clip(GBox $window): MultiLineString {
-    throw new \Exception("Dév interrompu");
-  }*/
-    
-  /*PhpDoc: methods
-  name:  isClosed
-  title: "function isClosed(): bool - teste la fermeture de la polyligne"
-  */
+  /**
+   * isClosed(): bool - teste la fermeture de la polyligne
+   */
   function isClosed(): bool { return ($this->coords[0] == $this->coords[count($this->coords)-1]); }
-  static function test_isClosed() {
+  static function test_isClosed(): void {
     foreach ([
       'LINESTRING(0 0,100 100)',
       'LINESTRING(0 0,100 100,0 0)',
@@ -130,9 +105,10 @@ class LineString extends Homogeneous {
     }
   }
 
-  /*PhpDoc: methods
-  name:  segs
-  title: "segs(): array - liste des segments constituant la polyligne"
+  /**
+   * segs(): array - liste des segments constituant la polyligne
+   *
+   * @return array<int, Segment>
   */
   function segs(): array {
     $segs = [];
@@ -148,11 +124,11 @@ class LineString extends Homogeneous {
     return $segs;
   }
   
-  function simplify(float $distTreshold): ?Homogeneous {
+  function simplify(float $distTreshold): ?LineString {
     $class = get_called_class();
     return ($lpos = LPos::simplify($this->coords, $distTreshold)) ? new $class($lpos) : null;
   }
-  static function test_simplify() {
+  static function test_simplify(): void {
     $ls = new LineString([[0,0],[0.1,0],[0,1],[2,2]]);
     echo "simplify($ls, 1)=",$ls->simplify(1),"<br>\n";
     echo "simplify($ls, 0.5)=",$ls->simplify(0.5),"<br>\n";
@@ -160,51 +136,46 @@ class LineString extends Homogeneous {
     echo "simplify($ls, 1)=",$ls->simplify(1),"<br>\n";
   }
   
-  function draw(Drawing $drawing, array $style=[]) {
+  /**
+   * simpleGeoms(): array - Retourne une structure standardisée commune à ttes les géométries
+   *
+   * Retourne un array composé d'exactement 3 champs points, lineStrings et polygons contenant chacun
+   * une liste évt. vide d'objets respectivement Point, LineString et Polygon.
+   *
+   * @return array<string, array<int, Homogeneous>>
+   */
+  function simpleGeoms(): array {
+    return ['points'=> [], 'lineStrings'=> [$this], 'polygons'=> []];
+  }
+  
+  function draw(Drawing $drawing, array $style=[]): void {
     $drawing->polyline($this->coords, $style);
   }
 }
 
 UnitTest::class(__NAMESPACE__, __FILE__, 'LineString'); // Test unitaire de la classe LineString
 
-{/*PhpDoc: classes
-name: MultiLineString
-title: class MultiLineString extends Geometry - contient une liste de liste de positions, chaque liste de positions en contient au moins 2
-*/}
+/**
+ * class MultiLineString extends Geometry - contient une liste de liste de positions, chaque liste de positions en contient au moins 2
+*/
 class MultiLineString extends Homogeneous {
-  // $coords contient une liste de listes de positions (LLPos)
+  /* @var TLLPos $coords; */
+  protected array $coords; // redéfinition de $coords pour préciser son type pour cette classe
+
   function eltTypes(): array { return $this->coords ? ['LineString'] : []; }
-  
-  function geoms(): array {
-    return array_map(function(array $lpos) { return new LineString($lpos); }, $this->coords);
-  }
-  static function test_geoms() {
-    foreach ([
-      [[[0,0],[0,1],[1,0],[0,0]]],
-      [[[0,0],[0,1],[1,0],[0,0]],[[0,0],[0,1],[1,0],[0,0]]],
-    ] as $coords) {
-      $mls = new MultiLineString($coords);
-      echo "geoms($mls)=[",implode(',',$mls->geoms()),"]<br>\n";
-    }
-  }
-  
-  /*PhpDoc: methods
-  name: __toString
-  title: "function __toString(): string - génère la réprésentation string WKT"
-  */
-  function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
 
   function isValid(): bool {
-    foreach ($this->geoms() as $ls)
-      if (!$ls->isValid())
+    foreach ($this->coords as $lpos) {
+      if (!(new LineString($lpos))->isValid())
         return false;
+    }
     return true;
   }
   
   function getErrors(): array {
     $errors = [];
-    foreach ($this->geoms() as $i => $ls) {
-      if ($lsErrors = $ls->getErrors())
+    foreach ($this->coords as $i => $lpos) {
+      if ($lsErrors = (new LineString($lpos))->getErrors())
         $errors[] = ["Erreur sur la ligne $i", $lsErrors];
     }
     return $errors;
@@ -213,7 +184,7 @@ class MultiLineString extends Homogeneous {
   function length(): float {
     return array_sum(array_map('gegeom\LPos::length', $this->coords));
   }
-  static function test_length() {
+  static function test_length(): void {
     foreach ([
       [[[0,0],[0,1],[1,0],[0,0]]],
     ] as $coords) {
@@ -225,39 +196,36 @@ class MultiLineString extends Homogeneous {
   function filter(int $precision=9999): ?Homogeneous {
     if ($precision == 9999)
       $precision == self::$precision;
-    $cclass = get_called_class();
     $coords = [];
     foreach ($this->coords as $lpos) {
       $lpos = LPos::filter($lpos, $precision);
       if (count($lpos) >= 2)
         $coords[] = $lpos;
     }
-    if ($coords)
+    if ($coords) {
+      $cclass = get_called_class();
       return new $cclass($coords);
+    }
     else
       return null;
   }
-  
-  // Dév interrompu
-  /*function clip(GBox $window): MultiLineString {
-    $llpos = [];
-    foreach ($this->coords as $lpos) {
-      $ls = new LineString($lpos);
-      $mls = $ls->clip($window);
-      if ($mls)
-        $llpos = array_merge($llpos, $mls->coords());
-    }
-    return new MultiLineString($llpos);
-  }*/
     
-  /*static function haggregate(array $elts) - NON UTILISE {
-    $coords = [];
-    foreach ($elts as $elt)
-      $coords[] = $elt->coords;
-    return new MultiLineString($coords);
-  }*/
-
-  function draw(Drawing $drawing, array $style=[]) {
+  /**
+   * simpleGeoms(): array - Retourne une structure standardisée commune à ttes les géométries
+   *
+   * Retourne un array composé d'exactement 3 champs points, lineStrings et polygons contenant chacun
+   * une liste évt. vide d'objets respectivement Point, LineString et Polygon.
+   *
+   * @return array<string, array<int, Homogeneous>>
+   */
+  function simpleGeoms(): array {
+    $lineStrings = [];
+    foreach ($this->coords as $lpos)
+      $lineStrings[] = new LineString($lpos);
+    return ['points'=> [], 'lineStrings'=> $lineStrings, 'polygons'=> []];
+  }
+  
+  function draw(Drawing $drawing, array $style=[]): void {
     foreach ($this->coords as $coords)
       $drawing->polyline($coords, $style);
   }

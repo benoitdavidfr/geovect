@@ -19,6 +19,31 @@ require_once __DIR__.'/unittest.inc.php';
 require_once __DIR__.'/../lib/sexcept.inc.php';
 use \unittest\UnitTest;
 
+
+/**
+ * flatten(array<mixed>): array<int, mixed> - applatit une liste pour retourner une liste d'éléments non liste
+ *
+ * ignore les clés éventuelles
+ *
+ * @param array<mixed> $array
+ * @return array<int, mixed>
+ */
+function flatten(array $array) {
+  $return = [];
+  array_walk_recursive($array, function($a) use (&$return) { $return[] = $a; });
+  return $return;
+}
+
+UnitTest::function(__FILE__, 'flatten', function() {
+  foreach([
+    [['a','b'],['c','d']],
+    [['a','b',['x','y']],['c','d']],
+    [['k'=>'a','b',['k2'=>'x','y']],['c','d']],
+  ] as $list) {
+    echo "flatten(",json_encode($list),") -> ",json_encode(flatten($list)),"<br>\n";
+  }
+});
+
 /**
  * class Pos - fonctions s'appliquant à une position
  *

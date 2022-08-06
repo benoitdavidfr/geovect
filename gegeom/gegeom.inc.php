@@ -105,13 +105,9 @@ UnitTest::function(__FILE__, 'json_encode', function(): void { // Tests unitaire
 abstract class Geometry {
   const ErrorFromGeoJSON = 'Geometry::ErrorFromGeoJSON';
   
-  static int $precision = 6; // nbre de chiffres après la virgule à conserver pour les coord. géo.
-  static int $ePrecision = 1; // nbre de chiffres après la virgule à conserver pour les coord. euclidiennes
-  
-  /** @var TStyle $style style évent. associé à la géométrie, toujours un array, par défaut [] */
-  protected array $style;
-  
-  // Je construis l'objet
+  /*
+   * Construction de l'objet
+   */
   
   /**
    * fromGeoJSON(TGeoJsonGeometry $geom, string $prefix=''): Geometry - construit une géométrie à partir de sa représentation GeoJSON décodée comme array Php
@@ -120,6 +116,7 @@ abstract class Geometry {
    * de la bibliothèque.
    *
    * @param TGeoJsonGeometry $geom
+   * @return Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon|GeometryCollection
    */
   static function fromGeoJSON(array $geom, string $prefix=''): Geometry {
     if (in_array($geom['type'] ?? null, Homogeneous::TYPES) && isset($geom['coordinates'])) {
@@ -138,19 +135,15 @@ abstract class Geometry {
    * fromWkt(string $wkt, string $prefix=''): Geometry - crée une géométrie à partir d'un WKT
    *
    * génère une erreur si le WKT ne correspond pas à une géométrie
+   *
+   * @return Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon|GeometryCollection
    */
   static function fromWkt(string $wkt, string $prefix=''): Geometry {
     return self::fromGeoJSON(Wkt::geojson($wkt), $prefix);
   }
   // Méthode de test dans la classe TestsOfGeometry
   
-  // définit le style associé et le récupère
-  /** @param TStyle $style */
-  function setStyle(array $style=[]): void { $this->style = $style; }
-  /** @return TStyle */
-  function getStyle(): array { return $this->style; }
-  
-  // Je vérifie la validité de l'objet
+  /*** vérification de la validité de l'objet ***/
   
   /**
    * isValid(): bool - teste la validité de l'objet
@@ -169,7 +162,7 @@ abstract class Geometry {
   abstract function getErrors(): array;
   // Méthode de test dans la classe TestsOfGeometry
   
-  // Je récupère le contenu de l'objet
+  /*** Exposition du contenu de l'objet ***/
   
   /**
    * asArray(): array - génère la représentation array Php du GeoJSON
@@ -177,12 +170,6 @@ abstract class Geometry {
    * @return TGeoJsonGeometry
    */
   abstract function asArray(): array;
-  
-  /* function geojson() redondante avec __toString
-   * geojson(): string - génère la représentation string GeoJSON
-   *
-  function geojson(): string { return json_encode($this->asArray()); }
-  */
   
   /**
    * __toString(): string - génère la représentation string GeoJSON
@@ -192,7 +179,11 @@ abstract class Geometry {
   // récupère le type en supprimant l'espace de nom
   function type(): string { $c = get_called_class(); return substr($c, strrpos($c, '\\')+1); }
   
-  // retourne la liste des types élémentaires ('Point','LineString','Polygon') contenus dans la géométrie
+  /**
+   * retourne la liste des types élémentaires ('Point','LineString','Polygon') contenus dans la géométrie
+   *
+   * @return array<int, string>
+   */
   abstract function eltTypes(): array;
   
   /**
@@ -200,24 +191,55 @@ abstract class Geometry {
    */
   abstract function wkt(): string;
   
-  // J'effectue des traitements
+  /** @return TLnPos */
+  function coords(): array {
+    $array = $this->asArray();
+    if ($array['type']=='GeometryCollection')
+      return [];
+    else
+      return $array['coordinates'];
+  }
+  
+  /*** Traitements sur l'objet ***/
+  
+  /**
+   * gbox(): GBox - renvoie la GBox de la géométrie considérée comme géographique
+   */
+  abstract function gbox(): GBox;
   
   /**
    * ebox(): EBox - renvoie la EBox de la géométrie considérée comme euclidienne
-  */
-  function ebox(): EBox { return new EBox($this->bbox()->asArray()); }
+   */
+  function ebox(): EBox { return new EBox($this->gbox()->asArray()); }
   
   /**
    * proj(callable $projPos): Geometry - projète chaque position d'une géométrie en utilisant la fonction anonyme
-  */
+   */
   abstract function proj(callable $projPos): Geometry;
   
   /**
    * center(): TPos - centre d'une géométrie considérée en coord. géo.
    *
    * @return TPos
-  */
+   */
   abstract function center(): array;
+  
+  /**
+   * simpleGeoms(): array - Retourne une structure standardisée commune à ttes les géométries
+   *
+   * Retourne un array composé d'exactement 3 champs points, lineStrings et polygons contenant chacun
+   * une liste évt. vide d'objets respectivement Point, LineString et Polygon.
+   *
+   * @return array<string, array<int, Homogeneous>>
+   */
+  abstract function simpleGeoms(): array;
+
+  /**
+   * draw(Drawing $drawing, array $style=[]) - Dessine l'objet dans le dessin avec le style
+   *
+   * @param TStyle $style
+   */
+  abstract function draw(Drawing $drawing, array $style=[]): void;
 };
 
 // UnitTest::class(__NAMESPACE__, __FILE__, 'Geometry'); // RIEN à tester dans la classe Geometry
@@ -232,20 +254,33 @@ abstract class Geometry {
  */
 abstract class Homogeneous extends Geometry {
   const TYPES = ['Point','LineString','Polygon','MultiPoint','MultiLineString','MultiPolygon'];
+  
+  static int $precision = 6; // nbre de chiffres après la virgule à conserver pour les coord. géo.
+  static int $ePrecision = 1; // nbre de chiffres après la virgule à conserver pour les coord. euclidiennes
 
-  /* @var TLnPos $coords; */
-  protected array $coords; // coordonnées ou Positions, stockées comme TPos, TLPos, ... en fonction de la sous-classe
+  /**
+   * coordonnées ou Positions, stockées comme TPos, TLPos, ... en fonction de la sous-classe
+   *
+   * @var TLnPos $coords
+   */
+  protected array $coords;
   
   /**
-   * __construct(array $coords, array $style=[]) - fonction d'initialisation commune à toutes les géométries homogènes
+   * __construct(TLnPos $coords, array $style=[]) - fonction d'initialisation commune à toutes les géométries homogènes
+   *
+   * @param TLnPos $coords
    */
-  function __construct(array $coords, array $style=[]) { $this->coords = $coords; $this->style = $style; }
+  function __construct(array $coords) { $this->coords = $coords; }
   
-  // récupère les coordonnées
+  /**
+   * récupère les coordonnées
+   *
+   * @return TLnPos
+   */
   function coords(): array { return $this->coords; }
   
   /**
-   * asArray(): array - génère la représentation Php du GeoJSON
+   * asArray(): array - génère la représentation array Php GeoJSON
    *
    * @return TGeoJsonGeometry
    */
@@ -257,7 +292,7 @@ abstract class Homogeneous extends Geometry {
   //function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
   
   /**
-   * wkt(): string - génère la réprésentation WKT
+   * wkt(): string - génère la réprésentation WKT de la géométrie
    */
   function wkt(): string { return strtoupper($this->type()).LnPos::wkt($this->coords); }
   
@@ -267,14 +302,13 @@ abstract class Homogeneous extends Geometry {
   doc: |
     Point -> [], MultiPoint->[Point], LineString->[Point], MultiLineString->[LineString], Polygon->[LineString],
     MutiPolygon->[Polygon], GeometryCollection->[Elements]  
-  */
-  abstract function geoms(): array;
+  *//*
+  abstract function geoms(): array;*/
   
-  /*PhpDoc: methods
-  name: proj2D
-  title: "abstract function proj2D(): Geometry - projection 2D, supprime l'éventuelle 3ème coordonnée, renvoie un nouveau Geometry"
+  /**
+   * proj2D(): $this - projection 2D, supprime l'éventuelle 3ème coordonnée, renvoie un nouvel objet de même type"
   */
-  function proj2D(): Geometry { return self::proj(function(array $pos) { return [$pos[0], $pos[1]]; }); }
+  function proj2D(): Homogeneous { return self::proj(function(array $pos) { return [$pos[0], $pos[1]]; }); }
   
   /**
    * center(): TPos - centre d'une géométrie considérée en coord. géo.
@@ -283,139 +317,88 @@ abstract class Homogeneous extends Geometry {
    */
   function center(): array { return LnPos::center($this->coords, self::$precision); }
     
-  /*PhpDoc: methods
-  name: center
-  title: "function ecenter(): array - centre d'une géométrie cosnidérée en coord. euclidiennes"
+  /**
+   * ecenter(): TPos - centre d'une géométrie cosnidérée en coord. euclidiennes
+   *
+   * @return TPos
   */
-  function ecenter(): array { return LnPos::center($this->coords, self::$eprecision); }
-  
-  /*PhpDoc: methods
-  name: nbreOfPos
-  title: "function nbreOfPos(): int - retourne le nobre de positions"
-  */
-  function nbreOfPos(): int { return LnPos::count($this->coords); }
-  
-  /*PhpDoc: methods
-  name: aPos
-  title: "function aPos(): array - retourne une position de la géométrie"
-  */
-  function aPos(): array { return LnPos::aPos($this->coords); }
-  
-  /*PhpDoc: methods
-  name: bbox
-  title: "function bbox(): GBox - renvoie la GBox de la géométrie considérée comme géographique"
-  */
-  function bbox(): GBox { return new GBox($this->coords); }
+  function ecenter(): array { return LnPos::center($this->coords, self::$ePrecision); }
   
   /**
-   * proj(callable $projPos): Homogeneous - projète une géométrie, prend en paramètre une fonction anonyme de projection d'une position
-  */
+   * nbreOfPos(): int - retourne le nobre de positions
+   */
+  function nbreOfPos(): int { return LnPos::count($this->coords); }
+  
+  /**
+   * aPos(): array - retourne une position de la géométrie
+   *
+   * @return TPos
+   */
+  function aPos(): array { return LnPos::aPos($this->coords); }
+  
+  /**
+   * gbox(): GBox - renvoie la GBox de la géométrie considérée comme géographique
+   */
+  function gbox(): GBox { return new GBox($this->coords); }
+  
+  /**
+   * proj(callable $projPos): Homogeneous - projète les positions de la géométrie par une fonction anonyme TPos -> TPos
+   *
+   * crée un nouvel objet
+   */
   function proj(callable $projPos): Homogeneous {
     $class = get_called_class();
-    return new $class(LnPos::projLn($this->coords, $projPos));
+    return new $class(LnPos::projLn($this->coords, $projPos)); // @phpstan-ignore-line
   }
   
-  /*PhpDoc: methods
-  name:  nbPoints
-  title: "function nbPoints(): int - nombre de primitives Point contenue dans la géométrie"
-  */
+  /**
+   * nbPoints(): int - nombre d'objets Point contenus dans la géométrie
+   */
   function nbPoints(): int { return 0; }
   
-  /*PhpDoc: methods
-  name:  length
-  title: "function length(): float - longueur dans le système de coordonnées courant"
-  */
+  /**
+   * length(): float - longueur dans le système de coordonnées courant
+   */
   function length(): float { return 0; }
   
-  /*PhpDoc: methods
-  name:  area
-  title: "function area($options=[]): float - surface dans le système de coordonnées courant"
-  doc: |
-    Par défaut, l'extérieur et les intérieurs tournent dans des sens différents.
-    La surface est positive ssi l'extérieur tourne dans le sens trigonométrique inverse, <0 sinon.
-    Cette règle est conforme à la définition GeoJSON.
-    Si l'option 'noDirection' vaut true alors les sens sont ignorés et la surface de l'extérieu est positive
-    et celle de chaque intérieur est négative.
+  /**
+   * area($options=[]): float - surface dans le système de coordonnées courant
+   *
+   * Par défaut, l'extérieur et les intérieurs tournent dans des sens différents.
+   * La surface est positive ssi l'extérieur tourne dans le sens trigonométrique inverse, <0 sinon.
+   * Cette règle est conforme à la définition GeoJSON.
+   * Si l'option 'noDirection' vaut true alors les sens sont ignorés et la surface de l'extérieu est positive
+   * et celle de chaque intérieur est négative.
+   *
+   * @param array<string, mixed> $options
   */
   function area(array $options=[]): float { return 0; }
   
-  /*PhpDoc: methods
-  name:  filter
-  title: "function filter(int $precision=9999): ?Homogeneous - renvoie un nouveau Homogeneous filtré supprimant les points successifs identiques sur les lignes brisées ou null si la géométrie est trop petite"
-  doc: |
-    Les coordonnées sont arrondies avec le nbre de chiffres significatifs défini par le paramètre precision
-    ou par la précision par défaut. Un filtre sans arrondi n'a pas de sens.
-    La gestion des géométries dégradées par le filtre permet de garder les morceaux corrects d'un objet.
+  /**
+   * filter(int $precision=9999): ?Homogeneous - renvoie un nouveau Homogeneous filtré supprimant les points successifs identiques sur les lignes brisées ou null si la géométrie est trop petite
+   *
+   * Les coordonnées sont arrondies avec le nbre de chiffres significatifs défini par le paramètre precision
+   * ou par la précision par défaut. Un filtre sans arrondi n'a pas de sens.
+   * La gestion des géométries dégradées par le filtre permet de garder les morceaux corrects d'un objet.
   */
   function filter(int $precision=9999): ?Homogeneous { return $this; }
   
-  /*PhpDoc: methods
-  name:  simplify
-  title: "function simplify(float $distTreshold): ?LineString - simplifie la géométrie de la ligne brisée"
-  doc : |
-    Algorithme de Douglas & Peucker
-    Ne modifie pas l'objet courant
-    Retourne un nouvel objet LineString simplifié
-    ou null si la ligne est fermée et que la distance max est inférieure au seuil
-  */
+  /**
+   * simplify(float $distTreshold): ?LineString - simplifie la géométrie de la ligne brisée"
+   *
+   * Simplification de la ligne brisée utilisant l'algorithme de Douglas & Peucker
+   * Ne modifie pas l'objet courant
+   * Retourne un nouvel objet LineString simplifié
+   * ou null si la ligne est fermée et que la distance max est inférieure au seuil
+   */
   function simplify(float $distTreshold): ?Homogeneous { return $this; }
   
-  /*PhpDoc: methods
-  name:  dissolveCollection
-  title: "dissolveCollection(): array - retourne un array de primitives géométriques homogènes"
-  */
-  function dissolveCollection(): array { return [$this]; }
-  
-  /*PhpDoc: methods
-  name: decompose
-  title: "function decompose(): array - Décompose une géométrie en un array de géométries élémentaires (Point/LineString/Polygon)"
-  */
-  function decompose(): array {
-    $transfos = ['MultiPoint'=>'Point', 'MultiLineString'=>'LineString', 'MultiPolygon'=>'Polygon'];
-    if (isset($transfos[$this->type()])) {
-      $elts = [];
-      foreach ($this->coords as $eltcoords) {
-        $class = __NAMESPACE__.'\\'.$transfos[$this->type()];
-        $elts[] = new $class($eltcoords);
-      }
-      return $elts;
-    }
-    else // $this est un élément
-      return [$this];
-  }
-  
-  /* agrège un ensemble de géométries élémentaires en une unique Geometry
-  static function aggregate(array $elts): Geometry {
-    $bbox = new GBox;
-    foreach ($elts as $elt)
-      $bbox->union($elt->bbox());
-    return new Polygon($bbox->polygon()); // temporaireemnt représente chaque agrégat par son GBox
-    $elts = array_merge([new Polygon($bbox->polygon())], $elts);
-    if (count($elts) == 1)
-      return $elts[0];
-    $agg = [];
-    foreach ($elts as $elt)
-      $agg[$elt->type()][] = $elt;
-    if (isset($agg['Point']) && !isset($agg['LineString']) && !isset($agg['Polygon']))
-      return MultiPoint::haggregate($agg['Point']);
-    elseif (!isset($agg['Point']) && isset($agg['LineString']) && !isset($agg['Polygon']))
-      return MultiLineString::haggregate($agg['LineString']);
-    elseif (!isset($agg['Point']) && !isset($agg['LineString']) && isset($agg['Polygon']))
-      return MultiPolygon::haggregate($agg['Polygon']);
-    else 
-      return new GeometryCollection(array_merge(
-        MultiPoint::haggregate($agg['Point']),
-        MultiLineString::haggregate($agg['LineString']),
-        MultiPolygon::haggregate($agg['Polygon'])
-      ));
-  }
-  */
-  
-  /*PhpDoc: methods
-  name: draw
-  title: "abstract function draw(Drawing $drawing, array $style=[]) - Dessine l'objet dans le dessin avec le style"
-  */
-  abstract function draw(Drawing $drawing, array $style=[]);
+  /**
+   * draw(Drawing $drawing, array $style=[]) - Dessine l'objet dans le dessin avec le style
+   *
+   * @param TStyle $style
+   */
+  abstract function draw(Drawing $drawing, array $style=[]): void;
 }
 
 // UnitTest::class(__NAMESPACE__, __FILE__, 'Homogeneous'); // RIEN à tester dans la classe Homogeneous
@@ -425,8 +408,11 @@ require_once __DIR__.'/linestring.inc.php';
 require_once __DIR__.'/polygon.inc.php';
 require_once __DIR__.'/geomcoll.inc.php';
 
-// Classe portant les méthodes de test de Geometry une fois les classes filles définies
-// Sinon, cela génère des erreurs à l'exécution des dites méthodes
+/**
+ * Classe portant les méthodes de test de Geometry et Homogneous une fois les classes filles définies
+ *
+ * Sinon, cela génère des erreurs à l'exécution des dites méthodes
+*/
 class TestsOfGeometry {
   static function test_fromGeoJSON(): void {
     echo "<b>Test de Geometry::fromGeoJSON</b></p>\n";
@@ -538,8 +524,8 @@ class TestsOfGeometry {
     echo "proj($gc)=",$gc->proj($projPos),"<br>\n";
   }
 
-  static function test_decompose() {
-    echo "<b>Test de decompose</b><br>\n";
+  static function test_simpleGeoms(): void {
+    echo "<b>Test de simpleGeoms</b><br>\n";
     foreach ([
       [ 'type'=>'MultiPoint', 'coordinates'=>[[0,0], [1,1]]],
       [ 'type'=>'GeometryCollection',
@@ -549,7 +535,7 @@ class TestsOfGeometry {
         ],
       ]
     ] as $geom) {
-      echo json_encode($geom),' -> [',implode(',',Geometry::fromGeoJSON($geom)->decompose()),"]<br>\n";
+      echo '<pre>',json_encode($geom)," -> "; print_r(Geometry::fromGeoJSON($geom)->simpleGeoms()); echo "<pre>\n";
     }
   }
 };
