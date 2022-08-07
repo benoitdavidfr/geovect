@@ -7,6 +7,7 @@ parameters:
     TLLLPos: 'array<int, TLLPos>'
     TLnPos: 'TPos|TLPos|TLLPos|TLLLPos'
     TGeoJsonHomogeneousGeometry: 'array<string, string|TLnPos>'
+    THomogeneous: 'gegeom\Point|gegeom\MultiPoint|gegeom\LineString|gegeom\MultiLineString|gegeom\Polygon|gegeom\MultiPolygon'
     TGeoJsonCollectionGeometry: 'array<string, string|array<int, TGeoJsonHomogeneousGeometry>>'
     TGeoJsonGeometry: 'TGeoJsonHomogeneousGeometry|TGeoJsonCollectionGeometry'
     TGeoJsonProperties: 'array<string, mixed>'
@@ -18,6 +19,7 @@ parameters:
     - lib
     - coordsys/light.inc.php
     - gegeom
+    #- features
   excludePaths:
     analyseAndScan:
       - coordsys/full.inc.php

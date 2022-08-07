@@ -74,8 +74,7 @@ class LineString extends Homogeneous {
    * filter(int $precision=9999): ?LineString - renvoie un nouveau LineString filtré supprimant les points successifs identiques
    *
    * Les coordonnées sont arrondies avec le nbre de chiffres significatifs défini par le paramètre precision
-   * ou par la précision par défaut.
-   * Un filtre sans arrondi n'a pas de sens.
+   * ou par la précision par défaut. Un filtre sans arrondi n'a pas de sens.
   */
   function filter(int $precision=9999): ?LineString {
     $cclass = get_called_class();
@@ -193,7 +192,7 @@ class MultiLineString extends Homogeneous {
     }
   }
   
-  function filter(int $precision=9999): ?Homogeneous {
+  function filter(int $precision=9999): ?MultiLineString {
     if ($precision == 9999)
       $precision == self::$precision;
     $coords = [];

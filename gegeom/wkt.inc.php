@@ -8,6 +8,9 @@ doc: |
   Implémentation performante de la transformation WKT en GeoJSON utilisée par Geometry::fromWkt()
   Il est préférable de ne pas utiliser cette classe directemrnt.
 journal: |
+  7/8/2022:
+   - corrections suite à analyse PhpStan level 6
+   - structuration de la doc conformément à phpDocumentor
   21/5/2019:
     - correction d'un bug sur MULTIPOLYGON
   3/5/2019:
@@ -18,30 +21,39 @@ journal: |
   12/8/2018
     - première version
 */
-/*PhpDoc: classes
-name:  Wkt
-title: "class Wkt - classe statique de gestion des WKT"
-methods:
-doc: |
-  La méthode Wkt::geojson() ne crée pas de copie du $wkt afin d'optimiser la gestion mémoire.
-  De plus, elle utilise ni preg_match() ni preg_replace().
-  Les fichiers polygon.wkt.txt et multipolygon.wkt.txt sont utilisés pour le test unitaire
+require_once __DIR__.'/../lib/sexcept.inc.php';
+/**
+ * class Wkt - classe statique de gestion des WKT
+ *
+ * La méthode Wkt::geojson() ne crée pas de copie du $wkt afin d'optimiser la gestion mémoire.
+ * De plus, elle utilise ni preg_match() ni preg_replace().
+ * Les fichiers polygon.wkt.txt et multipolygon.wkt.txt sont utilisés pour le test unitaire
 */
 class Wkt {
-  /*PhpDoc: methods
-  name:  geojson
-  title: "static function geojson(string $wkt, float $shift=0.0): array - convertit à la volée un WKT en GeoJSON"
-  doc: |
-    shift vaut 0.0, -360.0 ou +360.0 pour générer les objets de l'autre côté de l'anti-méridien
+  const ErrorIncorrectWkt = 'Wkt::ErrorIncorrectWkt';
+  
+  /**
+   * geojson(string $wkt, float $shift=0.0): array - convertit à la volée un WKT en géométrie GeoJSON
+   *
+   * shift vaut 0.0, -360.0 ou +360.0 pour générer les objets de l'autre côté de l'anti-méridien
+   *
+   * @return TGeoJsonGeometry
   */
   static function geojson(string $wkt, float $shift=0.0): array {
     $pos = 0;
     $gj = self::parse($wkt, $pos, $shift);
     if ((strlen($wkt) <> $pos) && trim(substr($wkt, $pos)))
-      throw new \Exception("erreur Wkt2GeoJson::convert(), wkt=".substr($wkt,$pos)."$\n");
+      throw new \SExcept("erreur Wkt::geojson(), wkt=".substr($wkt,$pos)."$\n", self::ErrorIncorrectWkt);
     return $gj;
   }
   
+  /**
+   * private parse(string $wkt, int &$pos, float $shift): array
+   *
+   * analyse le $wkt pour produire 
+   *
+   * @return TGeoJsonGeometry
+   */
   private static function parse(string $wkt, int &$pos, float $shift): array {
     //echo "parse(wkt-pos=",substr($wkt, $pos, 20),")<br>\n";
     if (substr($wkt, $pos, 6)=='POINT(') {
@@ -80,10 +92,14 @@ class Wkt {
       return ['type'=>'GeometryCollection', 'geometries'=> $geometries];
     }
     else
-      throw new \Exception("erreur Wkt2GeoJson::parse(), wkt=".substr($wkt,$pos));
+      throw new \SExcept("erreur Wkt::parse(), wkt=".substr($wkt,$pos), self::ErrorIncorrectWkt);
   }
   
-  // consomme une liste de LLPos + parenthèse fermante: ((nn nn,nn nn),(nn nn,nn nn)),((nn nn,nn nn),(nn nn,nn nn)))
+  /**
+   * parseLLLPos(string $wkt, int &$pos, float $shift): array - consomme une liste de LLPos + parenthèse fermante: ((nn nn,nn nn),(nn nn,nn nn)),((nn nn,nn nn),(nn nn,nn nn)))
+   *
+   * @return TLLLPos
+   */
   private static function parseLLLPos(string $wkt, int &$pos, float $shift): array {
     $pos++;
     $lllpos = [self::parseLLPos($wkt, $pos, $shift)];
@@ -97,11 +113,15 @@ class Wkt {
     }
     else {
       echo "left parseLLLPos 3=",substr($wkt,$pos),"<br>\n";
-      throw new \Exception("Erreur Wkt2GeoJson::parseLLLPos ligne ".__LINE__);
+      throw new \SExcept("Erreur Wkt::parseLLLPos ligne ".__LINE__, self::ErrorIncorrectWkt);
     }
   }
   
-  // consomme une liste de LPos + parenthèse fermante mais sans ouvrante (nn nn,nn nn),(nn nn,nn nn))
+  /**
+   * parseLLPos(string $wkt, int &$pos, float $shift): array - consomme une liste de LPos + parenthèse fermante mais sans ouvrante (nn nn,nn nn),(nn nn,nn nn))
+   *
+   * @return TLLPos
+   */
   private static function parseLLPos(string $wkt, int &$pos, float $shift): array {
     $llpos = [self::parseLPos($wkt, $pos, $shift)];
     while (substr($wkt, $pos, 1) == ',') {
@@ -114,11 +134,15 @@ class Wkt {
     }
     else {
       echo "Erreur left parseLLPos 2 sur '",substr($wkt, $pos),"'<br>\n";
-      throw new \Exception("ligne ".__LINE__);
+      throw new \SExcept("ligne ".__LINE__, self::ErrorIncorrectWkt);
     }
   }
   
-  // consomme une liste de positions avec évent '(' + ')': (?nn nn,nn nn)
+  /**
+   * parseLPos(string $wkt, int &$pos, float $shift): array - consomme une liste de positions avec évent '(' + ')': (?nn nn,nn nn)
+   *
+   * @return TLPos
+   */
   private static function parseLPos(string $wkt, int &$pos, float $shift): array {
     if (substr($wkt, $pos, 1) == '(')
       $pos++;
@@ -132,20 +156,24 @@ class Wkt {
       return $lpos;
     }
     else
-      throw new \Exception("Erreur dans Wkt2GeoJson::parseLPos sur wkt='".substr($wkt, $pos)."'");
+      throw new \SExcept("Erreur dans Wkt::parseLPos sur wkt='".substr($wkt, $pos)."'", self::ErrorIncorrectWkt);
   }
   
-  // consomme une position, pos pointe à la fin sur le séparateur après la position
+  /**
+   * parsePos(string $wkt, int &$pos, float $shift): array - consomme une position, pos pointe à la fin sur le séparateur après la position
+   *
+   * @return TPos
+   */
   private static function parsePos(string $wkt, int &$pos, float $shift): array {
     $len = strcspn($wkt, ' ),', $pos);
     if (($len < 1) || (substr($wkt, $pos+$len, 1)<>' '))
-      throw new \Exception("Erreur dans Wkt2GeoJson::parsePos sur x wkt='".substr($wkt, $pos)."'");
+      throw new \SExcept("Erreur dans Wkt::parsePos sur x wkt='".substr($wkt, $pos)."'");
     $x = substr($wkt, $pos, $len);
     //echo "len=$len, wkt='$wkt', pos=$pos, x=$x\n"; die();
     $pos += $len+1;
     $len = strcspn($wkt, ' ),', $pos);
     if ($len < 1)
-      throw new \Exception("Erreur dans Wkt2GeoJson::parsePos sur y wkt='".substr($wkt, $pos)."'");
+      throw new \SExcept("Erreur dans Wkt::parsePos sur y wkt='".substr($wkt, $pos)."'");
     $y = substr($wkt, $pos, $len);
     $pos += $len;
     //echo "\nsuite='",substr($wkt, $pos),"'<br>\n"; //die();
@@ -162,7 +190,7 @@ class Wkt {
       return [(float)$x + $shift, (float)$y, (float)$z];
     }
     else
-      throw new \Exception("Erreur dans Wkt2GeoJson::parsePos sur wkt='".substr($wkt, $pos)."'");
+      throw new \SExcept("Erreur dans Wkt::parsePos sur wkt='".substr($wkt, $pos)."'", self::ErrorIncorrectWkt);
   }
 };
 
@@ -170,7 +198,7 @@ class Wkt {
 if (basename(__FILE__)<>basename($_SERVER['PHP_SELF'])) return;
 
 
-// Test unitaire de la classe Wkt2GeoJson
+// Test unitaire de la classe Wkt
 
 $wkts = [
   'MULTIPOLYGON(((6.186 49.464,6.658 49.202,6.186 49.464)),((8.746 42.628,9.39 43.01,9.56 42.152,9.23 41.38,8.776 41.584,8.544 42.257,8.746 42.628)))',
@@ -199,7 +227,7 @@ foreach ($wkts as $wkt) {
     $geojson = Wkt::geojson($wkt);
     echo '  ',json_encode($geojson, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
   }
-  catch(\Exception $e) {
+  catch(\SExcept $e) {
     echo '  ',json_encode(
       ['type'=> 'Error', 'message'=> $e->getMessage(), 'source'=> $wkt],
       JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);

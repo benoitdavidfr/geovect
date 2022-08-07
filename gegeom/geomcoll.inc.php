@@ -22,15 +22,18 @@ use \unittest\UnitTest;
 class GeometryCollection extends Geometry {
   const ErrorSimpleGeoms = 'GeometryCollection::ErrorSimpleGeoms';
   
-  /** @var array<int, Homogeneous> */
+  /** @var array<int, THomogeneous> */
   protected array $geometries; // liste d'objets géométriques homogènes
   
   /**
    * __construct(array $geometries, array $style=[]) - création à partir d'une liste d'objets homogènes
    *
-   * @param array<int, Homogeneous> $geometries
+   * @param array<int, THomogeneous> $geometries
   */
-  function __construct(array $geometries) { $this->geometries = $geometries; }
+  function __construct(array $geometries) {
+    //echo "<pre>GeometryCollection::__construct("; print_r($geometries); echo ")</pre>\n";
+    $this->geometries = $geometries;
+  }
   
   // récupère le type en supprimant l'espace de nom
   function type(): string { $c = get_called_class(); return substr($c, strrpos($c, '\\')+1); }
@@ -61,15 +64,6 @@ class GeometryCollection extends Geometry {
         $errors[] = ["Erreur sur l'élément $i", $eltErrors];
     }
     return $errors;
-  }
-  
-  function __toString(): string {
-    return ($this->type())
-      .'('.implode(',',array_map(function(Geometry $geom) { return $geom->__toString(); }, $this->geometries)).')';
-  }
-  
-  function proj2D(): Geometry {
-    return new self(array_map(function(Homogeneous $geom) { return $geom->proj2D(); }, $this->geometries));
   }
   
   /**
@@ -137,6 +131,10 @@ class GeometryCollection extends Geometry {
     return array_sum(array_map(function(Geometry $geom) { return $geom->nbPoints(); }, $this->geometries));
   }
   
+  function proj2D(): self {
+    return new self(array_map(function(Homogeneous $geom) { return $geom->proj2D(); }, $this->geometries));
+  }
+  
   function length(): float {
     return array_sum(array_map(function(Geometry $geom) { return $geom->length(); }, $this->geometries));
   }
@@ -160,12 +158,27 @@ class GeometryCollection extends Geometry {
     return new GeometryCollection(array_map(function($g) use($projPos){ return $g->proj($projPos); }, $this->geometries));
   }
   
-  function filter(int $precision=9999): ?Geometry {
-    return new GeometryCollection(array_map(function($g) use($precision){ return $g->filter($precision); }, $this->geometries));
+  /**
+   * filter(int $prec=9999): ?self - renvoie un nouveau GeometryCollection filtré supprimant les points successifs identiques ou null si la géométrie est trop petite
+   */
+  function filter(int $prec=9999): ?self {
+    // filtre chacun des éléments et supprime ceux réduits à null
+    $geoms = array_filter(
+      array_map(function($g) use($prec) { return $g->filter($prec); }, $this->geometries),
+      function(?Homogeneous $geom): bool { return !is_null($geom); }
+    );
+    // s'il en reste au moins 1 fabrique un nouveau GeometryCollection sinon renvoie null
+    return $geoms ? new GeometryCollection($geoms) : null;
   }
   
-  function simplify(float $dTreshold): ?Geometry {
-    return new GeometryCollection(array_map(function($g) use($dTreshold){ return $g->simplify($dTreshold); }, $this->geometries));
+  function simplify(float $dTreshold): ?self {
+    // simplifie chacun des éléments et supprime ceux réduits à null
+    $geoms = array_filter(
+      array_map(function($g) use($dTreshold) { return $g->simplify($dTreshold); }, $this->geometries),
+      function(?Homogeneous $geom): bool { return !is_null($geom); }
+    );
+    // s'il en reste au moins 1 fabrique un nouveau GeometryCollection sinon renvoie null
+    return $geoms ? new GeometryCollection($geoms) : null;
   }
   
   /**

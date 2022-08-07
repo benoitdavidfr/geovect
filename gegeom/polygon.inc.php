@@ -96,7 +96,7 @@ class Polygon extends Homogeneous {
     }
   }
   
-  function filter(int $precision=9999): ?Polygon {
+  function filter(int $precision=9999): ?self {
     if ($precision == 9999)
       $precision == self::$precision;
     $cclass = get_called_class();
@@ -315,11 +315,11 @@ class MultiPolygon extends Homogeneous {
   }
   
   /**
-   * filter(int $precision=9999): $this
+   * filter(int $precision=9999): self
    *
    * @return self|null
   */
-  function filter(int $precision=9999): ?Homogeneous {
+  function filter(int $precision=9999): ?self {
     if ($precision == 9999)
       $precision == self::$precision;
     $cclass = get_called_class();

@@ -18,7 +18,7 @@ echo "<h2>La classe abstraite BBox</h2>\n";
 foreach (['GBox','EBox'] as $class) {
   $class = __NAMESPACE__.'\\'.$class;
   $bbox = new $class([0,0]);
-  "bbox=$bbox<br>\n";
+  "bbox=$bbox<br>\n"; // @phpstan-ignore-line
   $bbox->empty();
   $bbox->posInBBox([0,0]);
   $bbox->bound([1,1]);
@@ -48,13 +48,13 @@ foreach ([
     'Point'=>[0,0],'MultiPoint'=>[[0,0]],
     'LineString'=>[[0,0]],'MultiLineString'=>[[[0,0]]],
     'Polygon'=>[[[0,0]]],'MultiPolygon'=>[[[[0,0]]]],
-    'GeometryCollection'=>[new Point([0,0])],
+    'GeometryCollection'=> [new Point([0,0])],
   ] as $class=> $value) {
     $class = __NAMESPACE__.'\\'.$class;
-    $geom = new $class($value);
+    $geom = new $class($value); // @phpstan-ignore-line
     $geom->coords();
     $geom->asArray();
-    "geom=$geom<br>\n";
+    echo "geom=$geom<br>\n";
     $geom->wkt();
     $geom->isValid();
     $geom->getErrors();

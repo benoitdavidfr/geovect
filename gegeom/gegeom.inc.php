@@ -116,7 +116,7 @@ abstract class Geometry {
    * de la bibliothèque.
    *
    * @param TGeoJsonGeometry $geom
-   * @return Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon|GeometryCollection
+   * @return THomogeneous|GeometryCollection
    */
   static function fromGeoJSON(array $geom, string $prefix=''): Geometry {
     if (in_array($geom['type'] ?? null, Homogeneous::TYPES) && isset($geom['coordinates'])) {
@@ -136,7 +136,7 @@ abstract class Geometry {
    *
    * génère une erreur si le WKT ne correspond pas à une géométrie
    *
-   * @return Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon|GeometryCollection
+   * @return THomogeneous|GeometryCollection
    */
   static function fromWkt(string $wkt, string $prefix=''): Geometry {
     return self::fromGeoJSON(Wkt::geojson($wkt), $prefix);
@@ -214,8 +214,10 @@ abstract class Geometry {
   
   /**
    * proj(callable $projPos): Geometry - projète chaque position d'une géométrie en utilisant la fonction anonyme
+   *
+   * @return self
    */
-  abstract function proj(callable $projPos): Geometry;
+  abstract function proj(callable $projPos): self;
   
   /**
    * center(): TPos - centre d'une géométrie considérée en coord. géo.
@@ -230,12 +232,12 @@ abstract class Geometry {
    * Retourne un array composé d'exactement 3 champs points, lineStrings et polygons contenant chacun
    * une liste évt. vide d'objets respectivement Point, LineString et Polygon.
    *
-   * @return array<string, array<int, Homogeneous>>
+   * @return array<string, array<int, Point|LineString|Polygon>>
    */
   abstract function simpleGeoms(): array;
 
   /**
-   * draw(Drawing $drawing, array $style=[]) - Dessine l'objet dans le dessin avec le style
+   * draw(Drawing $drawing, array $style=[]): void - Dessine l'objet dans le dessin avec le style
    *
    * @param TStyle $style
    */
@@ -287,19 +289,16 @@ abstract class Homogeneous extends Geometry {
   function asArray(): array { return ['type'=> $this->type(), 'coordinates'=> $this->coords]; }
   
   /**
-   *__toString(): string - génère la réprésentation string WKT"
-  */
-  //function __toString(): string { return ($this->type()).LnPos::wkt($this->coords); }
-  
-  /**
    * wkt(): string - génère la réprésentation WKT de la géométrie
    */
   function wkt(): string { return strtoupper($this->type()).LnPos::wkt($this->coords); }
   
   /**
    * proj2D(): self - projection 2D, supprime l'éventuelle 3ème coordonnée, renvoie un nouvel objet de même type
+   *
+   * @return THomogeneous
   */
-  function proj2D(): Homogeneous { return self::proj(function(array $pos) { return [$pos[0], $pos[1]]; }); }
+  function proj2D(): self { return self::proj(function(array $pos) { return [$pos[0], $pos[1]]; }); }
   
   /**
    * center(): TPos - centre d'une géométrie considérée en coord. géo.
@@ -336,8 +335,10 @@ abstract class Homogeneous extends Geometry {
    * proj(callable $projPos): Homogeneous - projète les positions de la géométrie par une fonction anonyme TPos -> TPos
    *
    * crée un nouvel objet
+   *
+   * @return THomogeneous
    */
-  function proj(callable $projPos): Homogeneous {
+  function proj(callable $projPos): self {
     $class = get_called_class();
     return new $class(LnPos::projLn($this->coords, $projPos)); // @phpstan-ignore-line
   }
@@ -366,23 +367,27 @@ abstract class Homogeneous extends Geometry {
   function area(array $options=[]): float { return 0; }
   
   /**
-   * filter(int $precision=9999): ?Homogeneous - renvoie un nouveau Homogeneous filtré supprimant les points successifs identiques sur les lignes brisées ou null si la géométrie est trop petite
+   * filter(int $precision=9999): ?self - renvoie un nouvel objet de même type filtré supprimant les points successifs identiques ou null si la géométrie est trop petite
    *
    * Les coordonnées sont arrondies avec le nbre de chiffres significatifs défini par le paramètre precision
    * ou par la précision par défaut. Un filtre sans arrondi n'a pas de sens.
    * La gestion des géométries dégradées par le filtre permet de garder les morceaux corrects d'un objet.
+   *
+   * Pour un Point ou un MultiPoint renvoie null
+   *
+   * @return THomogeneous|null
   */
-  function filter(int $precision=9999): ?Homogeneous { return $this; }
+  function filter(int $precision=9999): ?self { return null; }
   
   /**
-   * simplify(float $distTreshold): ?LineString - simplifie la géométrie de la ligne brisée"
+   * simplify(float $distTreshold): ?self - simplifie la géométrie de la ligne brisée"
    *
-   * Simplification de la ligne brisée utilisant l'algorithme de Douglas & Peucker
-   * Ne modifie pas l'objet courant
-   * Retourne un nouvel objet LineString simplifié
-   * ou null si la ligne est fermée et que la distance max est inférieure au seuil
+   * Simplification de la géométrie utilisant l'algorithme de Douglas & Peucker. Ne modifie pas l'objet courant.
+   * Retourne un nouvel objet simplifié ou null si le diamètre de l'objet est inférieur au seuil
+   *
+   * @return THomogeneous|null
    */
-  function simplify(float $distTreshold): ?Homogeneous { return $this; }
+  function simplify(float $distTreshold): ?self { return null; }
   
   /**
    * draw(Drawing $drawing, array $style=[]) - Dessine l'objet dans le dessin avec le style

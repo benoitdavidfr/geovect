@@ -170,6 +170,22 @@ class Pos {
   }
 
   /**
+   * add() - $pos + $v en 2D où $v est une position
+   *
+   * @param TPos $pos
+   * @param TPos $v
+   * @return TPos
+   */
+  static function add(array $pos, array $v): array {
+    if (!self::is($pos))
+      throw new \Exception("Erreur dans Pos:diff(), paramètre pos pas une position");
+    elseif (!self::is($v))
+      throw new \Exception("Erreur dans Pos:diff(), paramètre v pas une position");
+    else
+      return [$pos[0] + $v[0], $pos[1] + $v[1]];
+  }
+  
+  /**
    * diff() - $pos - $v en 2D où $v est une position
    *
    * @param TPos $pos
@@ -688,10 +704,10 @@ class LnPos {
   }
   static function test_center(): void {
     $lpos = [[1,2],[3,7,5]];
-    echo "<pre>LnPos::count(",LnPos::toString($lpos),")="; print_r(LnPos::count($lpos));
-    echo "<pre>LnPos::sumncoord(",LnPos::toString($lpos),", 0)="; print_r(LnPos::sumncoord($lpos, 0));
-    echo "<pre>LnPos::sumncoord(",LnPos::toString($lpos),", 1)="; print_r(LnPos::sumncoord($lpos, 1));
-    echo "<pre>LnPos::center(",LnPos::toString($lpos),",1)=",json_encode(LnPos::center($lpos,1)),"<br>\n";
+    echo "<pre>LnPos::count(",json_encode($lpos),")="; print_r(LnPos::count($lpos));
+    echo "<pre>LnPos::sumncoord(",json_encode($lpos),", 0)="; print_r(LnPos::sumncoord($lpos, 0));
+    echo "<pre>LnPos::sumncoord(",json_encode($lpos),", 1)="; print_r(LnPos::sumncoord($lpos, 1));
+    echo "<pre>LnPos::center(",json_encode($lpos),",1)=",json_encode(LnPos::center($lpos,1)),"<br>\n";
   }
   
   /**

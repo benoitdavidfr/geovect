@@ -67,9 +67,9 @@ class Point extends Homogeneous {
    */
   function add(Point|array $v): Point {
     if (Pos::is($v))
-      return new Point([$this->coords[0] + $v[0], $this->coords[1] + $v[1]]);
+      return new Point(Pos::add($this->coords, $v));
     elseif (get_class($v) == __NAMESPACE__.'\Point')
-      return new Point([$this->coords[0] + $v->coords[0], $this->coords[1] + $v->coords[1]]);
+      return new Point(Pos::add($this->coords, $v->coords));
     else
       throw new \SExcept("Erreur dans Point:add(), paramètre ni position ni Point", self::ErrorAdd);
   }
@@ -81,9 +81,9 @@ class Point extends Homogeneous {
    */
   function diff(Point|array $v): Point {
     if (Pos::is($v))
-      return new Point([$this->coords[0] - $v[0], $this->coords[1] - $v[1]]);
+      return new Point(Pos::diff($this->coords, $v));
     elseif (get_class($v) == __NAMESPACE__.'\Point')
-      return new Point([$this->coords[0] - $v->coords[0], $this->coords[1] - $v->coords[1]]);
+      return new Point(Pos::diff($this->coords, $v->coords));
     else
       throw new \SExcept("Erreur dans Point:diff(), paramètre ni position ni Point", self::ErrorDiff);
   }
@@ -141,7 +141,7 @@ class Point extends Homogeneous {
       [[1,0], [0,0], [0,2]],
     ] as $lpts) {
       $p = new Point($lpts[0]);
-      echo '(',$p,")->projPointOnLine(",LnPos::toString($lpts[1]),',',LnPos::toString($lpts[2]),")->",
+      echo '(',$p,")->projPointOnLine(",json_encode($lpts[1]),',',json_encode($lpts[2]),")->",
           $p->projPointOnLine($lpts[1], $lpts[2]),"<br>\n";
     }
   }
