@@ -13,6 +13,8 @@ doc: |
       '{classe}::{nom_constante}'
 classes:
 journal: |
+  7/8/2022:
+    - corrections suite à PhpStan level 6
   27/2/2022:
     - amélioration de la gestion des erreurs, utilisation de SExcept
   27/1/2021:
@@ -22,12 +24,8 @@ journal: |
     - évolutions
   30/12/2020:
     - création
-includes:
-  - ftsonwfs.inc.php
-  - ftsonfile.inc.php
-  - ftsonsql.inc.php
 */
-require_once __DIR__.'/sexcept.inc.php';
+require_once __DIR__.'/../lib/sexcept.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 

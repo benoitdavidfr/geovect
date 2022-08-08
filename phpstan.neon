@@ -19,9 +19,14 @@ parameters:
     - lib
     - coordsys/light.inc.php
     - gegeom
-    #- features
-  excludePaths:
-    analyseAndScan:
-      - coordsys/full.inc.php
-      - coordsys/crs.inc.php
-      - coordsys/draw.php
+    - specs
+    - features
+  scanFiles:
+    - coordsys/full.inc.php
+    - coordsys/crs.inc.php
+    - coordsys/draw.php
+  scanDirectories:
+    - ../phplib
+    - ../schema
+  #excludePaths:
+    #analyseAndScan:

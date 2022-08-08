@@ -75,6 +75,11 @@ doc: |
     
     
 journal: |
+  4-7/8/2022:
+    - corrections gegeom suite à analyse PhpStan level 6
+    - structuration de la doc conformément à phpDocumentor
+    - restructuration du code pour corriger des erreurs
+    - uniquement sur gegeom et démarrage interrompu sur features
   15-16/2/2022:
     - évolutions de ogr2php pour charger NE dans OVH
     - mise à jour de Symfony/Yaml pour Php 8.1

@@ -1,6 +1,8 @@
 title: fcoll - accès aux FeatureCollection
 path: /geovect/fcoll
 doc: |
+  Module périmé. La méthode d'accès homogère est l'interface OGC API Features qui a l'avantage d'être standardisée.
+
   Ce module permet:
     - d'accéder de manière homogène à une FeatureCollection, en faisant abstraction de son format de stockage,
     - de générer des Feature à partir d'une FeatureCollection,

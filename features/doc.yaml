@@ -3,7 +3,7 @@ abstract: |
   Tester une doc des données indexée par nom de raccourci, ex ignf-route500
   L'objectif est de définir une doc des jeux de données exposés en s'inspirant des schema JSON
   et en permettant de générer facilement un schéma JSON.
-  Cette doc peut référence des spécifications qui définissent :
+  Cette doc peut référencer des spécifications qui définissent :
     - la structuration des données
     - la définition des jeux de données, de leurs collections, de leurs propriétés, des valeurs en cas de type énuméré.
     - la définition du type de géométrie de chaque collection

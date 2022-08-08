@@ -11,6 +11,8 @@ doc: |
     - 'Erreur .properties.acces="Saisonnier" not in enum=["A péage","Libre"]'
 
 journal: |
+  7/8/2022:
+    - corrections suite à PhpStan level 6 et mise en PhpDocumentor
   22/2/2022:
     - transfert des classes specs vers ../specs
     - modif. de DatasetDoc
@@ -29,7 +31,7 @@ includes: [../../schema/jsonschema.inc.php]
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/../../schema/jsonschema.inc.php';
 require_once __DIR__.'/../specs/spec.inc.php';
-require_once __DIR__.'/sexcept.inc.php';
+require_once __DIR__.'/../lib/sexcept.inc.php';
 
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Yaml\Exception\ParseException;
@@ -37,15 +39,19 @@ use Michelf\MarkdownExtra;
 
 ini_set('memory_limit', '10G');
 
-class DatasetDoc { // Doc d'un Dataset 
+/**
+ * class DatasetDoc - Doc d'un Dataset
+ */
+class DatasetDoc {
   protected string $id;
   protected string $title;
   protected ?string $abstract;
+  /** @var array<mixed> $licence */
   protected array $licence = [];
   protected string $path;
   protected ?Spec $conformsTo = null;
   
-  function schema() { /* Schema JSON: 
+  function schema(): void { /* Schema JSON d'un dataset: 
     dataset:
       description: |
         Description d'un jeu de données.
@@ -79,6 +85,7 @@ class DatasetDoc { // Doc d'un Dataset
     */
   }
   
+  /** @param array<mixed> $yaml */
   function __construct(string $id, array $yaml) {
     $this->id = $id;
     $this->title = $yaml['title'];
@@ -101,6 +108,7 @@ class DatasetDoc { // Doc d'un Dataset
       return null;
   }
   
+  /** @return array<string, string> */
   function collections(): array {
     if ($this->conformsTo)
       return $this->conformsTo->collections();
@@ -108,6 +116,7 @@ class DatasetDoc { // Doc d'un Dataset
       return [];
   }
   
+  /** @return array<string, mixed> */
   function asArray(): array {
     return [
       'title'=> $this->title,
@@ -118,6 +127,9 @@ class DatasetDoc { // Doc d'un Dataset
   }
 };
 
+/**
+ * class Doc - Doc globale 
+ */
 class Doc { // Doc globale 
   const ERROR_ON_DOC = 'Doc::ERROR_ON_DOC';
   const PATH = __DIR__.'/doc.'; // chemin des fichiers stockant la doc en pser ou en yaml, lui ajouter l'extension
@@ -125,9 +137,14 @@ class Doc { // Doc globale
   const PATH_YAML = self::PATH.'yaml'; // chemin du fichier stockant la doc en Yaml
   const SCHEMA_PATH_YAML = __DIR__.'/doc.schema.yaml'; // chemin du fichier stockant le schema en Yaml
 
+  /** @var array<int, DatasetDoc> */
   protected array $datasets; // [DatasetDoc]
   
-  // vérifie la conformité du document Yaml notamment à son schéma. En cas d'erreurs les retourne, sinon retourne []
+  /** checkYamlConformity(array $yaml=[]): array - vérifie la conformité du document Yaml notamment à son schéma. En cas d'erreurs les retourne, sinon retourne []
+   *
+   * @param array<mixed> $yaml
+   * @return array<string, mixed>
+   */
   static function checkYamlConformity(array $yaml=[]): array {
     if (!$yaml) {
       if (!is_file(self::PATH_YAML))
@@ -153,7 +170,10 @@ class Doc { // Doc globale
       return [];
   }
   
-  // charge la doc définie par défaut stockée dans le fichier self::PATH_YAML
+  /** charge la doc définie par défaut stockée dans le fichier self::PATH_YAML
+   * __construct(string|array $srce=self::PATH_YAML)
+   * @param string|array<mixed> $srce
+   */
   function __construct(string|array $srce=self::PATH_YAML) {
     if (is_string($srce)) {
       $yaml = Yaml::parseFile($srce);
@@ -175,6 +195,7 @@ class Doc { // Doc globale
     }
   }
   
+  /** @return array<string, mixed> */
   function asArray(): array {
     $array = [];
     foreach ($this->datasets as $id => $ds) {
@@ -183,7 +204,7 @@ class Doc { // Doc globale
     return $array;
   }
   
-  function __get(string $name) { return isset($this->$name) ? $this->$name : null; }
+  function __get(string $name): mixed { return isset($this->$name) ? $this->$name : null; }
   
   function datasetByPath(string $path): ?DatasetDoc {
     foreach ($this->datasets as $dataset) {

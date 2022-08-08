@@ -55,6 +55,8 @@ doc: |
     - renommer geovect en gdata pour green data
     - étendre features aux autres OGC API ?
 journal: |
+  7/8/2022:
+    - corrections suite à PhpStan level 6
   1/3/2022:
     - définition de la fonction fts pour clarifier la réutilisation du code
   28/2/2022:
@@ -85,7 +87,7 @@ includes:
   - displayjson.inc.php
 */
 require_once __DIR__.'/../vendor/autoload.php';
-require_once __DIR__.'/sexcept.inc.php';
+require_once __DIR__.'/../lib/sexcept.inc.php';
 require_once __DIR__.'/doc.php';
 require_once __DIR__.'/ftrserver.inc.php';
 require_once __DIR__.'/displayjson.inc.php';
